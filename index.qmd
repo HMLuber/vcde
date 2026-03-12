@@ -11,6 +11,18 @@ format:
 ## Abstract
 This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.
 
+#| label: fig-polar
+#| fig-cap: "A line plot on a polar axis"
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+r = np.arange(0, 2, 0.01)
+theta = 2 * np.pi * r
+fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+ax.plot(theta, r)
+plt.show()
+
 ## Methodology
 You can include complex math like $$E = mc^2$$ and immediately follow it with an interactive 3D figure to visualize your results.
 
