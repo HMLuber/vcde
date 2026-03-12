@@ -11,16 +11,13 @@ format:
 ## Abstract
 This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.
 
-#| label: fig-polar
-#| fig-cap: "A line plot on a polar axis"
-
-import numpy as np
+#| echo: false
+# The {python} tells Quarto to EXECUTE this
 import matplotlib.pyplot as plt
+import numpy as np
 
-r = np.arange(0, 2, 0.01)
-theta = 2 * np.pi * r
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.plot(theta, r)
+x = np.linspace(0, 10, 100)
+plt.plot(x, np.sin(x))
 plt.show()
 
 ## Methodology
