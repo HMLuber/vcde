@@ -153,8 +153,45 @@ window.Quarto = {
 <section id="methodology" class="level2">
 <h2 class="anchored" data-anchor-id="methodology">Methodology</h2>
 <p>You can include math like <span class="math inline">\(E = mc^2\)</span> and even your Babylon.js code here.</p>
-<canvas id="renderCanvas" style="width: 100%; height: 400px;">
+<script src="[https://cdn.babylonjs.com/babylon.js](https://cdn.babylonjs.com/babylon.js)"></script>
+<canvas id="renderCanvas" style="width: 100%; height: 400px; touch-action: none; border: 1px solid #ddd; background: #f0f0f0;">
 </canvas>
+<script>
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+
+    const createScene = function () {
+        const scene = new BABYLON.Scene(engine);
+        
+        // Setup Camera
+        const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 4, 4, BABYLON.Vector3.Zero(), scene);
+        camera.attachControl(canvas, true);
+        
+        // Setup Light
+        const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+        
+        // Add a Box
+        const box = BABYLON.MeshBuilder.CreateBox("box", {size: 1}, scene);
+        
+        // Simple Animation
+        scene.registerBeforeRender(function () {
+            box.rotation.y += 0.01;
+            box.rotation.x += 0.01;
+        });
+
+        return scene;
+    };
+
+    const scene = createScene();
+
+    engine.runRenderLoop(function () {
+        scene.render();
+    });
+
+    window.addEventListener("resize", function () {
+        engine.resize();
+    });
+</script>
 
 
 </section>
