@@ -149,6 +149,9 @@ window.Quarto = {
 <section id="abstract" class="level2">
 <h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
 <p>This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.</p>
+<p>#| label: fig-polar #| fig-cap: “A line plot on a polar axis”</p>
+<p>import numpy as np import matplotlib.pyplot as plt</p>
+<p>r = np.arange(0, 2, 0.01) theta = 2 * np.pi * r fig, ax = plt.subplots(subplot_kw={‘projection’: ‘polar’}) ax.plot(theta, r) plt.show()</p>
 </section>
 <section id="methodology" class="level2">
 <h2 class="anchored" data-anchor-id="methodology">Methodology</h2>

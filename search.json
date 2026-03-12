@@ -4,14 +4,14 @@
     "href": "index.html",
     "title": "My Awesome Paper Title",
     "section": "",
-    "text": "This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements."
+    "text": "This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.\n#| label: fig-polar #| fig-cap: “A line plot on a polar axis”\nimport numpy as np import matplotlib.pyplot as plt\nr = np.arange(0, 2, 0.01) theta = 2 * np.pi * r fig, ax = plt.subplots(subplot_kw={‘projection’: ‘polar’}) ax.plot(theta, r) plt.show()"
   },
   {
     "objectID": "index.html#abstract",
     "href": "index.html#abstract",
     "title": "My Awesome Paper Title",
     "section": "",
-    "text": "This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements."
+    "text": "This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.\n#| label: fig-polar #| fig-cap: “A line plot on a polar axis”\nimport numpy as np import matplotlib.pyplot as plt\nr = np.arange(0, 2, 0.01) theta = 2 * np.pi * r fig, ax = plt.subplots(subplot_kw={‘projection’: ‘polar’}) ax.plot(theta, r) plt.show()"
   },
   {
     "objectID": "index.html#methodology",
