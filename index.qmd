@@ -5,9 +5,11 @@ format:
   html:
     theme: cosmo
 jupyter: python3
+bibliography: references.bib
 ---
 
 ## Abstract
+Nach @knuth1984 ist TeX...
 This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.
 
 ```{python}
