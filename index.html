@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Markus Luber, Jasmin Kohlpaintner, Henrik Berg">
+<meta name="author" content="Jasmin Kohlpaintner, Henrik Berg, Markus Luber">
 
 <title>Echtzeit-Objekterkennung in Videostreams</title>
 <style>
@@ -24,61 +24,7 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
-/* CSS for citations */
-div.csl-bib-body { }
-div.csl-entry {
-  clear: both;
-}
-.hanging-indent div.csl-entry {
-  margin-left:2em;
-  text-indent:-2em;
-}
-div.csl-left-margin {
-  min-width:2em;
-  float:left;
-}
-div.csl-right-inline {
-  margin-left:2em;
-  padding-left:1em;
-}
-div.csl-indent {
-  margin-left: 2em;
-}</style>
+</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -125,35 +71,6 @@ div.csl-indent {
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 </head>
 
@@ -180,7 +97,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Markus Luber, Jasmin Kohlpaintner, Henrik Berg </p>
+             <p>Jasmin Kohlpaintner, Henrik Berg, Markus Luber </p>
           </div>
   </div>
     
@@ -193,90 +110,40 @@ window.Quarto = {
 </header>
 
 
-<section id="abstract" class="level2">
-<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
-<p>Nach <span class="citation" data-cites="knuth1984">Knuth (<a href="#ref-knuth1984" role="doc-biblioref">1984</a>)</span> ist TeX… This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.</p>
-<div id="cell-fig-polar" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">2</span>, <span class="fl">0.01</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>theta <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.pi <span class="op">*</span> r</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  subplot_kw <span class="op">=</span> {<span class="st">'projection'</span>: <span class="st">'polar'</span>} </span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>ax.plot(theta, r)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>ax.set_rticks([<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>])</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div id="fig-polar" class="quarto-float quarto-figure quarto-figure-center anchored">
-<figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-polar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="index_files/figure-html/fig-polar-output-1.png" width="450" height="439" class="figure-img">
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-polar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;1: A line plot on a polar axis
-</figcaption>
-</figure>
-</div>
-</div>
-</div>
+<section id="inhaltlicher-fokus" class="level2">
+<h2 class="anchored" data-anchor-id="inhaltlicher-fokus">1. Inhaltlicher Fokus</h2>
+<p><em>Echtzeit‑Objekterkennung in Videostreams mit YOLO und OpenCV. Ziele:</em></p>
+<ul>
+<li>Objekte in Live‑Videos lokalisieren und klassifizieren</li>
+<li>Mindestens 24–30 FPS erreichen</li>
+<li>Unterschiede zwischen YOLO‑Versionen (z.B. v8/v11/v12/neuere) anschaulich machen</li>
+</ul>
 </section>
-<section id="methodology" class="level2">
-<h2 class="anchored" data-anchor-id="methodology">Methodology</h2>
-<p>You can include complex math like <span class="math display">\[E = mc^2\]</span> and immediately follow it with an interactive 3D figure to visualize your results.</p>
-
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
-
-<div style="width: 100%; height: 400px; position: relative; margin: 20px 0;">
-    <canvas id="renderCanvas" style="width: 100%; height: 100%; touch-action: none; border: 1px solid #ddd; display: block; border-radius: 8px;"></canvas>
-</div>
-
-<script>
-    window.addEventListener('DOMContentLoaded', function() {
-        const canvas = document.getElementById("renderCanvas");
-        if (!canvas) return;
-
-        const engine = new BABYLON.Engine(canvas, true);
-
-        const createScene = function () {
-            const scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(0.95, 0.95, 0.95);
-
-            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/4, Math.PI/3, 5, BABYLON.Vector3.Zero(), scene);
-            camera.attachControl(canvas, true);
-
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            
-            const box = BABYLON.MeshBuilder.CreateBox("box", {size: 1.5}, scene);
-            const material = new BABYLON.StandardMaterial("mat", scene);
-            material.diffuseColor = new BABYLON.Color3(0.1, 0.4, 0.8);
-            box.material = material;
-
-            scene.registerBeforeRender(function () {
-                box.rotation.y += 0.01;
-                box.rotation.x += 0.005;
-            });
-
-            return scene;
-        };
-
-        const scene = createScene();
-        engine.runRenderLoop(() => scene.render());
-        window.addEventListener("resize", () => engine.resize());
-    });
-</script>
-
+<section id="grobstruktur-der-webseite" class="level2">
+<h2 class="anchored" data-anchor-id="grobstruktur-der-webseite">2. Grobstruktur der Webseite</h2>
+<p><em>Startseite</em> - Kurz erklärt: Was ist Echtzeit‑Objekterkennung? - Kurze Live‑Demo (Webcam oder Beispielvideo) <em>Grundlagen</em> - Begriffe: Localization vs.&nbsp;Classification - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) <em>Technik</em> - Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes) - Rolle von OpenCV für Video‑Capture und Vorverarbeitung <em>Demo‑Bereich</em> - Live‑Webcam oder Video‑Upload mit Erkennung - Anzeige von FPS und Konfidenz <em>Ausblick</em> - Einsatz auf Edge‑Geräten (z.B. Raspberry Pi) - Link zum Code‑Repository</p>
+</section>
+<section id="geplante-interaktive-inhalte" class="level2">
+<h2 class="anchored" data-anchor-id="geplante-interaktive-inhalte">3. Geplante interaktive Inhalte</h2>
+<ul>
+<li>Live‑Webcam‑Demo mit YOLO (Bounding Boxes in Echtzeit)</li>
+<li>Video‑Upload: Nutzer lädt ein kurzes Video hoch, bekommt annotierte Ausgabe</li>
+<li>Regler für Konfidenz‑Threshold und evtl. Modellwahl (z.B. YOLO‑Variante umschalten)</li>
+<li>FPS‑Anzeige zur Verdeutlichung der Echtzeit‑Anforderung</li>
+</ul>
+</section>
+<section id="erste-ideen-für-x" class="level2">
+<h2 class="anchored" data-anchor-id="erste-ideen-für-x">4. Erste Ideen für „X“</h2>
+<ul>
+<li>Edge‑Demo: Kurze Darstellung, wie das Modell auf einem Raspberry Pi laufen könnte</li>
+<li>Sport‑Beispiel (z.B. Fußball‑ oder Tischtennis‑Szene) zur Verfolgung von Spielern/Ball</li>
+<li>Kleine Vergleichsansicht: Zwei YOLO‑Versionen auf demselben Video nebeneinander (Qualität vs.&nbsp;Geschwindigkeit)</li>
+</ul>
 
 
 </section>
 
-<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
-<div id="ref-knuth1984" class="csl-entry" role="listitem">
-Knuth, Donald E. 1984. <em>The TeXbook</em>. Addison-Wesley.
-</div>
-</div></section></div></main> <!-- /main -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
