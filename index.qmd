@@ -22,12 +22,12 @@ bibliography: references.bib
 - Kurz erklärt: Was ist Echtzeit‑Objekterkennung?\
 - Kurze Live‑Demo (Webcam oder Beispielvideo)\
 *Grundlagen*\
-- Begriffe: Localization vs. Classification
-- Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) \#
-
-*Technik*
-- Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)
-- Rolle von OpenCV für Video‑Capture und Vorverarbeitung
+- Begriffserklärungen \
+- Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) \
+- Motivation \
+*Technik* \
+- Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes) \
+- Rolle von OpenCV für Video‑Capture und Vorverarbeitung \
 
 *Demo‑Bereich*
  - Live‑Webcam oder Video‑Upload mit Erkennung
