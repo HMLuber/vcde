@@ -1,6 +1,6 @@
 ---
 title: "Echtzeit-Objekterkennung in Videostreams"
-author: "Markus Luber, Jasmin Kohlpaintner, Henrik Berg"
+author: "Jasmin Kohlpaintner, Henrik Berg, Markus Luber"
 format:
   html:
     theme: cosmo
@@ -8,71 +8,41 @@ jupyter: python3
 bibliography: references.bib
 ---
 
-## Abstract
-Nach @knuth1984 ist TeX...
-This is a single-file Quarto website hosted on GitHub Pages. It combines Markdown text, LaTeX math, and interactive 3D elements.
+## 1. Inhaltlicher Fokus
+_Echtzeit‑Objekterkennung in Videostreams mit YOLO und OpenCV.
+Ziele:_
 
-```{python}
-#| label: fig-polar
-#| fig-cap: "A line plot on a polar axis"
+- Objekte in Live‑Videos lokalisieren und klassifizieren
+- Mindestens 24–30 FPS erreichen
+- Unterschiede zwischen YOLO‑Versionen (z.B. v8/v11/v12/neuere) anschaulich machen
 
-import numpy as np
-import matplotlib.pyplot as plt
 
-r = np.arange(0, 2, 0.01)
-theta = 2 * np.pi * r
-fig, ax = plt.subplots(
-  subplot_kw = {'projection': 'polar'} 
-)
-ax.plot(theta, r)
-ax.set_rticks([0.5, 1, 1.5, 2])
-ax.grid(True)
-plt.show()
-```
+## 2. Grobstruktur der Webseite
+_Startseite_
+- Kurz erklärt: Was ist Echtzeit‑Objekterkennung?
+- Kurze Live‑Demo (Webcam oder Beispielvideo)
+_Grundlagen_
+- Begriffe: Localization vs. Classification
+- Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)
+_Technik_
+- Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)
+- Rolle von OpenCV für Video‑Capture und Vorverarbeitung
+_Demo‑Bereich_
+- Live‑Webcam oder Video‑Upload mit Erkennung
+- Anzeige von FPS und Konfidenz
+_Ausblick_
+- Einsatz auf Edge‑Geräten (z.B. Raspberry Pi)
+- Link zum Code‑Repository
 
-## Methodology
-You can include complex math like $$E = mc^2$$ and immediately follow it with an interactive 3D figure to visualize your results.
 
-```{=html}
+## 3. Geplante interaktive Inhalte
+- Live‑Webcam‑Demo mit YOLO (Bounding Boxes in Echtzeit)
+- Video‑Upload: Nutzer lädt ein kurzes Video hoch, bekommt annotierte Ausgabe
+- Regler für Konfidenz‑Threshold und evtl. Modellwahl (z.B. YOLO‑Variante umschalten)
+- FPS‑Anzeige zur Verdeutlichung der Echtzeit‑Anforderung
 
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
 
-<div style="width: 100%; height: 400px; position: relative; margin: 20px 0;">
-    <canvas id="renderCanvas" style="width: 100%; height: 100%; touch-action: none; border: 1px solid #ddd; display: block; border-radius: 8px;"></canvas>
-</div>
-
-<script>
-    window.addEventListener('DOMContentLoaded', function() {
-        const canvas = document.getElementById("renderCanvas");
-        if (!canvas) return;
-
-        const engine = new BABYLON.Engine(canvas, true);
-
-        const createScene = function () {
-            const scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(0.95, 0.95, 0.95);
-
-            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/4, Math.PI/3, 5, BABYLON.Vector3.Zero(), scene);
-            camera.attachControl(canvas, true);
-
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            
-            const box = BABYLON.MeshBuilder.CreateBox("box", {size: 1.5}, scene);
-            const material = new BABYLON.StandardMaterial("mat", scene);
-            material.diffuseColor = new BABYLON.Color3(0.1, 0.4, 0.8);
-            box.material = material;
-
-            scene.registerBeforeRender(function () {
-                box.rotation.y += 0.01;
-                box.rotation.x += 0.005;
-            });
-
-            return scene;
-        };
-
-        const scene = createScene();
-        engine.runRenderLoop(() => scene.render());
-        window.addEventListener("resize", () => engine.resize());
-    });
-</script>
-```
+## 4. Erste Ideen für „X“
+- Edge‑Demo: Kurze Darstellung, wie das Modell auf einem Raspberry Pi laufen könnte
+- Sport‑Beispiel (z.B. Fußball‑ oder Tischtennis‑Szene) zur Verfolgung von Spielern/Ball
+- Kleine Vergleichsansicht: Zwei YOLO‑Versionen auf demselben Video nebeneinander (Qualität vs. Geschwindigkeit)
