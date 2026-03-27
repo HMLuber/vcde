@@ -1,6 +1,6 @@
 ---
-title: "My Awesome Paper Title"
-author: "Your Name"
+title: "Echtzeit-Objekterkennung in Videostreams"
+author: "Markus Luber, Jasmin Kohlpaintner, Henrik Berg"
 format:
   html:
     theme: cosmo
