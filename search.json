@@ -18,7 +18,7 @@
     "href": "index.html#grobstruktur-der-webseite",
     "title": "Echtzeit-Objekterkennung in Videostreams",
     "section": "2. Grobstruktur der Webseite",
-    "text": "2. Grobstruktur der Webseite\nStartseite - Kurz erklärt: Was ist Echtzeit‑Objekterkennung? - Kurze Live‑Demo (Webcam oder Beispielvideo) Grundlagen - Begriffe: Localization vs. Classification - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) Technik - Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes) - Rolle von OpenCV für Video‑Capture und Vorverarbeitung Demo‑Bereich - Live‑Webcam oder Video‑Upload mit Erkennung - Anzeige von FPS und Konfidenz Ausblick - Einsatz auf Edge‑Geräten (z.B. Raspberry Pi) - Link zum Code‑Repository"
+    "text": "2. Grobstruktur der Webseite\nStartseite\n- Kurz erklärt: Was ist Echtzeit‑Objekterkennung?\n- Kurze Live‑Demo (Webcam oder Beispielvideo)\nGrundlagen\n- Begriffe: Localization vs. Classification - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) Technik - Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes) - Rolle von OpenCV für Video‑Capture und Vorverarbeitung Demo‑Bereich - Live‑Webcam oder Video‑Upload mit Erkennung - Anzeige von FPS und Konfidenz Ausblick - Einsatz auf Edge‑Geräten (z.B. Raspberry Pi) - Link zum Code‑Repository"
   },
   {
     "objectID": "index.html#geplante-interaktive-inhalte",
