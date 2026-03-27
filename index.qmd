@@ -23,6 +23,7 @@ bibliography: references.bib
 - Kurze Live‑Demo (Webcam oder Beispielvideo)\
 
 *Grundlagen*\
+- Geschichte der Objekterkennung \
 - Begriffserklärungen \
 - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) \
 - Motivation \
@@ -33,7 +34,6 @@ bibliography: references.bib
 
 *Demo‑Bereich* \
  - Live‑Webcam oder Video‑Upload mit Erkennung \
- - Anzeige von FPS und Konfidenz \
  - Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches) \
 
 *Ausblick* \
@@ -49,6 +49,5 @@ bibliography: references.bib
 
 ## 4. Erste Ideen für „X“
 
-- Edge‑Demo: Kurze Darstellung, wie das Modell auf einem Raspberry Pi laufen könnte
-- Sport‑Beispiel (z.B. Fußball‑ oder Tischtennis‑Szene) zur Verfolgung von Spielern/Ball
+- Beispiel bei welchen Echtzeit-Objekterkennung bereits genutzt wird (z.B. in der Industrie, im Alltag) \
 - Kleine Vergleichsansicht: Zwei YOLO‑Versionen auf demselben Video nebeneinander (Qualität vs. Geschwindigkeit)
