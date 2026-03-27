@@ -9,40 +9,50 @@ bibliography: references.bib
 ---
 
 ## 1. Inhaltlicher Fokus
-_Echtzeit‑Objekterkennung in Videostreams mit YOLO und OpenCV.
-Ziele:_
+
+*Echtzeit‑Objekterkennung in Videostreams mit YOLO und OpenCV. Ziele:*
 
 - Objekte in Live‑Videos lokalisieren und klassifizieren
 - Mindestens 24–30 FPS erreichen
 - Unterschiede zwischen YOLO‑Versionen (z.B. v8/v11/v12/neuere) anschaulich machen
 
-
 ## 2. Grobstruktur der Webseite
-_Startseite_ \
-- Kurz erklärt: Was ist Echtzeit‑Objekterkennung? \
-- Kurze Live‑Demo (Webcam oder Beispielvideo) \
-_Grundlagen_ \
-- Begriffe: Localization vs. Classification
-- Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)
-_Technik_
-- Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)
-- Rolle von OpenCV für Video‑Capture und Vorverarbeitung
-_Demo‑Bereich_
-- Live‑Webcam oder Video‑Upload mit Erkennung
-- Anzeige von FPS und Konfidenz
-_Ausblick_
-- Einsatz auf Edge‑Geräten (z.B. Raspberry Pi)
-- Link zum Code‑Repository
 
+*Startseite*\
+- Kurz erklärt: Was ist Echtzeit‑Objekterkennung?\
+- Kurze Live‑Demo (Webcam oder Beispielvideo)\
+*Grundlagen*\
+- Begriffe: Localization vs. Classification
+
+\- Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) \#
+
+*Technik*
+
+\- Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)
+
+\- Rolle von OpenCV für Video‑Capture und Vorverarbeitung
+
+*Demo‑Bereich*
+
+ - Live‑Webcam oder Video‑Upload mit Erkennung
+
+ - Anzeige von FPS und Konfidenz
+
+*Ausblick*
+
+\- Einsatz auf Edge‑Geräten (z.B. Raspberry Pi)
+
+ - Link zum Code‑Repository
 
 ## 3. Geplante interaktive Inhalte
+
 - Live‑Webcam‑Demo mit YOLO (Bounding Boxes in Echtzeit)
 - Video‑Upload: Nutzer lädt ein kurzes Video hoch, bekommt annotierte Ausgabe
 - Regler für Konfidenz‑Threshold und evtl. Modellwahl (z.B. YOLO‑Variante umschalten)
 - FPS‑Anzeige zur Verdeutlichung der Echtzeit‑Anforderung
 
-
 ## 4. Erste Ideen für „X“
+
 - Edge‑Demo: Kurze Darstellung, wie das Modell auf einem Raspberry Pi laufen könnte
 - Sport‑Beispiel (z.B. Fußball‑ oder Tischtennis‑Szene) zur Verfolgung von Spielern/Ball
 - Kleine Vergleichsansicht: Zwei YOLO‑Versionen auf demselben Video nebeneinander (Qualität vs. Geschwindigkeit)
