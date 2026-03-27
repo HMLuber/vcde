@@ -18,10 +18,10 @@ Ziele:_
 
 
 ## 2. Grobstruktur der Webseite
-_Startseite_
-- Kurz erklärt: Was ist Echtzeit‑Objekterkennung?
-- Kurze Live‑Demo (Webcam oder Beispielvideo)
-_Grundlagen_
+_Startseite_ \
+- Kurz erklärt: Was ist Echtzeit‑Objekterkennung? \
+- Kurze Live‑Demo (Webcam oder Beispielvideo) \
+_Grundlagen_ \
 - Begriffe: Localization vs. Classification
 - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)
 _Technik_
