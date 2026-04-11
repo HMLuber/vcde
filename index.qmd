@@ -8,46 +8,24 @@ jupyter: python3
 bibliography: references.bib
 ---
 
-## 1. Inhaltlicher Fokus
-
-*Echtzeit‑Objekterkennung in Videostreams mit YOLO und OpenCV. Ziele:*
-
-- Objekte in Live‑Videos lokalisieren und klassifizieren
-- Mindestens 24–30 FPS erreichen
-- Unterschiede zwischen YOLO‑Versionen (z.B. v8/v11/v12/neuere) anschaulich machen
-
-## 2. Grobstruktur der Webseite
-
-*Startseite*\
+## Startseite
 - Kurz erklärt: Was ist Echtzeit‑Objekterkennung?\
 - Kurze Live‑Demo (Webcam oder Beispielvideo)\
 
-*Grundlagen*\
+## Grundlagen
 - Geschichte der Objekterkennung \
 - Begriffserklärungen \
 - Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport) \
 - Motivation \
 
-*Technik* \
+## Technik
 - Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes) \
 - Rolle von OpenCV für Video‑Capture und Vorverarbeitung \
 
-*Demo‑Bereich* \
+## Demo‑Bereich
  - Live‑Webcam oder Video‑Upload mit Erkennung \
  - Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches) \
 
-*Ausblick* \
+## Ausblick
 - Einsatz auf Edge‑Geräten (z.B. Raspberry Pi) \
 - Link zum Code‑Repository
-
-## 3. Geplante interaktive Inhalte
-
-- Live‑Webcam‑Demo mit YOLO (Bounding Boxes in Echtzeit)
-- Video‑Upload: Nutzer lädt ein kurzes Video hoch, bekommt annotierte Ausgabe
-- Regler für Konfidenz‑Threshold und evtl. Modellwahl (z.B. YOLO‑Variante umschalten)
-- FPS‑Anzeige zur Verdeutlichung der Echtzeit‑Anforderung
-
-## 4. Erste Ideen für „X“
-
-- Beispiel bei welchen Echtzeit-Objekterkennung bereits genutzt wird (z.B. in der Industrie, im Alltag) \
-- Kleine Vergleichsansicht: Zwei YOLO‑Versionen auf demselben Video nebeneinander (Qualität vs. Geschwindigkeit)
