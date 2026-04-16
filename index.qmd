@@ -67,7 +67,7 @@ Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages üb
 </script>
 <script async src="https://docs.opencv.org/master/opencv.js"></script>
 <script>
-  const modelPath = 'models/yolov5n.onnx';
+  const modelPath = './models/yolov5n.onnx';
   const inputSize = 640;
   const confThreshold = 0.30;
   const minObjectness = 0.30;

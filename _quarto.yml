@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - models/yolov5n.onnx
 
 website:
   title: Browserbasierte YOLO-Objekterkennung
