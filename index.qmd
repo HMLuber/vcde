@@ -1,5 +1,5 @@
 ---
-title: Browserbasierte YOLO-Objekterkennung
+title: Echtzeit-Objekterkennung 
 format:
   html:
     self-contained: false
