@@ -10,10 +10,12 @@ Sie verwendet OpenCV.js im Browser und führt ein YOLOv5n-ONNX-Modell lokal im N
 - Zeichnet erkannte Objekte farbig auf dem Bild ein
 
 ## Deployment
-Für GitHub Pages genügt ein `push` in das Repository. GitHub Pages liefert die Datei `index.html` direkt aus.
+Für GitHub Pages genügt ein `push` in das Repository. Der GitHub Action-Workflow in `.github/workflows/publish.yml` rendert jetzt die Seite mit Quarto aus `index.qmd`.
 
 1. Stelle sicher, dass GitHub Pages auf den Branch `main` (oder den aktiven Branch) und das Stammverzeichnis `/` eingestellt ist.
 2. Die Startseite ist `index.html`.
+
+> Hinweis: Quarto erzeugt die finale HTML-Seite automatisch. Du musst `index.qmd` nicht manuell in HTML konvertieren.
 
 > Hinweis: Für diese statische GitHub Page ist keine Quarto-Datei (`index.qmd`) erforderlich. Alles läuft direkt über die vorhandene `index.html`.
 
