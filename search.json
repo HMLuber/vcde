@@ -32,13 +32,20 @@
     "href": "index.html#demobereich",
     "title": "Echtzeit-Objekterkennung in Videostreams",
     "section": "Demo‑Bereich",
-    "text": "Demo‑Bereich\n\nLive‑Webcam oder Video‑Upload mit Erkennung\n\nVergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches)"
+    "text": "Demo‑Bereich\n\nLive‑Webcam oder Video‑Upload mit Erkennung\n\nVergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches)\n\nLokale Demo mit OpenCV + YOLO: scripts/yolo_demo.py erzeugt ein Ergebnisbild"
   },
   {
-    "objectID": "index.html#ausblick",
-    "href": "index.html#ausblick",
+    "objectID": "index.html#lokale-demo",
+    "href": "index.html#lokale-demo",
     "title": "Echtzeit-Objekterkennung in Videostreams",
-    "section": "Ausblick",
-    "text": "Ausblick\n\nEinsatz auf Edge‑Geräten (z.B. Raspberry Pi)\n\nLink zum Code‑Repository"
+    "section": "Lokale Demo",
+    "text": "Lokale Demo\nDas Python-Skript scripts/yolo_demo.py führt lokal eine YOLO-Objekterkennung durch. Es lädt ein ONNX-Modell, verarbeitet ein Beispielbild oder Video und speichert das Ergebnis in output/result.jpg.\n\nLegen Sie das Modell ab: models/yolov5s.onnx\nLegen Sie das Beispielbild ab: demo/demo.jpg\nFühren Sie lokal aus:\n\npython scripts/yolo_demo.py --source demo/demo.jpg --output output/result.jpg\nDas Ergebnisbild kann anschließend in der Quarto-Seite eingebunden werden, z. B. mit:\n![](output/result.jpg)"
+  },
+  {
+    "objectID": "index.html#lokales-upload-formular",
+    "href": "index.html#lokales-upload-formular",
+    "title": "Echtzeit-Objekterkennung in Videostreams",
+    "section": "Lokales Upload-Formular",
+    "text": "Lokales Upload-Formular\nFür einen echten Upload und direkte Objekterkennung in einer Weboberfläche nutzen Sie die lokale Flask-App app.py.\n\nInstallieren Sie die Abhängigkeiten:\n\npip install -r scripts/requirements.txt\n\nStarten Sie die App:\n\npython app.py\n\nÖffnen Sie im Browser:\n\nhttp://localhost:5000\n\nLaden Sie dort ein Bild hoch. Die App speichert das Ergebnis in static/results/ und zeigt das Bild mit Bounding Boxes an.\n\n\nHinweis: Dieses Upload-Feature funktioniert nur lokal. GitHub Pages kann keine serverseitigen Uploads oder Bildverarbeitungen ausführen.\n\n\nLink zum Code‑Repository"
   }
 ]
