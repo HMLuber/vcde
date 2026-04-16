@@ -1,3 +1,5 @@
+// OpenCV.js benötigt dieses globale Modul-Objekt, damit es uns benachrichtigt,
+// wenn die WebAssembly-Laufzeit von OpenCV vollständig initialisiert ist.
 window.Module = {
   onRuntimeInitialized: function() {
     if (typeof window.onOpenCvReady === 'function') {
@@ -6,18 +8,15 @@ window.Module = {
   }
 };
 
+// Pfad zum ONNX-Modell, das im Browser geladen und ausgeführt wird.
 const modelPath = 'models/yolov5n.onnx';
+// Das Eintragsbild wird auf 640x640 pixel verarbeitet, wie das YOLO-Modell erwartet.
 const inputSize = 640;
+// Schwellwerte für die Erkennung: je niedriger, desto empfindlicher die Erkennung.
 const confThreshold = 0.20;
 const minObjectness = 0.20;
 const minClassScore = 0.20;
 const nmsThreshold = 0.45;
-const colorMap = {
-  person: 'lime',
-  tie: 'yellow',
-  cat: 'red',
-  dog: 'cyan'
-};
 const classNames = [
   'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
   'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog',
@@ -30,8 +29,11 @@ const classNames = [
   'book','clock','vase','scissors','teddy bear','hair drier','toothbrush'
 ];
 
+// Das Modell erwartet float16-Eingaben. Wir konvertieren die Pixelwerte daher
+// von Float32 nach Float16, bevor sie als Tensor an den ONNX-Laufzeit übergeben werden.
 const modelInputType = 'float16';
 
+// Globale Variablen für das ONNX-Session-Objekt und den Zustand der Bibliotheken.
 let session = null;
 let inputName = null;
 let outputName = null;
@@ -39,7 +41,7 @@ let cvReady = false;
 let ortReady = false;
 let openCvLoaded = false;
 
-const statusEl = document.getElementById('status');
+// HTML-Elemente aus der Seite, die wir später aktualisieren und lesen.
 const fileInput = document.getElementById('fileInput');
 const runButton = document.getElementById('runButton');
 const outputCanvas = document.getElementById('outputCanvas');
@@ -48,10 +50,12 @@ const debug = document.getElementById('debug');
 const ctx = outputCanvas.getContext('2d');
 
 async function loadModel() {
+  // Lädt das ONNX-Modell asynchron in den Browser. Die ONNX Runtime kann dann
+  // das Modell direkt in WebAssembly ausführen.
   try {
     console.log('Versuche Modell zu laden:', modelPath);
-    statusEl.innerText = 'Lade YOLO-Modell...';
     session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
+    // Merke uns die Namen der Eingabe- und Ausgabe-Tensoren für später.
     inputName = session.inputNames[0];
     outputName = session.outputNames[0];
     ortReady = true;
@@ -59,27 +63,25 @@ async function loadModel() {
     console.log('Session inputNames:', session.inputNames);
     console.log('Session outputNames:', session.outputNames);
     console.log('Verwendeter Eingabetyp:', modelInputType);
-    statusEl.innerText = 'Modell geladen. Lade OpenCV...';
     loadOpenCv();
     updateReadyState();
   } catch (err) {
     console.error('Modell konnte nicht geladen werden.', err);
-    statusEl.innerText = 'Modell konnte nicht geladen werden. Siehe Konsole.';
     debug.innerText = `Modell-Fehler: ${err.message || err.toString()}`;
     if (err.stack) debug.innerText += `\n${err.stack}`;
   }
 }
 
 function loadOpenCv() {
+  // Lädt OpenCV.js dynamisch als <script>-Tag. OpenCV.js wird benötigt, um das
+  // Eingangsbild zu lesen, zu skalieren und in das YOLO-Format zu bringen.
   if (openCvLoaded) return;
   openCvLoaded = true;
-  statusEl.innerText = 'Lade OpenCV...';
   const script = document.createElement('script');
   script.src = 'https://docs.opencv.org/master/opencv.js';
   script.async = true;
   script.onerror = () => {
     console.error('OpenCV konnte nicht geladen werden.');
-    statusEl.innerText = 'OpenCV konnte nicht geladen werden. Siehe Konsole.';
     debug.innerText = 'Fehler beim Laden von OpenCV.js';
   };
   document.head.appendChild(script);
@@ -88,14 +90,12 @@ function loadOpenCv() {
 function updateReadyState() {
   if (cvReady && ortReady) {
     runButton.disabled = false;
-    statusEl.innerText = 'Bereit. Wähle ein Bild und starte die Erkennung.';
   }
 }
 
 window.onOpenCvReady = function() {
   cvReady = true;
   console.log('OpenCV geladen.');
-  statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
   updateReadyState();
 };
 
@@ -157,11 +157,14 @@ function preprocessImage(img) {
   return { floatData, scale, padLeft: left, padTop: top };
 }
 
+// ONNX Runtime Web unterstützt float16-Eingaben, aber JavaScript hat keinen
+// nativen Float16-Typ. Deshalb wandeln wir jeden Float32-Wert selbst um.
 function float32ToFloat16(value) {
   const floatView = new Float32Array(1);
   const int32View = new Int32Array(floatView.buffer);
   floatView[0] = value;
 
+  // Diese Bitoperationen konvertieren die 32-Bit-Fließkommazahl in das 16-Bit-Format.
   const x = int32View[0];
   const sign = (x >> 16) & 0x8000;
   const rawExponent = (x >> 23) & 0xff;
@@ -188,6 +191,7 @@ function float32ToFloat16(value) {
 }
 
 function convertFloat32ToFloat16Array(float32Array) {
+  // Konvertiert das gesamte Bilder-Array von Float32 nach Float16.
   const float16Array = new Uint16Array(float32Array.length);
   for (let i = 0; i < float32Array.length; i++) {
     float16Array[i] = float32ToFloat16(float32Array[i]);
@@ -196,6 +200,9 @@ function convertFloat32ToFloat16Array(float32Array) {
 }
 
 function nonMaxSuppression(boxes, scores, threshold) {
+  // Diese Funktion entfernt sich stark überlappende Boxen, damit nur die beste
+  // Box pro Objekt erhalten bleibt. Das ist wichtig, weil YOLO viele ähnliche
+  // Detektionen für ein Objekt erzeugen kann.
   const order = scores.map((score, idx) => ({ score, idx })).sort((a, b) => b.score - a.score).map(item => item.idx);
   const keep = [];
   while (order.length > 0) {
@@ -216,6 +223,8 @@ function nonMaxSuppression(boxes, scores, threshold) {
   return keep;
 }
 
+// Hauptfunktion: wird aufgerufen, wenn der Benutzer ein Bild hochlädt und die Erkennung startet.
+// Sie führt alle Schritte aus: Laden, Preprocessing, Inferenz, NMS und Zeichnen.
 async function runDetection() {
   if (!fileInput.files || !fileInput.files[0]) return;
   const img = await loadImage(fileInput.files[0]);
@@ -223,7 +232,6 @@ async function runDetection() {
   outputCanvas.height = img.naturalHeight;
   ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
 
-  statusEl.innerText = 'Verarbeite Bild...';
   const { floatData, scale, padLeft, padTop } = preprocessImage(img);
   const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
   console.log('Input data prepared:', { modelInputType, inputDataType: inputData.constructor.name, length: inputData.length });
@@ -296,13 +304,13 @@ async function runDetection() {
       const li = document.createElement('li');
       li.innerText = label;
       list.appendChild(li);
-      drawBox(det.box, label, colorMap[name] || 'magenta');
+      drawBox(det.box, label, 'magenta');
     });
     detectionInfo.appendChild(list);
   }
-  statusEl.innerText = 'Erkennung abgeschlossen.';
 }
 
+// Zeichnet eine erkannte Box und das zugehörige Label auf das Canvas.
 function drawBox(box, label, color) {
   ctx.lineWidth = 3;
   ctx.strokeStyle = color;

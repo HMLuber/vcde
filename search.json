@@ -4,13 +4,13 @@
     "href": "index.html",
     "title": "Browserbasierte YOLO-Objekterkennung",
     "section": "",
-    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n  \n    \n    OpenCV.js + ONNX im Browser auf GitHub Pages\n  \n  \n    \n      Bild auswählen\n      \n      Erkennung starten\n      \n        Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n      \n    \n    \n      Status:\n      Modell wird geladen...\n    \n    \n      \n      Warte auf Eingabe..."
+    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n\nBild auswählen \n\nErkennung starten\n\n\nDiese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n\n\n\n\n\nWarte auf Eingabe…"
   },
   {
     "objectID": "index.html#browserseitige-yolo-objekterkennung-mit-quarto",
     "href": "index.html#browserseitige-yolo-objekterkennung-mit-quarto",
     "title": "Browserbasierte YOLO-Objekterkennung",
     "section": "",
-    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n  \n    \n    OpenCV.js + ONNX im Browser auf GitHub Pages\n  \n  \n    \n      Bild auswählen\n      \n      Erkennung starten\n      \n        Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n      \n    \n    \n      Status:\n      Modell wird geladen...\n    \n    \n      \n      Warte auf Eingabe..."
+    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n\nBild auswählen \n\nErkennung starten\n\n\nDiese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n\n\n\n\n\nWarte auf Eingabe…"
   }
 ]
