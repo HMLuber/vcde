@@ -8,9 +8,24 @@ resources:
   - models/yolov5n.onnx
 ---
 
-## Browserseitige YOLO-Objekterkennung mit Quarto
+###  Kurz erklärt: Was ist Echtzeit‑Objekterkennung?
+### Kurze Live‑Demo (Webcam oder Beispielvideo)
 
-Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in `.github/workflows/publish.yml` gerendert.
+## Grundlagen
+### Geschichte der Objekterkennung
+### Begriffserklärungen
+### Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)
+
+## Motivation
+### Technik
+### Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)
+### Rolle von OpenCV für Video‑Capture und Vorverarbeitung
+
+## Demo‑Bereich
+Live‑Webcam oder Video‑Upload mit Erkennung
+Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches)
+Lokale Demo mit OpenCV + YOLO: scripts/yolo_demo.py erzeugt ein Ergebnisbild
+
 
 ### Bedienung
 
@@ -19,9 +34,6 @@ Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages üb
 
 <button id="runButton" disabled>Erkennung starten</button>
 
-<div class="note">
-  Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.
-</div>
 
 ### Ergebnisse
 
