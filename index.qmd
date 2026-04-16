@@ -12,50 +12,35 @@ resources:
 
 Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in `.github/workflows/publish.yml` gerendert.
 
-```{=html}
-<section>
-  <header>
-    <h1>Browserseitige YOLO-Objekterkennung</h1>
-    <p>OpenCV.js + ONNX im Browser auf GitHub Pages</p>
-  </header>
-  <div class="hero">
-    <section class="controls">
-      <label for="fileInput">Bild auswählen</label>
-      <input id="fileInput" type="file" accept="image/*" />
-      <button id="runButton" disabled>Erkennung starten</button>
-      <div class="note">
-        Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.
-      </div>
-    </section>
-    <section class="status">
-      <strong>Status:</strong>
-      <div id="status">Modell wird geladen...</div>
-    </section>
-    <section class="detections">
-      <h2>Ergebnisse</h2>
-      <div id="detectionInfo">Warte auf Eingabe...</div>
-    </section>
-  </div>
-  <canvas id="outputCanvas"></canvas>
-  <div id="debug" class="note"></div>
-</section>
+### Bedienung
+
+<label for="fileInput">Bild auswählen</label>
+<input id="fileInput" type="file" accept="image/*" />
+
+<button id="runButton" disabled>Erkennung starten</button>
+
+<div class="note">
+  Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.
+</div>
+
+### Ergebnisse
+
+<div id="detectionInfo">Warte auf Eingabe...</div>
+
+<canvas id="outputCanvas"></canvas>
+<div id="debug" class="note"></div>
 
 <style>
   body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f5f7; color: #222; }
-  header { background: #20232a; color: #fff; padding: 1rem; text-align: center; }
   main, section { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
-  .hero { display: grid; gap: 1rem; }
-  .controls, .status, .detections { background: white; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.08); padding: 1.25rem; }
-  .controls label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
-  .controls input[type=file] { width: 100%; }
-  .controls button { margin-top: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 8px; background: #0b74de; color: #fff; cursor: pointer; }
-  .controls button:disabled { background: #888; cursor: not-allowed; }
-  canvas { width: 100%; height: auto; border-radius: 12px; background: #000; }
-  ul { margin: 0; padding-left: 1.2rem; }
   .note { font-size: 0.95rem; color: #555; margin-top: 1rem; }
+  label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+  input[type=file] { width: 100%; margin-bottom: 1rem; }
+  button { margin-top: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 8px; background: #0b74de; color: #fff; cursor: pointer; }
+  button:disabled { background: #888; cursor: not-allowed; }
+  canvas { width: 100%; height: auto; border-radius: 12px; background: #000; margin-top: 1rem; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <script src="assets/yolo-browser.js?v=2"></script>
-```
 
