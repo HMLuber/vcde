@@ -56,6 +56,9 @@ async function loadModel() {
     outputName = session.outputNames[0];
     ortReady = true;
     console.log('Modell geladen:', modelPath);
+    console.log('Session inputNames:', session.inputNames);
+    console.log('Session outputNames:', session.outputNames);
+    console.log('Verwendeter Eingabetyp:', modelInputType);
     statusEl.innerText = 'Modell geladen. Lade OpenCV...';
     loadOpenCv();
     updateReadyState();
@@ -208,7 +211,9 @@ async function runDetection() {
   statusEl.innerText = 'Verarbeite Bild...';
   const floatData = preprocessImage(img);
   const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
+  console.log('Input data prepared:', { modelInputType, inputDataType: inputData.constructor.name, length: inputData.length });
   const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
+  console.log('Erstellter Tensor:', { type: inputTensor.type, dims: inputTensor.dims });
   const feeds = { [inputName]: inputTensor };
   const results = await session.run(feeds);
   const outputData = results[outputName].data;
