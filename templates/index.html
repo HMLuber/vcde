@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YOLO Upload Demo</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+      label { display: block; margin-top: 1rem; }
+      input[type=file] { margin-top: 0.5rem; }
+      button { margin-top: 1rem; padding: 0.75rem 1.25rem; font-size: 1rem; }
+      .info { margin-top: 2rem; color: #333; }
+    </style>
+  </head>
+  <body>
+    <h1>Lokale Bild‑Upload Demo</h1>
+    <p>Lade hier ein Bild hoch, das lokal mit YOLO und OpenCV verarbeitet wird. Das Ergebnis wird anschließend mit Bounding Boxes angezeigt.</p>
+
+    <form method="post" action="/upload" enctype="multipart/form-data">
+      <label for="file">Bild auswählen (PNG, JPG, JPEG, BMP):</label>
+      <input type="file" name="file" id="file" accept="image/png, image/jpeg, image/bmp" required />
+      <button type="submit">Bild hochladen und erkennen</button>
+    </form>
+
+    <div class="info">
+      <p><strong>Hinweis:</strong> Diese Upload-Funktion funktioniert nur, wenn du die App lokal ausführst.</p>
+      <p>Starte die App mit:</p>
+      <pre>python app.py</pre>
+      <p>Öffne dann im Browser:</p>
+      <pre>http://localhost:5000</pre>
+    </div>
+  </body>
+</html>

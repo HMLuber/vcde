@@ -25,7 +25,48 @@ bibliography: references.bib
 ## Demo‑Bereich
  - Live‑Webcam oder Video‑Upload mit Erkennung \
  - Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches) \
+- Lokale Demo mit OpenCV + YOLO: `scripts/yolo_demo.py` erzeugt ein Ergebnisbild \
 
-## Ausblick
-- Einsatz auf Edge‑Geräten (z.B. Raspberry Pi) \
+## Lokale Demo
+Das Python-Skript `scripts/yolo_demo.py` führt lokal eine YOLO-Objekterkennung durch. Es lädt ein ONNX-Modell, verarbeitet ein Beispielbild oder Video und speichert das Ergebnis in `output/result.jpg`.
+
+1. Legen Sie das Modell ab: `models/yolov5s.onnx`
+2. Legen Sie das Beispielbild ab: `demo/demo.jpg`
+3. Führen Sie lokal aus:
+
+```bash
+python scripts/yolo_demo.py --source demo/demo.jpg --output output/result.jpg
+```
+
+Das Ergebnisbild kann anschließend in der Quarto-Seite eingebunden werden, z. B. mit:
+
+```markdown
+![](output/result.jpg)
+```
+
+## Lokales Upload-Formular
+Für einen echten Upload und direkte Objekterkennung in einer Weboberfläche nutzen Sie die lokale Flask-App `app.py`.
+
+1. Installieren Sie die Abhängigkeiten:
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
+2. Starten Sie die App:
+
+```bash
+python app.py
+```
+
+3. Öffnen Sie im Browser:
+
+```text
+http://localhost:5000
+```
+
+4. Laden Sie dort ein Bild hoch. Die App speichert das Ergebnis in `static/results/` und zeigt das Bild mit Bounding Boxes an.
+
+> Hinweis: Dieses Upload-Feature funktioniert nur lokal. GitHub Pages kann keine serverseitigen Uploads oder Bildverarbeitungen ausführen.
+
 - Link zum Code‑Repository
