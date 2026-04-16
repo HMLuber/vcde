@@ -47,17 +47,21 @@ const ctx = outputCanvas.getContext('2d');
 
 async function loadModel() {
   try {
+    console.log('Versuche Modell zu laden:', modelPath);
     statusEl.innerText = 'Lade YOLO-Modell...';
     session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
     inputName = session.inputNames[0];
     outputName = session.outputNames[0];
     ortReady = true;
+    console.log('Modell geladen:', modelPath);
     statusEl.innerText = 'Modell geladen. Lade OpenCV...';
     loadOpenCv();
     updateReadyState();
   } catch (err) {
-    statusEl.innerText = 'Modell konnte nicht geladen werden.';
-    debug.innerText = err.toString();
+    console.error('Modell konnte nicht geladen werden.', err);
+    statusEl.innerText = 'Modell konnte nicht geladen werden. Siehe Konsole.';
+    debug.innerText = `Modell-Fehler: ${err.message || err.toString()}`;
+    if (err.stack) debug.innerText += `\n${err.stack}`;
   }
 }
 
@@ -69,7 +73,8 @@ function loadOpenCv() {
   script.src = 'https://docs.opencv.org/master/opencv.js';
   script.async = true;
   script.onerror = () => {
-    statusEl.innerText = 'OpenCV konnte nicht geladen werden.';
+    console.error('OpenCV konnte nicht geladen werden.');
+    statusEl.innerText = 'OpenCV konnte nicht geladen werden. Siehe Konsole.';
     debug.innerText = 'Fehler beim Laden von OpenCV.js';
   };
   document.head.appendChild(script);
@@ -84,9 +89,20 @@ function updateReadyState() {
 
 window.onOpenCvReady = function() {
   cvReady = true;
+  console.log('OpenCV geladen.');
   statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
   updateReadyState();
 };
+
+window.addEventListener('error', (event) => {
+  console.error('Unerwarteter Fehler:', event.error || event.message);
+  debug.innerText = `Fehler: ${event.error?.message || event.message}`;
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled Promise Rejection:', event.reason);
+  debug.innerText = `Promise-Fehler: ${event.reason?.message || event.reason}`;
+});
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {
