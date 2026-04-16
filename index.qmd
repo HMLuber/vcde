@@ -55,21 +55,8 @@ Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages üb
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
-<script>
-  window.Module = {
-    onRuntimeInitialized: function() {
-      window._opencvAvailable = true;
-      if (typeof onOpenCvReady === 'function') {
-        onOpenCvReady();
-      }
-    }
-  };
-</script>
+<script src="assets/yolo-browser.js"></script>
 <script async src="https://docs.opencv.org/master/opencv.js"></script>
-<script>
-  const modelPath = './models/yolov5n.onnx';
-  const inputSize = 640;
-  const confThreshold = 0.30;
   const minObjectness = 0.30;
   const minClassScore = 0.35;
   const nmsThreshold = 0.45;
