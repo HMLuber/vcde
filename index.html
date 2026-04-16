@@ -103,18 +103,45 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="browserseitige-yolo-objekterkennung-mit-quarto" class="level2">
-<h2 class="anchored" data-anchor-id="browserseitige-yolo-objekterkennung-mit-quarto">Browserseitige YOLO-Objekterkennung mit Quarto</h2>
-<p>Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in <code>.github/workflows/publish.yml</code> gerendert.</p>
+<section id="kurz-erklärt-was-ist-echtzeitobjekterkennung" class="level3">
+<h3 class="anchored" data-anchor-id="kurz-erklärt-was-ist-echtzeitobjekterkennung">Kurz erklärt: Was ist Echtzeit‑Objekterkennung?</h3>
+</section>
+<section id="kurze-livedemo-webcam-oder-beispielvideo" class="level3">
+<h3 class="anchored" data-anchor-id="kurze-livedemo-webcam-oder-beispielvideo">Kurze Live‑Demo (Webcam oder Beispielvideo)</h3>
+</section>
+<section id="grundlagen" class="level2">
+<h2 class="anchored" data-anchor-id="grundlagen">Grundlagen</h2>
+<section id="geschichte-der-objekterkennung" class="level3">
+<h3 class="anchored" data-anchor-id="geschichte-der-objekterkennung">Geschichte der Objekterkennung</h3>
+</section>
+<section id="begriffserklärungen" class="level3">
+<h3 class="anchored" data-anchor-id="begriffserklärungen">Begriffserklärungen</h3>
+</section>
+<section id="typische-anwendungsfälle-autonomes-fahren-überwachung-sport" class="level3">
+<h3 class="anchored" data-anchor-id="typische-anwendungsfälle-autonomes-fahren-überwachung-sport">Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)</h3>
+</section>
+</section>
+<section id="motivation" class="level2">
+<h2 class="anchored" data-anchor-id="motivation">Motivation</h2>
+<section id="technik" class="level3">
+<h3 class="anchored" data-anchor-id="technik">Technik</h3>
+</section>
+<section id="wie-yolo-grob-funktioniert-input-netzwerk-bounding-boxes" class="level3">
+<h3 class="anchored" data-anchor-id="wie-yolo-grob-funktioniert-input-netzwerk-bounding-boxes">Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)</h3>
+</section>
+<section id="rolle-von-opencv-für-videocapture-und-vorverarbeitung" class="level3">
+<h3 class="anchored" data-anchor-id="rolle-von-opencv-für-videocapture-und-vorverarbeitung">Rolle von OpenCV für Video‑Capture und Vorverarbeitung</h3>
+</section>
+</section>
+<section id="demobereich" class="level2">
+<h2 class="anchored" data-anchor-id="demobereich">Demo‑Bereich</h2>
+<p>Live‑Webcam oder Video‑Upload mit Erkennung Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches) Lokale Demo mit OpenCV + YOLO: scripts/yolo_demo.py erzeugt ein Ergebnisbild</p>
 <section id="bedienung" class="level3">
 <h3 class="anchored" data-anchor-id="bedienung">Bedienung</h3>
 <p><label for="fileInput">Bild auswählen</label> <input id="fileInput" type="file" accept="image/*"></p>
 <button id="runButton" disabled="">
 Erkennung starten
 </button>
-<div class="note">
-<p>Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.</p>
-</div>
 </section>
 <section id="ergebnisse" class="level3">
 <h3 class="anchored" data-anchor-id="ergebnisse">Ergebnisse</h3>

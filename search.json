@@ -1,16 +1,23 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
+    "objectID": "index.html#grundlagen",
+    "href": "index.html#grundlagen",
     "title": "Browserbasierte YOLO-Objekterkennung",
-    "section": "",
-    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n\nBild auswählen \n\nErkennung starten\n\n\nDiese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n\n\n\n\n\nWarte auf Eingabe…"
+    "section": "Grundlagen",
+    "text": "Grundlagen\n\nGeschichte der Objekterkennung\n\n\nBegriffserklärungen\n\n\nTypische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)"
   },
   {
-    "objectID": "index.html#browserseitige-yolo-objekterkennung-mit-quarto",
-    "href": "index.html#browserseitige-yolo-objekterkennung-mit-quarto",
+    "objectID": "index.html#motivation",
+    "href": "index.html#motivation",
     "title": "Browserbasierte YOLO-Objekterkennung",
-    "section": "",
-    "text": "Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in .github/workflows/publish.yml gerendert.\n\n\nBild auswählen \n\nErkennung starten\n\n\nDiese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.\n\n\n\n\n\nWarte auf Eingabe…"
+    "section": "Motivation",
+    "text": "Motivation\n\nTechnik\n\n\nWie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)\n\n\nRolle von OpenCV für Video‑Capture und Vorverarbeitung"
+  },
+  {
+    "objectID": "index.html#demobereich",
+    "href": "index.html#demobereich",
+    "title": "Browserbasierte YOLO-Objekterkennung",
+    "section": "Demo‑Bereich",
+    "text": "Demo‑Bereich\nLive‑Webcam oder Video‑Upload mit Erkennung Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches) Lokale Demo mit OpenCV + YOLO: scripts/yolo_demo.py erzeugt ein Ergebnisbild\n\nBedienung\nBild auswählen \n\nErkennung starten\n\n\n\nErgebnisse\n\nWarte auf Eingabe…"
   }
 ]
