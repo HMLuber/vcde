@@ -30,6 +30,8 @@ const classNames = [
   'book','clock','vase','scissors','teddy bear','hair drier','toothbrush'
 ];
 
+const modelInputType = 'float16';
+
 let session = null;
 let inputName = null;
 let outputName = null;
@@ -137,6 +139,44 @@ function preprocessImage(img) {
   return floatData;
 }
 
+function float32ToFloat16(value) {
+  const floatView = new Float32Array(1);
+  const int32View = new Int32Array(floatView.buffer);
+  floatView[0] = value;
+
+  const x = int32View[0];
+  const sign = (x >> 16) & 0x8000;
+  const rawExponent = (x >> 23) & 0xff;
+  let exponent = rawExponent - 127 + 15;
+  let mantissa = x & 0x007fffff;
+
+  if (rawExponent === 255) {
+    return sign | 0x7c00 | (mantissa ? 0x200 : 0);
+  }
+
+  if (exponent <= 0) {
+    if (exponent < -10) {
+      return sign;
+    }
+    mantissa = (mantissa | 0x00800000) >> (1 - exponent);
+    return sign | ((mantissa + 0x0fff + ((mantissa >> 13) & 1)) >> 13);
+  }
+
+  if (exponent > 30) {
+    return sign | 0x7c00;
+  }
+
+  return sign | (exponent << 10) | (mantissa >> 13);
+}
+
+function convertFloat32ToFloat16Array(float32Array) {
+  const float16Array = new Uint16Array(float32Array.length);
+  for (let i = 0; i < float32Array.length; i++) {
+    float16Array[i] = float32ToFloat16(float32Array[i]);
+  }
+  return float16Array;
+}
+
 function nonMaxSuppression(boxes, scores, threshold) {
   const order = scores.map((score, idx) => ({ score, idx })).sort((a, b) => b.score - a.score).map(item => item.idx);
   const keep = [];
@@ -167,7 +207,8 @@ async function runDetection() {
 
   statusEl.innerText = 'Verarbeite Bild...';
   const floatData = preprocessImage(img);
-  const inputTensor = new ort.Tensor('float32', floatData, [1, 3, inputSize, inputSize]);
+  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
+  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
   const feeds = { [inputName]: inputTensor };
   const results = await session.run(feeds);
   const outputData = results[outputName].data;
