@@ -149,21 +149,8 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
-<script>
-  window.Module = {
-    onRuntimeInitialized: function() {
-      window._opencvAvailable = true;
-      if (typeof onOpenCvReady === 'function') {
-        onOpenCvReady();
-      }
-    }
-  };
-</script>
+<script src="assets/yolo-browser.js"></script>
 <script async="" src="https://docs.opencv.org/master/opencv.js"></script>
-<script>
-  const modelPath = './models/yolov5n.onnx';
-  const inputSize = 640;
-  const confThreshold = 0.30;
   const minObjectness = 0.30;
   const minClassScore = 0.35;
   const nmsThreshold = 0.45;
@@ -215,7 +202,7 @@ ul.task-list li input[type="checkbox"] {
   }
 
   function updateReadyState() {
-    if (cvReady && ortReady) {
+    if (cvReady &amp;&amp; ortReady) {
       runButton.disabled = false;
       statusEl.innerText = 'Bereit. Wähle ein Bild und starte die Erkennung.';
     }
@@ -232,9 +219,9 @@ ul.task-list li input[type="checkbox"] {
   }
 
   function loadImage(file) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) =&gt; {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = () =&gt; resolve(img);
       img.onerror = reject;
       img.src = URL.createObjectURL(file);
     });
@@ -249,8 +236,8 @@ ul.task-list li input[type="checkbox"] {
     cv.resize(rgb, resized, dsize, 0, 0, cv.INTER_AREA);
 
     const floatData = new Float32Array(inputSize * inputSize * 3);
-    for (let y = 0; y < inputSize; y++) {
-      for (let x = 0; x < inputSize; x++) {
+    for (let y = 0; y &lt; inputSize; y++) {
+      for (let x = 0; x &lt; inputSize; x++) {
         const i = y * inputSize + x;
         floatData[i] = resized.data[i * 3] / 255.0;
         floatData[inputSize * inputSize + i] = resized.data[i * 3 + 1] / 255.0;
@@ -265,21 +252,21 @@ ul.task-list li input[type="checkbox"] {
   }
 
   function nonMaxSuppression(boxes, scores, threshold) {
-    const order = scores.map((score, idx) => ({ score, idx })).sort((a, b) => b.score - a.score).map(item => item.idx);
+    const order = scores.map((score, idx) =&gt; ({ score, idx })).sort((a, b) =&gt; b.score - a.score).map(item =&gt; item.idx);
     const keep = [];
-    while (order.length > 0) {
+    while (order.length &gt; 0) {
       const idx = order.shift();
       keep.push(idx);
       const boxA = boxes[idx];
       const [xA1, yA1, xA2, yA2] = [boxA[0], boxA[1], boxA[0] + boxA[2], boxA[1] + boxA[3]];
-      for (let j = order.length - 1; j >= 0; j--) {
+      for (let j = order.length - 1; j &gt;= 0; j--) {
         const boxB = boxes[order[j]];
         const [xB1, yB1, xB2, yB2] = [boxB[0], boxB[1], boxB[0] + boxB[2], boxB[1] + boxB[3]];
         const interArea = Math.max(0, Math.min(xA2, xB2) - Math.max(xA1, xB1)) * Math.max(0, Math.min(yA2, yB2) - Math.max(yA1, yB1));
         const areaA = (xA2 - xA1) * (yA2 - yA1);
         const areaB = (xB2 - xB1) * (yB2 - yB1);
         const ovr = interArea / (areaA + areaB - interArea);
-        if (ovr > threshold) order.splice(j, 1);
+        if (ovr &gt; threshold) order.splice(j, 1);
       }
     }
     return keep;
@@ -301,20 +288,20 @@ ul.task-list li input[type="checkbox"] {
     const detections = [];
     const numDetections = outputData.length / 85;
 
-    for (let i = 0; i < numDetections; i++) {
+    for (let i = 0; i &lt; numDetections; i++) {
       const base = i * 85;
       const objectness = outputData[base + 4];
       let classId = 0;
       let classScore = 0;
-      for (let c = 0; c < 80; c++) {
+      for (let c = 0; c &lt; 80; c++) {
         const score = outputData[base + 5 + c];
-        if (score > classScore) {
+        if (score &gt; classScore) {
           classScore = score;
           classId = c;
         }
       }
       const confidence = objectness * classScore;
-      if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
+      if (objectness &lt; minObjectness || classScore &lt; minClassScore || confidence &lt; confThreshold) continue;
       const cx = outputData[base];
       const cy = outputData[base + 1];
       const w = outputData[base + 2];
@@ -326,10 +313,10 @@ ul.task-list li input[type="checkbox"] {
       detections.push({ classId, classScore, objectness, confidence, box: [x, y, width, height] });
     }
 
-    const boxes = detections.map(d => d.box);
-    const scores = detections.map(d => d.confidence);
+    const boxes = detections.map(d =&gt; d.box);
+    const scores = detections.map(d =&gt; d.confidence);
     const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
-    const selected = keep.map(i => detections[i]);
+    const selected = keep.map(i =&gt; detections[i]);
 
     ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
     if (selected.length === 0) {
@@ -337,7 +324,7 @@ ul.task-list li input[type="checkbox"] {
     } else {
       detectionInfo.innerHTML = `<strong>Erkannte Objekte:</strong> ${selected.length}`;
       const list = document.createElement('ul');
-      selected.forEach(det => {
+      selected.forEach(det =&gt; {
         const name = classNames[det.classId] || 'unknown';
         const label = `${name} (${det.confidence.toFixed(2)})`;
         const li = document.createElement('li');
@@ -364,14 +351,14 @@ ul.task-list li input[type="checkbox"] {
     ctx.fillText(label, box[0] + 4, box[1] - 8);
   }
 
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', () =&gt; {
     runButton.disabled = !fileInput.files.length || !cvReady || !ortReady;
     detectionInfo.innerHTML = 'Bereit zur Erkennung.';
   });
 
   runButton.addEventListener('click', runDetection);
   loadModel();
-</script>
+
 
 
 </section>
