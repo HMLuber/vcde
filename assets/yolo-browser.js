@@ -1,6 +1,5 @@
 window.Module = {
   onRuntimeInitialized: function() {
-    window._opencvAvailable = true;
     if (typeof window.onOpenCvReady === 'function') {
       window.onOpenCvReady();
     }
@@ -36,6 +35,7 @@ let inputName = null;
 let outputName = null;
 let cvReady = false;
 let ortReady = false;
+let openCvLoaded = false;
 
 const statusEl = document.getElementById('status');
 const fileInput = document.getElementById('fileInput');
@@ -52,12 +52,27 @@ async function loadModel() {
     inputName = session.inputNames[0];
     outputName = session.outputNames[0];
     ortReady = true;
-    updateReadyState();
     statusEl.innerText = 'Modell geladen. Lade OpenCV...';
+    loadOpenCv();
+    updateReadyState();
   } catch (err) {
     statusEl.innerText = 'Modell konnte nicht geladen werden.';
     debug.innerText = err.toString();
   }
+}
+
+function loadOpenCv() {
+  if (openCvLoaded) return;
+  openCvLoaded = true;
+  statusEl.innerText = 'Lade OpenCV...';
+  const script = document.createElement('script');
+  script.src = 'https://docs.opencv.org/master/opencv.js';
+  script.async = true;
+  script.onerror = () => {
+    statusEl.innerText = 'OpenCV konnte nicht geladen werden.';
+    debug.innerText = 'Fehler beim Laden von OpenCV.js';
+  };
+  document.head.appendChild(script);
 }
 
 function updateReadyState() {
@@ -72,10 +87,6 @@ window.onOpenCvReady = function() {
   statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
   updateReadyState();
 };
-
-if (window._opencvAvailable) {
-  window.onOpenCvReady();
-}
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {

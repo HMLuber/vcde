@@ -57,6 +57,5 @@ Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages üb
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
 <script src="assets/yolo-browser.js"></script>
-<script async src="https://docs.opencv.org/master/opencv.js"></script>
 ```
 
