@@ -6,9 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Jasmin Kohlpaintner, Henrik Berg, Markus Luber">
 
-<title>Echtzeit-Objekterkennung in Videostreams</title>
+<title>Browserbasierte YOLO-Objekterkennung</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -23,41 +22,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -77,7 +41,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4897d45d2f75ed4f519693be625836c5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-244ce1b9ec229af56bb6f90d24b3371d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -122,19 +86,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Echtzeit-Objekterkennung in Videostreams</h1>
+<h1 class="title">Browserbasierte YOLO-Objekterkennung</h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Jasmin Kohlpaintner, Henrik Berg, Markus Luber </p>
-          </div>
-  </div>
     
   
     
@@ -145,84 +103,263 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="startseite" class="level2">
-<h2 class="anchored" data-anchor-id="startseite">Startseite</h2>
-<ul>
-<li>Kurz erklärt: Was ist Echtzeit‑Objekterkennung?<br>
-</li>
-<li>Kurze Live‑Demo (Webcam oder Beispielvideo)<br>
-</li>
-</ul>
+<section id="browserseitige-yolo-objekterkennung-mit-quarto" class="level2">
+<h2 class="anchored" data-anchor-id="browserseitige-yolo-objekterkennung-mit-quarto">Browserseitige YOLO-Objekterkennung mit Quarto</h2>
+<p>Diese Seite ist jetzt als Quarto-Website aufgebaut und wird von GitHub Pages über den Workflow in <code>.github/workflows/publish.yml</code> gerendert.</p>
+<section>
+  <header>
+    <h1>Browserseitige YOLO-Objekterkennung</h1>
+    <p>OpenCV.js + ONNX im Browser auf GitHub Pages</p>
+  </header>
+  <div class="hero">
+    <section class="controls">
+      <label for="fileInput">Bild auswählen</label>
+      <input id="fileInput" type="file" accept="image/*">
+      <button id="runButton" disabled="">Erkennung starten</button>
+      <div class="note">
+        Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.
+      </div>
+    </section>
+    <section class="status">
+      <strong>Status:</strong>
+      <div id="status">Modell wird geladen...</div>
+    </section>
+    <section class="detections">
+      <h2 class="anchored">Ergebnisse</h2>
+      <div id="detectionInfo">Warte auf Eingabe...</div>
+    </section>
+  </div>
+  <canvas id="outputCanvas"></canvas>
+  <div id="debug" class="note"></div>
 </section>
-<section id="grundlagen" class="level2">
-<h2 class="anchored" data-anchor-id="grundlagen">Grundlagen</h2>
-<ul>
-<li>Geschichte der Objekterkennung<br>
-</li>
-<li>Begriffserklärungen<br>
-</li>
-<li>Typische Anwendungsfälle (Autonomes Fahren, Überwachung, Sport)<br>
-</li>
-<li>Motivation<br>
-</li>
-</ul>
-</section>
-<section id="technik" class="level2">
-<h2 class="anchored" data-anchor-id="technik">Technik</h2>
-<ul>
-<li>Wie YOLO grob funktioniert (Input → Netzwerk → Bounding Boxes)<br>
-</li>
-<li>Rolle von OpenCV für Video‑Capture und Vorverarbeitung<br>
-</li>
-</ul>
-</section>
-<section id="demobereich" class="level2">
-<h2 class="anchored" data-anchor-id="demobereich">Demo‑Bereich</h2>
-<ul>
-<li>Live‑Webcam oder Video‑Upload mit Erkennung<br>
-</li>
-<li>Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches)<br>
-</li>
-<li>Lokale Demo mit OpenCV + YOLO: <code>scripts/yolo_demo.py</code> erzeugt ein Ergebnisbild<br>
-</li>
-</ul>
-</section>
-<section id="lokale-demo" class="level2">
-<h2 class="anchored" data-anchor-id="lokale-demo">Lokale Demo</h2>
-<p>Das Python-Skript <code>scripts/yolo_demo.py</code> führt lokal eine YOLO-Objekterkennung durch. Es lädt ein ONNX-Modell, verarbeitet ein Beispielbild oder Video und speichert das Ergebnis in <code>output/result.jpg</code>.</p>
-<ol type="1">
-<li>Legen Sie das Modell ab: <code>models/yolov5s.onnx</code></li>
-<li>Legen Sie das Beispielbild ab: <code>demo/demo.jpg</code></li>
-<li>Führen Sie lokal aus:</li>
-</ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/yolo_demo.py <span class="at">--source</span> demo/demo.jpg <span class="at">--output</span> output/result.jpg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Das Ergebnisbild kann anschließend in der Quarto-Seite eingebunden werden, z. B. mit:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="al">![](output/result.jpg)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="lokales-upload-formular" class="level2">
-<h2 class="anchored" data-anchor-id="lokales-upload-formular">Lokales Upload-Formular</h2>
-<p>Für einen echten Upload und direkte Objekterkennung in einer Weboberfläche nutzen Sie die lokale Flask-App <code>app.py</code>.</p>
-<ol type="1">
-<li>Installieren Sie die Abhängigkeiten:</li>
-</ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> scripts/requirements.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ol start="2" type="1">
-<li>Starten Sie die App:</li>
-</ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> app.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ol start="3" type="1">
-<li>Öffnen Sie im Browser:</li>
-</ol>
-<pre class="text"><code>http://localhost:5000</code></pre>
-<ol start="4" type="1">
-<li>Laden Sie dort ein Bild hoch. Die App speichert das Ergebnis in <code>static/results/</code> und zeigt das Bild mit Bounding Boxes an.</li>
-</ol>
-<blockquote class="blockquote">
-<p>Hinweis: Dieses Upload-Feature funktioniert nur lokal. GitHub Pages kann keine serverseitigen Uploads oder Bildverarbeitungen ausführen.</p>
-</blockquote>
-<ul>
-<li>Link zum Code‑Repository</li>
-</ul>
+
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f5f7; color: #222; }
+  header { background: #20232a; color: #fff; padding: 1rem; text-align: center; }
+  main, section { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
+  .hero { display: grid; gap: 1rem; }
+  .controls, .status, .detections { background: white; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.08); padding: 1.25rem; }
+  .controls label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+  .controls input[type=file] { width: 100%; }
+  .controls button { margin-top: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 8px; background: #0b74de; color: #fff; cursor: pointer; }
+  .controls button:disabled { background: #888; cursor: not-allowed; }
+  canvas { width: 100%; height: auto; border-radius: 12px; background: #000; }
+  ul { margin: 0; padding-left: 1.2rem; }
+  .note { font-size: 0.95rem; color: #555; margin-top: 1rem; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
+<script async="" src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();"></script>
+<script>
+  const modelPath = 'models/yolov5n.onnx';
+  const inputSize = 640;
+  const confThreshold = 0.30;
+  const minObjectness = 0.30;
+  const minClassScore = 0.35;
+  const nmsThreshold = 0.45;
+  const colorMap = {
+    person: 'lime',
+    tie: 'yellow',
+    cat: 'red',
+    dog: 'cyan'
+  };
+  const classNames = [
+    'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
+    'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog',
+    'horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella',
+    'handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat',
+    'baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork',
+    'knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog',
+    'pizza','donut','cake','chair','sofa','pottedplant','bed','diningtable','toilet','tvmonitor',
+    'laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator',
+    'book','clock','vase','scissors','teddy bear','hair drier','toothbrush'
+  ];
+
+  let session = null;
+  let inputName = null;
+  let outputName = null;
+  let cvReady = false;
+  let ortReady = false;
+
+  const statusEl = document.getElementById('status');
+  const fileInput = document.getElementById('fileInput');
+  const runButton = document.getElementById('runButton');
+  const outputCanvas = document.getElementById('outputCanvas');
+  const detectionInfo = document.getElementById('detectionInfo');
+  const debug = document.getElementById('debug');
+  const ctx = outputCanvas.getContext('2d');
+
+  async function loadModel() {
+    try {
+      statusEl.innerText = 'Lade YOLO-Modell...';
+      session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
+      inputName = session.inputNames[0];
+      outputName = session.outputNames[0];
+      ortReady = true;
+      updateReadyState();
+      statusEl.innerText = 'Modell geladen. Lade OpenCV...';
+    } catch (err) {
+      statusEl.innerText = 'Modell konnte nicht geladen werden.';
+      debug.innerText = err.toString();
+    }
+  }
+
+  function updateReadyState() {
+    if (cvReady && ortReady) {
+      runButton.disabled = false;
+      statusEl.innerText = 'Bereit. Wähle ein Bild und starte die Erkennung.';
+    }
+  }
+
+  function onOpenCvReady() {
+    cv['onRuntimeInitialized'] = () => {
+      cvReady = true;
+      statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
+      updateReadyState();
+    };
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function preprocessImage(img) {
+    const mat = cv.imread(img);
+    const rgb = new cv.Mat();
+    cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
+    const resized = new cv.Mat();
+    const dsize = new cv.Size(inputSize, inputSize);
+    cv.resize(rgb, resized, dsize, 0, 0, cv.INTER_AREA);
+
+    const floatData = new Float32Array(inputSize * inputSize * 3);
+    for (let y = 0; y < inputSize; y++) {
+      for (let x = 0; x < inputSize; x++) {
+        const i = y * inputSize + x;
+        floatData[i] = resized.data[i * 3] / 255.0;
+        floatData[inputSize * inputSize + i] = resized.data[i * 3 + 1] / 255.0;
+        floatData[2 * inputSize * inputSize + i] = resized.data[i * 3 + 2] / 255.0;
+      }
+    }
+
+    mat.delete();
+    rgb.delete();
+    resized.delete();
+    return floatData;
+  }
+
+  function nonMaxSuppression(boxes, scores, threshold) {
+    const order = scores.map((score, idx) => ({ score, idx })).sort((a, b) => b.score - a.score).map(item => item.idx);
+    const keep = [];
+    while (order.length > 0) {
+      const idx = order.shift();
+      keep.push(idx);
+      const boxA = boxes[idx];
+      const [xA1, yA1, xA2, yA2] = [boxA[0], boxA[1], boxA[0] + boxA[2], boxA[1] + boxA[3]];
+      for (let j = order.length - 1; j >= 0; j--) {
+        const boxB = boxes[order[j]];
+        const [xB1, yB1, xB2, yB2] = [boxB[0], boxB[1], boxB[0] + boxB[2], boxB[1] + boxB[3]];
+        const interArea = Math.max(0, Math.min(xA2, xB2) - Math.max(xA1, xB1)) * Math.max(0, Math.min(yA2, yB2) - Math.max(yA1, yB1));
+        const areaA = (xA2 - xA1) * (yA2 - yA1);
+        const areaB = (xB2 - xB1) * (yB2 - yB1);
+        const ovr = interArea / (areaA + areaB - interArea);
+        if (ovr > threshold) order.splice(j, 1);
+      }
+    }
+    return keep;
+  }
+
+  async function runDetection() {
+    if (!fileInput.files || !fileInput.files[0]) return;
+    const img = await loadImage(fileInput.files[0]);
+    outputCanvas.width = img.naturalWidth;
+    outputCanvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+
+    statusEl.innerText = 'Verarbeite Bild...';
+    const floatData = preprocessImage(img);
+    const inputTensor = new ort.Tensor('float32', floatData, [1, 3, inputSize, inputSize]);
+    const feeds = { [inputName]: inputTensor };
+    const results = await session.run(feeds);
+    const outputData = results[outputName].data;
+    const detections = [];
+    const numDetections = outputData.length / 85;
+
+    for (let i = 0; i < numDetections; i++) {
+      const base = i * 85;
+      const objectness = outputData[base + 4];
+      let classId = 0;
+      let classScore = 0;
+      for (let c = 0; c < 80; c++) {
+        const score = outputData[base + 5 + c];
+        if (score > classScore) {
+          classScore = score;
+          classId = c;
+        }
+      }
+      const confidence = objectness * classScore;
+      if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
+      const cx = outputData[base];
+      const cy = outputData[base + 1];
+      const w = outputData[base + 2];
+      const h = outputData[base + 3];
+      const x = (cx - w / 2) * outputCanvas.width;
+      const y = (cy - h / 2) * outputCanvas.height;
+      const width = w * outputCanvas.width;
+      const height = h * outputCanvas.height;
+      detections.push({ classId, classScore, objectness, confidence, box: [x, y, width, height] });
+    }
+
+    const boxes = detections.map(d => d.box);
+    const scores = detections.map(d => d.confidence);
+    const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
+    const selected = keep.map(i => detections[i]);
+
+    ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+    if (selected.length === 0) {
+      detectionInfo.innerHTML = 'Keine Objekte erkannt.';
+    } else {
+      detectionInfo.innerHTML = `<strong>Erkannte Objekte:</strong> ${selected.length}`;
+      const list = document.createElement('ul');
+      selected.forEach(det => {
+        const name = classNames[det.classId] || 'unknown';
+        const label = `${name} (${det.confidence.toFixed(2)})`;
+        const li = document.createElement('li');
+        li.innerText = label;
+        list.appendChild(li);
+        drawBox(det.box, label, colorMap[name] || 'magenta');
+      });
+      detectionInfo.appendChild(list);
+    }
+    statusEl.innerText = 'Erkennung abgeschlossen.';
+  }
+
+  function drawBox(box, label, color) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.strokeRect(box[0], box[1], box[2], box[3]);
+    ctx.font = '18px Arial';
+    ctx.fillStyle = color;
+    const textWidth = ctx.measureText(label).width + 8;
+    const textHeight = 22;
+    ctx.fillRect(box[0], box[1] - textHeight - 4, textWidth, textHeight);
+    ctx.fillStyle = '#000';
+    ctx.fillText(label, box[0] + 4, box[1] - 8);
+  }
+
+  fileInput.addEventListener('change', () => {
+    runButton.disabled = !fileInput.files.length || !cvReady || !ortReady;
+    detectionInfo.innerHTML = 'Bereit zur Erkennung.';
+  });
+
+  runButton.addEventListener('click', runDetection);
+  loadModel();
+</script>
 
 
 </section>
