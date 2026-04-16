@@ -1,9 +1,6 @@
 project:
   type: website
   output-dir: _site
-  files:
-    - index.qmd
-    - models/**
 
 website:
   title: Browserbasierte YOLO-Objekterkennung

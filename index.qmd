@@ -3,6 +3,8 @@ title: Browserbasierte YOLO-Objekterkennung
 format:
   html:
     self-contained: false
+resources:
+  - models/yolov5n.onnx
 ---
 
 ## Browserseitige YOLO-Objekterkennung mit Quarto
