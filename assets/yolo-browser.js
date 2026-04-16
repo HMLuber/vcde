@@ -254,10 +254,23 @@ async function runDetection() {
     const cy = outputData[base + 1];
     const w = outputData[base + 2];
     const h = outputData[base + 3];
-    const x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
-    const y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
-    const width = (w * inputSize) / scale;
-    const height = (h * inputSize) / scale;
+    let x;
+    let y;
+    let width;
+    let height;
+    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
+    if (normalized) {
+      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
+      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
+      width = (w * inputSize) / scale;
+      height = (h * inputSize) / scale;
+    } else {
+      x = (cx - w / 2 - padLeft) / scale;
+      y = (cy - h / 2 - padTop) / scale;
+      width = w / scale;
+      height = h / scale;
+      console.log('Detected coordinates appear absolute, switching mapping:', { cx, cy, w, h, normalized });
+    }
     const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
     const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
     const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
@@ -269,6 +282,7 @@ async function runDetection() {
   const scores = detections.map(d => d.confidence);
   const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
   const selected = keep.map(i => detections[i]);
+  console.log('Selected detections:', selected);
 
   ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
   if (selected.length === 0) {
