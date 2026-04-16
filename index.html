@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echtzeit-Objekterkennung mit OpenCV.js + YOLO</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f5f7; color: #222; }
+    header { background: #20232a; color: #fff; padding: 1rem; text-align: center; }
+    main { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
+    .hero { display: grid; gap: 1rem; }
+    .controls { background: white; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.08); padding: 1.25rem; }
+    .controls label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+    .controls input[type=file] { width: 100%; }
+    .controls button { margin-top: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 8px; background: #0b74de; color: #fff; cursor: pointer; }
+    .controls button:disabled { background: #888; cursor: not-allowed; }
+    canvas { width: 100%; height: auto; border-radius: 12px; background: #000; }
+    .status, .detections { margin-top: 1rem; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.08); }
+    ul { margin: 0; padding-left: 1.2rem; }
+    .note { font-size: 0.95rem; color: #555; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Browserseitige YOLO-Objekterkennung</h1>
+    <p>OpenCV.js + ONNX im Browser auf GitHub Pages</p>
+  </header>
+  <main>
+    <div class="hero">
+      <section class="controls">
+        <label for="fileInput">Bild auswählen</label>
+        <input id="fileInput" type="file" accept="image/*" />
+        <button id="runButton" disabled>Erkennung starten</button>
+        <div class="note">
+          Diese Seite führt die Berechnung komplett im Browser aus. Auf GitHub Pages wird keine Python-/Serverlogik benötigt.
+        </div>
+      </section>
+      <section class="status">
+        <strong>Status:</strong>
+        <div id="status">Modell wird geladen...</div>
+      </section>
+      <section class="detections">
+        <h2>Ergebnisse</h2>
+        <div id="detectionInfo">Warte auf Eingabe...</div>
+      </section>
+    </div>
+    <canvas id="outputCanvas"></canvas>
+    <div id="debug" class="note"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
+  <script async src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();"></script>
+  <script>
+    const modelPath = 'models/yolov5n.onnx';
+    const inputSize = 640;
+    const confThreshold = 0.30;
+    const minObjectness = 0.30;
+    const minClassScore = 0.35;
+    const nmsThreshold = 0.45;
+    const colorMap = {
+      person: 'lime',
+      tie: 'yellow',
+      cat: 'red',
+      dog: 'cyan'
+    };
+    const classNames = [
+      'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
+      'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog',
+      'horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella',
+      'handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat',
+      'baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork',
+      'knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog',
+      'pizza','donut','cake','chair','sofa','pottedplant','bed','diningtable','toilet','tvmonitor',
+      'laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator',
+      'book','clock','vase','scissors','teddy bear','hair drier','toothbrush'
+    ];
+
+    let session = null;
+    let inputName = null;
+    let outputName = null;
+    let cvReady = false;
+    let ortReady = false;
+
+    const statusEl = document.getElementById('status');
+    const fileInput = document.getElementById('fileInput');
+    const runButton = document.getElementById('runButton');
+    const outputCanvas = document.getElementById('outputCanvas');
+    const detectionInfo = document.getElementById('detectionInfo');
+    const debug = document.getElementById('debug');
+    const ctx = outputCanvas.getContext('2d');
+
+    async function loadModel() {
+      try {
+        statusEl.innerText = 'Lade YOLO-Modell...';
+        session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
+        inputName = session.inputNames[0];
+        outputName = session.outputNames[0];
+        ortReady = true;
+        updateReadyState();
+        statusEl.innerText = 'Modell geladen. Lade OpenCV...';
+      } catch (err) {
+        statusEl.innerText = 'Modell konnte nicht geladen werden.';
+        debug.innerText = err.toString();
+      }
+    }
+
+    function updateReadyState() {
+      if (cvReady && ortReady) {
+        runButton.disabled = false;
+        statusEl.innerText = 'Bereit. Wähle ein Bild und starte die Erkennung.';
+      }
+    }
+
+    function onOpenCvReady() {
+      cv['onRuntimeInitialized'] = () => {
+        cvReady = true;
+        statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
+        updateReadyState();
+      };
+    }
+
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function preprocessImage(img) {
+      const mat = cv.imread(img);
+      const rgb = new cv.Mat();
+      cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
+      const resized = new cv.Mat();
+      const dsize = new cv.Size(inputSize, inputSize);
+      cv.resize(rgb, resized, dsize, 0, 0, cv.INTER_AREA);
+
+      const floatData = new Float32Array(inputSize * inputSize * 3);
+      for (let y = 0; y < inputSize; y++) {
+        for (let x = 0; x < inputSize; x++) {
+          const i = y * inputSize + x;
+          floatData[i] = resized.data[i * 3] / 255.0;
+          floatData[inputSize * inputSize + i] = resized.data[i * 3 + 1] / 255.0;
+          floatData[2 * inputSize * inputSize + i] = resized.data[i * 3 + 2] / 255.0;
+        }
+      }
+
+      mat.delete();
+      rgb.delete();
+      resized.delete();
+      return floatData;
+    }
+
+    function nonMaxSuppression(boxes, scores, threshold) {
+      const order = scores
+        .map((score, idx) => ({ score, idx }))
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.idx);
+
+      const keep = [];
+      while (order.length > 0) {
+        const idx = order.shift();
+        keep.push(idx);
+        const boxA = boxes[idx];
+        const [xA1, yA1, xA2, yA2] = [boxA[0], boxA[1], boxA[0] + boxA[2], boxA[1] + boxA[3]];
+        for (let j = order.length - 1; j >= 0; j--) {
+          const boxB = boxes[order[j]];
+          const [xB1, yB1, xB2, yB2] = [boxB[0], boxB[1], boxB[0] + boxB[2], boxB[1] + boxB[3]];
+          const interArea = Math.max(0, Math.min(xA2, xB2) - Math.max(xA1, xB1)) * Math.max(0, Math.min(yA2, yB2) - Math.max(yA1, yB1));
+          const areaA = (xA2 - xA1) * (yA2 - yA1);
+          const areaB = (xB2 - xB1) * (yB2 - yB1);
+          const ovr = interArea / (areaA + areaB - interArea);
+          if (ovr > threshold) order.splice(j, 1);
+        }
+      }
+      return keep;
+    }
+
+    async function runDetection() {
+      if (!fileInput.files || !fileInput.files[0]) return;
+      const img = await loadImage(fileInput.files[0]);
+      outputCanvas.width = img.naturalWidth;
+      outputCanvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+
+      statusEl.innerText = 'Verarbeite Bild...';
+      const floatData = preprocessImage(img);
+      const inputTensor = new ort.Tensor('float32', floatData, [1, 3, inputSize, inputSize]);
+      const feeds = { [inputName]: inputTensor };
+      const results = await session.run(feeds);
+      const outputData = results[outputName].data;
+      const detections = [];
+
+      const numDetections = outputData.length / 85;
+      for (let i = 0; i < numDetections; i++) {
+        const base = i * 85;
+        const objectness = outputData[base + 4];
+        let classId = 0;
+        let classScore = 0;
+        for (let c = 0; c < 80; c++) {
+          const score = outputData[base + 5 + c];
+          if (score > classScore) {
+            classScore = score;
+            classId = c;
+          }
+        }
+        const confidence = objectness * classScore;
+        if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
+        const cx = outputData[base];
+        const cy = outputData[base + 1];
+        const w = outputData[base + 2];
+        const h = outputData[base + 3];
+        const x = (cx - w / 2) * outputCanvas.width;
+        const y = (cy - h / 2) * outputCanvas.height;
+        const width = w * outputCanvas.width;
+        const height = h * outputCanvas.height;
+        detections.push({ classId, classScore, objectness, confidence, box: [x, y, width, height] });
+      }
+
+      const boxes = detections.map(d => d.box);
+      const scores = detections.map(d => d.confidence);
+      const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
+      const selected = keep.map(i => detections[i]);
+
+      ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+      if (selected.length === 0) {
+        detectionInfo.innerHTML = 'Keine Objekte erkannt.';
+      } else {
+        detectionInfo.innerHTML = `<strong>Erkannte Objekte:</strong> ${selected.length}`;
+        const list = document.createElement('ul');
+        selected.forEach(det => {
+          const name = classNames[det.classId] || 'unknown';
+          const label = `${name} (${det.confidence.toFixed(2)})`;
+          const li = document.createElement('li');
+          li.innerText = label;
+          list.appendChild(li);
+          drawBox(det.box, label, colorMap[name] || 'magenta');
+        });
+        detectionInfo.appendChild(list);
+      }
+      statusEl.innerText = 'Erkennung abgeschlossen.';
+    }
+
+    function drawBox(box, label, color) {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.strokeRect(box[0], box[1], box[2], box[3]);
+      ctx.font = '18px Arial';
+      ctx.fillStyle = color;
+      const textWidth = ctx.measureText(label).width + 8;
+      const textHeight = 22;
+      ctx.fillRect(box[0], box[1] - textHeight - 4, textWidth, textHeight);
+      ctx.fillStyle = '#000';
+      ctx.fillText(label, box[0] + 4, box[1] - 8);
+    }
+
+    fileInput.addEventListener('change', () => {
+      runButton.disabled = !fileInput.files.length || !cvReady || !ortReady;
+      detectionInfo.innerHTML = 'Bereit zur Erkennung.';
+    });
+
+    runButton.addEventListener('click', runDetection);
+    loadModel();
+  </script>
+</body>
+</html>

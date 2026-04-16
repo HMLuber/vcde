@@ -1,52 +1,32 @@
-# Interaktives Website-Template
-Dieses Repository dient als technische Grundlage für die Erstellung Ihrer Webseite. 
-Die Vorlage integriert Quarto zur Dokumenterstellung, Python für computergestützte Analysen 
-sowie beispielhaft Babylon.js für die Einbindung interaktiver 3D-Visualisierungen.
+# GitHub Pages Object Detection Demo
 
-## Konfigurationsschritte (Setup)
-Um eine eigene Arbeitsumgebung auf Basis dieser Vorlage zu erstellen, führen Sie bitte die folgenden Schritte strikt in der angegebenen Reihenfolge aus:
+Diese Website ist jetzt als statische GitHub Pages-Anwendung angelegt.
+Sie verwendet OpenCV.js im Browser und führt ein YOLOv5n-ONNX-Modell lokal im Nutzergerät aus.
 
-- **Repository forken**
-Betätigen Sie die Schaltfläche "Fork" in der oberen rechten Ecke der GitHub-Oberfläche. Hierdurch wird eine identische Kopie des Projekts in Ihren persönlichen GitHub-Account übertragen.
+## Was diese Seite macht
+- Lädt das leichte YOLOv5n-Modell aus `models/yolov5n.onnx`
+- Verwendet OpenCV.js zur Bildvorverarbeitung und Anzeige
+- Führt ONNX-Inferenz direkt im Browser mit `onnxruntime-web` aus
+- Zeichnet erkannte Objekte farbig auf dem Bild ein
 
-- **Konfiguration der Workflow-Berechtigungen**
-Standardmäßig sind Schreibzugriffe für automatisierte Prozesse in Forks deaktiviert. Zur Aktivierung der Website-Erstellung müssen Sie folgende Anpassungen vornehmen:
+## Deployment
+Für GitHub Pages genügt ein `push` in das Repository. GitHub Pages liefert die Datei `index.html` direkt aus.
 
-  - Navigieren Sie zu Settings > Actions > General.
-    
-  - Suchen Sie den Abschnitt Workflow permissions.
+1. Stelle sicher, dass GitHub Pages auf den Branch `main` (oder den aktiven Branch) und das Stammverzeichnis `/` eingestellt ist.
+2. Die Startseite ist `index.html`.
 
-  - Aktivieren Sie die Option "Read and write permissions" und bestätigen Sie mit Save.
+> Hinweis: Für diese statische GitHub Page ist keine Quarto-Datei (`index.qmd`) erforderlich. Alles läuft direkt über die vorhandene `index.html`.
 
-  - Wechseln Sie zum Reiter Actions und bestätigen Sie die Aktivierung der Workflows durch Klick auf "I understand my workflows, go ahead and enable them".
+## Verwendung
+1. Öffne die Seite in einem Browser.
+2. Wähle ein Bild aus.
+3. Klicke auf "Erkennung starten".
 
-- **Aktivierung von GitHub Pages**
-- 
-  - Navigieren Sie zu Settings > Pages.
+## Struktur
+- `index.html` &rarr; statische Benutzeroberfläche für die Bild- und Objekterkennung
+- `models/yolov5n.onnx` &rarr; kleines YOLOv5-ONNX-Modell für Browserinferenz
 
-  - Wählen Sie unter dem Punkt "Build and deployment" bei Branch den Branch gh-pages aus.
-
-  - Bestätigen Sie die Auswahl mit Save.
-(Hinweis: Der Branch gh-pages wird erst nach dem ersten erfolgreichen Durchlauf der GitHub Action generiert, oder muss manuell erstellt werden).
-
-## Workflow für Bearbeitung und Deployment
-Sämtliche Änderungen an der Datei index.qmd führen nach einem Push zum Repository automatisch zur Ausführung der CI/CD-Pipeline:
-
-- Python-Umgebung: Quarto führt enthaltene Code-Segmente aus und generiert die entsprechenden Abbildungen.
-
-- Rendering: Die Markdown-Inhalte werden in ein statisches HTML-Dokument transformiert.
-
-- Deployment: Die aktualisierte Website wird unter folgendem URL-Schema bereitgestellt: https://<ihr-username>.github.io/<repo-name>/
-
-## Richtlinien zur Quarto-Syntax:
-- Mathematische Formeln: Verwenden Sie die LaTeX-Notation, z. B. $E = mc^2$.
-
-- Python-Berechnungen: Code-Blöcke müssen zwingend mit ```{python} eingeleitet werden.
-
-- HTML/3D-Inhalte: Die Integration von Babylon.js-Skripten erfolgt innerhalb von ```{=html} Blöcken.
-
-## Fehleranalyse (Troubleshooting)
-- Fehlende Python-Grafiken: Überprüfen Sie das Protokoll unter dem Reiter "Actions" auf etwaige Installationsfehler der Bibliotheken matplotlib oder numpy.
-
-- Inaktiver 3D-Canvas: Sollte die 3D-Umgebung nicht geladen werden, untersuchen Sie die Browser-Konsole (Taste F12) auf einen 404 (Not Found) Fehler. Dies deutet zumeist auf eine fehlerhafte Syntax im Verweis auf das Babylon.js-Framework hin.
+## Hinweise
+- Es ist keine Python- oder Flask-Serverlogik mehr erforderlich.
+- Alles läuft clientseitig im Browser.
 
