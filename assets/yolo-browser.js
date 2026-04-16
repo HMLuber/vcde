@@ -8,9 +8,9 @@ window.Module = {
 
 const modelPath = 'models/yolov5n.onnx';
 const inputSize = 640;
-const confThreshold = 0.30;
-const minObjectness = 0.30;
-const minClassScore = 0.35;
+const confThreshold = 0.20;
+const minObjectness = 0.20;
+const minClassScore = 0.20;
 const nmsThreshold = 0.45;
 const colorMap = {
   person: 'lime',
@@ -122,24 +122,39 @@ function preprocessImage(img) {
   const mat = cv.imread(img);
   const rgb = new cv.Mat();
   cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
+
+  const srcHeight = rgb.rows;
+  const srcWidth = rgb.cols;
+  const scale = Math.min(inputSize / srcWidth, inputSize / srcHeight);
+  const resizedWidth = Math.round(srcWidth * scale);
+  const resizedHeight = Math.round(srcHeight * scale);
+
   const resized = new cv.Mat();
-  const dsize = new cv.Size(inputSize, inputSize);
-  cv.resize(rgb, resized, dsize, 0, 0, cv.INTER_AREA);
+  cv.resize(rgb, resized, new cv.Size(resizedWidth, resizedHeight), 0, 0, cv.INTER_AREA);
+
+  const top = Math.floor((inputSize - resizedHeight) / 2);
+  const bottom = inputSize - resizedHeight - top;
+  const left = Math.floor((inputSize - resizedWidth) / 2);
+  const right = inputSize - resizedWidth - left;
+
+  const padded = new cv.Mat();
+  cv.copyMakeBorder(resized, padded, top, bottom, left, right, cv.BORDER_CONSTANT, new cv.Scalar(114, 114, 114));
 
   const floatData = new Float32Array(inputSize * inputSize * 3);
   for (let y = 0; y < inputSize; y++) {
     for (let x = 0; x < inputSize; x++) {
       const i = y * inputSize + x;
-      floatData[i] = resized.data[i * 3] / 255.0;
-      floatData[inputSize * inputSize + i] = resized.data[i * 3 + 1] / 255.0;
-      floatData[2 * inputSize * inputSize + i] = resized.data[i * 3 + 2] / 255.0;
+      floatData[i] = padded.data[i * 3] / 255.0;
+      floatData[inputSize * inputSize + i] = padded.data[i * 3 + 1] / 255.0;
+      floatData[2 * inputSize * inputSize + i] = padded.data[i * 3 + 2] / 255.0;
     }
   }
 
   mat.delete();
   rgb.delete();
   resized.delete();
-  return floatData;
+  padded.delete();
+  return { floatData, scale, padLeft: left, padTop: top };
 }
 
 function float32ToFloat16(value) {
@@ -209,7 +224,7 @@ async function runDetection() {
   ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
 
   statusEl.innerText = 'Verarbeite Bild...';
-  const floatData = preprocessImage(img);
+  const { floatData, scale, padLeft, padTop } = preprocessImage(img);
   const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
   console.log('Input data prepared:', { modelInputType, inputDataType: inputData.constructor.name, length: inputData.length });
   const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
@@ -217,6 +232,7 @@ async function runDetection() {
   const feeds = { [inputName]: inputTensor };
   const results = await session.run(feeds);
   const outputData = results[outputName].data;
+  console.log('Inferenzergebnis:', { outputName, length: outputData.length, firstValues: Array.from(outputData.slice(0, 20)) });
   const detections = [];
   const numDetections = outputData.length / 85;
 
@@ -238,11 +254,15 @@ async function runDetection() {
     const cy = outputData[base + 1];
     const w = outputData[base + 2];
     const h = outputData[base + 3];
-    const x = (cx - w / 2) * outputCanvas.width;
-    const y = (cy - h / 2) * outputCanvas.height;
-    const width = w * outputCanvas.width;
-    const height = h * outputCanvas.height;
-    detections.push({ classId, classScore, objectness, confidence, box: [x, y, width, height] });
+    const x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
+    const y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
+    const width = (w * inputSize) / scale;
+    const height = (h * inputSize) / scale;
+    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
+    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
+    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
+    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
+    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
   }
 
   const boxes = detections.map(d => d.box);
