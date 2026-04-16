@@ -149,7 +149,17 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-web.min.js"></script>
-<script async="" src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();"></script>
+<script>
+  window.Module = {
+    onRuntimeInitialized: function() {
+      window._opencvAvailable = true;
+      if (typeof onOpenCvReady === 'function') {
+        onOpenCvReady();
+      }
+    }
+  };
+</script>
+<script async="" src="https://docs.opencv.org/master/opencv.js"></script>
 <script>
   const modelPath = 'models/yolov5n.onnx';
   const inputSize = 640;
@@ -212,11 +222,13 @@ ul.task-list li input[type="checkbox"] {
   }
 
   function onOpenCvReady() {
-    cv['onRuntimeInitialized'] = () => {
-      cvReady = true;
-      statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
-      updateReadyState();
-    };
+    cvReady = true;
+    statusEl.innerText = ortReady ? 'Bereit. Wähle ein Bild.' : 'OpenCV geladen. Lade YOLO-Modell...';
+    updateReadyState();
+  }
+
+  if (window._opencvAvailable) {
+    onOpenCvReady();
   }
 
   function loadImage(file) {
