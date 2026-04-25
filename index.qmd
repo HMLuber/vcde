@@ -14,11 +14,10 @@ Echtzeit-Objekterkennung ist die **automatische Identifikation und Lokalisierung
 
 Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und präzise Bounding Boxes um Objekte zu zeichnen. Dies ermöglicht praktische Anwendungen wie autonomes Fahren, Videoüberwachung, medizinische Bilddiagnose und industrielle Qualitätsprüfung.
 
-**Warum "Echtzeit"?** Die Verarbeitung muss schnell genug erfolgen, um mit der Kamerafreshrate Schritt zu halten – typischerweise 30-60 Bilder pro Sekunde. YOLO ermöglicht dies durch eine effiziente Netzwerkarchitektur, die komplette Bilder in einem Pass verarbeitet statt mehrfache Detektionen durchzuführen.
-
 ### Kurze Live‑Demo (Webcam oder Beispielvideo)
 
-Die Demo auf dieser Seite zeigt YOLO in Aktion. Sie können ein Bild hochladen und die Echtzeit-Erkennung wird die erkannten Objekte mit Bounding Boxes markieren. Das Modell YOLOv5 nano läuft direkt in Ihrem Browser – **keine Server- oder GPU-Anforderungen** nötig.
+HIER DEMO VIDEO EINFÜGEN
+
 
 ## Grundlagen
 
@@ -29,7 +28,7 @@ Die Objekterkennung hat sich über Jahrzehnte entwickelt:
 - **1960er-1990er**: Klassische Methoden wie **Edge Detection** und **Feature Matching** (z.B. Haar Cascades) dominieren
 - **2012**: Ein Wendepunkt – **AlexNet** gewinnt ImageNet-Wettbewerb mit Deep Learning und zeigt Überlegenheit von CNNs
 - **2015-2016**: **Faster R-CNN** und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, dafür aber mit längerer Verarbeitung
-- **2016 – heute**: **YOLO** (You Only Look Once) revolutioniert das Feld durch **Echtzeit-Erkennung auf normaler Hardware**. Weitere Varianten wie SSD und andere moderne Architekturen folgen. YOLO wird kontinuierlich verbessert – aktuelle Version ist YOLOv11
+- **2016 – heute**: **YOLO** (You Only Look Once) revolutioniert das Feld durch **Echtzeit-Erkennung auf normaler Hardware**. Weitere Varianten wie SSD und andere moderne Architekturen folgen.
 
 ### Begriffserklärungen
 
@@ -38,9 +37,6 @@ Die Objekterkennung hat sich über Jahrzehnte entwickelt:
 | **CNN** (Convolutional Neural Network) | Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder |
 | **Bounding Box** | Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe) |
 | **Confidence Score** | Wahrscheinlichkeit (0-1), ob ein erkanntes Objekt echt ist |
-| **IoU** (Intersection over Union) | Maß für Übereinstimmung zwischen erkannter und echter Bounding Box |
-| **NMS** (Non-Maximum Suppression) | Algorithmus zur Eliminierung doppelt erkannter Objekte |
-| **Anchor Boxes** | Vordefinierte Bounding-Box-Größen an Gitterpunkten des Bildes |
 
 ### Typische Anwendungsfälle
 
@@ -49,19 +45,18 @@ Die Objekterkennung hat sich über Jahrzehnte entwickelt:
 - **Sportanalyse**: Tracking von Spielern, Bällen und Bewegungsanalyse
 - **Medizin**: Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern
 - **Industrielle Inspektion**: Qualitätskontrolle, Defekterkennung an Produktionslinien
-- **Retail**: Produktzählung, Shelf-Management in Supermärkten
 
 ## Motivation
 
 ### Warum Echtzeit-Objekterkennung heute essentiell ist
 
-Die Fähigkeit, **Objekte augenblicklich und präzise zu erkennen**, ist in einer zunehmend vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig für moderne Anforderungen. YOLO löst dieses Problem durch intelligente Architekturdesign.
+Die Fähigkeit, **Objekte augenblicklich und präzise zu erkennen**, ist in einer zunehmend vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig für moderne Anforderungen.
 
 ### Wie YOLO grob funktioniert
 
-1. **Input**: Ein Bild beliebiger Größe wird auf ein festes Format (z.B. 416×416 Pixel) normalisiert
+1. **Input**: Ein Bild beliebiger Größe wird auf ein festes Format normalisiert
 2. **Backbone-Netzwerk**: Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten
-3. **Gitter-Struktur**: Das Bild wird in eine Gerade von Zellen aufgeteilt (z.B. 13×13). Jede Zelle ist für Objekte in ihrem Bereich zuständig
+3. **Gitter-Struktur**: Das Bild wird in eine Gerade von Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig
 4. **Vorhersage**: Für jede Zelle werden folgende Werte vorhergesagt:
    - **Bounding Boxes**: Mehrere Boxen mit verschiedenen Aspect Ratios
    - **Objectness Score**: Wahrscheinlichkeit, dass ein Objekt in der Box ist
@@ -69,7 +64,6 @@ Die Fähigkeit, **Objekte augenblicklich und präzise zu erkennen**, ist in eine
 5. **Output**: Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung
 6. **Post-Processing**: NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen
 
-**Kernvorteil**: Der komplette Prozess läuft in **einem Forward Pass** ab – daher der Name "You Only Look Once" (YOLO). Dies macht YOLO 10-100× schneller als ältere Region-basierte Methoden.
 
 ### Rolle von OpenCV für Video-Capture und Vorverarbeitung
 
@@ -83,13 +77,9 @@ Die Fähigkeit, **Objekte augenblicklich und präzise zu erkennen**, ist in eine
 - **Rendering**: Zeichnen von Bounding Boxes, Labels und Scores auf das Bild
 - **Speicherung**: Speichern von Ergebnisbildern oder -videos
 
-In dieser Demo verwenden wir die **Browser-basierte ONNX Runtime**, die OpenCV durch Web APIs ersetzt. Im klassischen Setup (Python/C++) ist OpenCV unverzichtbar für die Produktionsqualität.
 
 ## Demo‑Bereich
 Live‑Webcam oder Video‑Upload mit Erkennung
-Vergleich mit anderer Bibliothek (z.B. TensorFlow Object Detection API / hier Vergleichstablle oder ähnliches)
-Lokale Demo mit OpenCV + YOLO: scripts/yolo_demo.py erzeugt ein Ergebnisbild
-
 
 ### Bedienung
 
