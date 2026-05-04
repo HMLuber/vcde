@@ -50,17 +50,19 @@ const debug = document.getElementById('debug');
 const ctx = outputCanvas.getContext('2d');
 const frameCanvas = document.createElement('canvas');
 const frameCtx = frameCanvas.getContext('2d');
+// Separates Canvas für den gespeicherten Inferenz-Frame
+const inferenceFrameCanvas = document.createElement('canvas');
+const inferenceFrameCtx = inferenceFrameCanvas.getContext('2d');
 let currentMediaType = null;
 let videoElement = null;
 let videoProcessing = false;
 let processingVideoFrame = false;
 let lastProcessingTime = 0;
-const inferenceInterval = 100; // ms zwischen Erkennungen (ca 10 fps für Inferenz)
+const inferenceInterval = 100; // ms zwischen Erkennungen
 
-// Gespeicherte Detektionen für das aktuelle Frame
+// Gespeicherte Detektionen und Frame-Info
 let lastDetections = [];
 let lastDetectionTime = '';
-let lastInferenceFrameCanvas = null;
 
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
@@ -428,12 +430,14 @@ async function runDetection() {
       videoElement = await loadVideo(file);
       outputCanvas.width = videoElement.videoWidth;
       outputCanvas.height = videoElement.videoHeight;
+      inferenceFrameCanvas.width = videoElement.videoWidth;
+      inferenceFrameCanvas.height = videoElement.videoHeight;
       detectionInfo.innerHTML = 'Video geladen. Erkennung startet...';
       videoProcessing = true;
 
       await videoElement.play();
 
-      // Render-Loop: Zeichnet den Frame, auf dem die Inferenz lief + Detektionen
+      // Render-Loop: Sehr schnell, zeigt nur den gespeicherten Frame
       const renderLoop = () => {
         if (!videoProcessing || videoElement.paused || videoElement.ended) {
           videoProcessing = false;
@@ -443,59 +447,51 @@ async function runDetection() {
           return;
         }
 
-        // Zeichne den Frame, auf dem die Inferenz läuft (nicht den Live-Stream!)
-        if (lastInferenceFrameCanvas) {
-          ctx.drawImage(lastInferenceFrameCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-        } else {
-          // Fallback: Zeige Live-Video, bis erste Inferenz fertig ist
-          ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
-        }
+        // Zeichne den gespeicherten Inferenz-Frame
+        ctx.drawImage(inferenceFrameCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-        // Zeichne Detektionen über dem Frame
+        // Zeichne alle Detektionen darüber
         lastDetections.forEach(det => {
           const name = classNames[det.classId] || 'unknown';
           const label = `${name} (${det.confidence.toFixed(2)})`;
           drawBox(det.box, label, 'magenta');
         });
 
-        // Aktualisiere Status
-        if (lastDetectionTime) {
-          detectionInfo.innerHTML = `${lastDetectionTime}`;
-        }
+        // Update Status-Text
+        detectionInfo.innerHTML = lastDetectionTime || 'Warte auf erste Erkennung...';
 
         requestAnimationFrame(renderLoop);
       };
 
-      // Inferenz-Loop: Läuft unabhängig und aktualisiert Detektionen
+      // Inferenz-Loop: Unabhängig, aktualisiert frameCanvas und Detektionen
       const inferenceLoop = async () => {
         if (!videoProcessing) return;
 
         const now = performance.now();
-        if (now - lastProcessingTime >= inferenceInterval) {
+        if (now - lastProcessingTime >= inferenceInterval && !processingVideoFrame) {
           lastProcessingTime = now;
           processingVideoFrame = true;
 
           try {
-            // Extrahiere den aktuellen Video-Frame in frameCanvas
-            frameCanvas.width = videoElement.videoWidth;
-            frameCanvas.height = videoElement.videoHeight;
+            // Kopiere aktuellen Video-Frame
             frameCtx.drawImage(videoElement, 0, 0);
 
             // Speichere diesen Frame für die Render-Loop
-            lastInferenceFrameCanvas = frameCanvas.cloneNode(true);
-            const clonedCtx = lastInferenceFrameCanvas.getContext('2d');
-            clonedCtx.drawImage(frameCanvas, 0, 0);
+            inferenceFrameCtx.drawImage(frameCanvas, 0, 0);
 
+            // Laufe Inferenz auf frameCanvas
             const detections = await runInferenceOnly(frameCanvas);
             lastDetections = detections;
             lastDetectionTime = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
           } catch (err) {
-            console.error('Fehler bei der Inferenz.', err);
+            console.error('Fehler bei Inferenz:', err);
+            lastDetectionTime = 'Erkennungsfehler';
           } finally {
             processingVideoFrame = false;
           }
         }
 
+        // Nächste Inferenz in ~10ms checken
         setTimeout(() => inferenceLoop(), 10);
       };
 
