@@ -48,6 +48,51 @@ const outputCanvas = document.getElementById('outputCanvas');
 const detectionInfo = document.getElementById('detectionInfo');
 const debug = document.getElementById('debug');
 const ctx = outputCanvas.getContext('2d');
+const frameCanvas = document.createElement('canvas');
+const frameCtx = frameCanvas.getContext('2d');
+let currentMediaType = null;
+let videoElement = null;
+let videoProcessing = false;
+
+function isVideoFile(file) {
+  return file && file.type.startsWith('video/');
+}
+
+function loadVideo(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+    video.style.display = 'none';
+    video.src = URL.createObjectURL(file);
+
+    video.addEventListener('loadedmetadata', () => {
+      if (!video.videoWidth || !video.videoHeight) {
+        reject(new Error('Video konnte nicht geladen werden.'));
+        return;
+      }
+      document.body.appendChild(video);
+      resolve(video);
+    });
+
+    video.addEventListener('error', () => {
+      reject(new Error('Fehler beim Laden des Videos.'));
+    });
+
+    video.load();
+  });
+}
+
+function stopVideoProcessing() {
+  videoProcessing = false;
+  if (videoElement) {
+    videoElement.pause();
+    URL.revokeObjectURL(videoElement.src);
+    videoElement.remove();
+    videoElement = null;
+  }
+}
 
 async function loadModel() {
   // Lädt das ONNX-Modell asynchron in den Browser. Die ONNX Runtime kann dann
@@ -116,6 +161,90 @@ function loadImage(file) {
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
   });
+}
+
+function drawVideoFrame(video) {
+  frameCanvas.width = video.videoWidth;
+  frameCanvas.height = video.videoHeight;
+  frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+  return frameCanvas;
+}
+
+async function runDetectionOnSource(source, frameLabel = '') {
+  const { floatData, scale, padLeft, padTop } = preprocessImage(source);
+  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
+  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
+  const feeds = { [inputName]: inputTensor };
+  const results = await session.run(feeds);
+  const outputData = results[outputName].data;
+
+  const detections = [];
+  const numDetections = outputData.length / 85;
+
+  for (let i = 0; i < numDetections; i++) {
+    const base = i * 85;
+    const objectness = outputData[base + 4];
+    let classId = 0;
+    let classScore = 0;
+    for (let c = 0; c < 80; c++) {
+      const score = outputData[base + 5 + c];
+      if (score > classScore) {
+        classScore = score;
+        classId = c;
+      }
+    }
+    const confidence = objectness * classScore;
+    if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
+    const cx = outputData[base];
+    const cy = outputData[base + 1];
+    const w = outputData[base + 2];
+    const h = outputData[base + 3];
+    let x;
+    let y;
+    let width;
+    let height;
+    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
+    if (normalized) {
+      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
+      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
+      width = (w * inputSize) / scale;
+      height = (h * inputSize) / scale;
+    } else {
+      x = (cx - w / 2 - padLeft) / scale;
+      y = (cy - h / 2 - padTop) / scale;
+      width = w / scale;
+      height = h / scale;
+      console.log('Detected coordinates appear absolute, switching mapping:', { cx, cy, w, h, normalized });
+    }
+    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
+    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
+    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
+    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
+    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
+  }
+
+  const boxes = detections.map(d => d.box);
+  const scores = detections.map(d => d.confidence);
+  const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
+  const selected = keep.map(i => detections[i]);
+
+  ctx.drawImage(source, 0, 0, outputCanvas.width, outputCanvas.height);
+  const infoPrefix = frameLabel ? `${frameLabel} ` : '';
+  if (selected.length === 0) {
+    detectionInfo.innerHTML = `${infoPrefix}Keine Objekte erkannt.`;
+  } else {
+    detectionInfo.innerHTML = `${infoPrefix}<strong>Erkannte Objekte:</strong> ${selected.length}`;
+    const list = document.createElement('ul');
+    selected.forEach(det => {
+      const name = classNames[det.classId] || 'unknown';
+      const label = `${name} (${det.confidence.toFixed(2)})`;
+      const li = document.createElement('li');
+      li.innerText = label;
+      list.appendChild(li);
+      drawBox(det.box, label, 'magenta');
+    });
+    detectionInfo.appendChild(list);
+  }
 }
 
 function preprocessImage(img) {
@@ -227,86 +356,54 @@ function nonMaxSuppression(boxes, scores, threshold) {
 // Sie führt alle Schritte aus: Laden, Preprocessing, Inferenz, NMS und Zeichnen.
 async function runDetection() {
   if (!fileInput.files || !fileInput.files[0]) return;
-  const img = await loadImage(fileInput.files[0]);
-  outputCanvas.width = img.naturalWidth;
-  outputCanvas.height = img.naturalHeight;
-  ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
-
-  const { floatData, scale, padLeft, padTop } = preprocessImage(img);
-  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
-  console.log('Input data prepared:', { modelInputType, inputDataType: inputData.constructor.name, length: inputData.length });
-  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
-  console.log('Erstellter Tensor:', { type: inputTensor.type, dims: inputTensor.dims });
-  const feeds = { [inputName]: inputTensor };
-  const results = await session.run(feeds);
-  const outputData = results[outputName].data;
-  console.log('Inferenzergebnis:', { outputName, length: outputData.length, firstValues: Array.from(outputData.slice(0, 20)) });
-  const detections = [];
-  const numDetections = outputData.length / 85;
-
-  for (let i = 0; i < numDetections; i++) {
-    const base = i * 85;
-    const objectness = outputData[base + 4];
-    let classId = 0;
-    let classScore = 0;
-    for (let c = 0; c < 80; c++) {
-      const score = outputData[base + 5 + c];
-      if (score > classScore) {
-        classScore = score;
-        classId = c;
-      }
-    }
-    const confidence = objectness * classScore;
-    if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
-    const cx = outputData[base];
-    const cy = outputData[base + 1];
-    const w = outputData[base + 2];
-    const h = outputData[base + 3];
-    let x;
-    let y;
-    let width;
-    let height;
-    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
-    if (normalized) {
-      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
-      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
-      width = (w * inputSize) / scale;
-      height = (h * inputSize) / scale;
-    } else {
-      x = (cx - w / 2 - padLeft) / scale;
-      y = (cy - h / 2 - padTop) / scale;
-      width = w / scale;
-      height = h / scale;
-      console.log('Detected coordinates appear absolute, switching mapping:', { cx, cy, w, h, normalized });
-    }
-    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
-    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
-    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
-    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
-    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
+  const file = fileInput.files[0];
+  if (videoProcessing) {
+    stopVideoProcessing();
   }
 
-  const boxes = detections.map(d => d.box);
-  const scores = detections.map(d => d.confidence);
-  const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
-  const selected = keep.map(i => detections[i]);
-  console.log('Selected detections:', selected);
+  if (isVideoFile(file)) {
+    try {
+      videoElement = await loadVideo(file);
+      outputCanvas.width = videoElement.videoWidth;
+      outputCanvas.height = videoElement.videoHeight;
+      detectionInfo.innerHTML = 'Video geladen. Erkennung startet...';
+      videoProcessing = true;
 
-  ctx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
-  if (selected.length === 0) {
-    detectionInfo.innerHTML = 'Keine Objekte erkannt.';
+      await videoElement.play();
+      const fps = 5;
+      const interval = 1000 / fps;
+      let lastTime = 0;
+
+      const processVideoFrame = async () => {
+        if (!videoProcessing || videoElement.paused || videoElement.ended) {
+          videoProcessing = false;
+          if (videoElement && videoElement.ended) {
+            detectionInfo.innerHTML += ' (Videoende erreicht)';
+          }
+          return;
+        }
+
+        const now = performance.now();
+        if (now - lastTime >= interval) {
+          lastTime = now;
+          const frame = drawVideoFrame(videoElement);
+          const frameLabel = `Frame ${Math.floor(videoElement.currentTime * fps)}`;
+          await runDetectionOnSource(frame, frameLabel);
+        }
+
+        requestAnimationFrame(processVideoFrame);
+      };
+
+      processVideoFrame();
+    } catch (err) {
+      console.error('Video konnte nicht verarbeitet werden.', err);
+      detectionInfo.innerText = `Video-Fehler: ${err.message || err.toString()}`;
+    }
   } else {
-    detectionInfo.innerHTML = `<strong>Erkannte Objekte:</strong> ${selected.length}`;
-    const list = document.createElement('ul');
-    selected.forEach(det => {
-      const name = classNames[det.classId] || 'unknown';
-      const label = `${name} (${det.confidence.toFixed(2)})`;
-      const li = document.createElement('li');
-      li.innerText = label;
-      list.appendChild(li);
-      drawBox(det.box, label, 'magenta');
-    });
-    detectionInfo.appendChild(list);
+    const img = await loadImage(file);
+    outputCanvas.width = img.naturalWidth;
+    outputCanvas.height = img.naturalHeight;
+    await runDetectionOnSource(img);
   }
 }
 
@@ -326,8 +423,19 @@ function drawBox(box, label, color) {
 }
 
 fileInput.addEventListener('change', () => {
-  runButton.disabled = !fileInput.files.length || !cvReady || !ortReady;
-  detectionInfo.innerHTML = 'Bereit zur Erkennung.';
+  const file = fileInput.files && fileInput.files[0];
+  if (videoProcessing) {
+    stopVideoProcessing();
+  }
+  currentMediaType = file ? (isVideoFile(file) ? 'video' : 'image') : null;
+  runButton.disabled = !file || !cvReady || !ortReady;
+  if (!file) {
+    detectionInfo.innerHTML = 'Warte auf Eingabe...';
+  } else if (currentMediaType === 'video') {
+    detectionInfo.innerHTML = 'Video geladen. Drücke Erkennung starten.';
+  } else {
+    detectionInfo.innerHTML = 'Bereit zur Erkennung.';
+  }
 });
 
 runButton.addEventListener('click', runDetection);
