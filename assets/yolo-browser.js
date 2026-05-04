@@ -76,7 +76,7 @@ function loadVideo(file) {
       resolve(video);
     });
 
-    video.addEventListener('error', () => {
+    video.addEventListener('error', (event) => {
       reject(new Error('Fehler beim Laden des Videos.'));
     });
 
@@ -158,7 +158,7 @@ function loadImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = (event) => reject(new Error('Bild konnte nicht geladen werden.'));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -361,8 +361,8 @@ async function runDetection() {
     stopVideoProcessing();
   }
 
-  if (isVideoFile(file)) {
-    try {
+  try {
+    if (isVideoFile(file)) {
       videoElement = await loadVideo(file);
       outputCanvas.width = videoElement.videoWidth;
       outputCanvas.height = videoElement.videoHeight;
@@ -395,15 +395,15 @@ async function runDetection() {
       };
 
       processVideoFrame();
-    } catch (err) {
-      console.error('Video konnte nicht verarbeitet werden.', err);
-      detectionInfo.innerText = `Video-Fehler: ${err.message || err.toString()}`;
+    } else {
+      const img = await loadImage(file);
+      outputCanvas.width = img.naturalWidth;
+      outputCanvas.height = img.naturalHeight;
+      await runDetectionOnSource(img);
     }
-  } else {
-    const img = await loadImage(file);
-    outputCanvas.width = img.naturalWidth;
-    outputCanvas.height = img.naturalHeight;
-    await runDetectionOnSource(img);
+  } catch (err) {
+    console.error('Fehler bei der Erkennung.', err);
+    detectionInfo.innerText = `Erkennungsfehler: ${err.message || err.toString()}`;
   }
 }
 
