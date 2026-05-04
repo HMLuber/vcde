@@ -54,7 +54,8 @@ let currentMediaType = null;
 let videoElement = null;
 let videoProcessing = false;
 let processingVideoFrame = false;
-let pendingVideoFrame = false;
+let lastProcessingTime = 0;
+const inferenceInterval = 150; // ms zwischen Erkennungen
 
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
@@ -368,7 +369,7 @@ async function runDetection() {
 
       await videoElement.play();
 
-      const processVideoFrame = async () => {
+      const renderLoop = () => {
         if (!videoProcessing || videoElement.paused || videoElement.ended) {
           videoProcessing = false;
           if (videoElement && videoElement.ended) {
@@ -377,36 +378,40 @@ async function runDetection() {
           return;
         }
 
-        if (processingVideoFrame) {
-          pendingVideoFrame = true;
-          return;
-        }
+        // Zeichne den aktuellen Frame
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = videoElement.videoWidth;
+        tempCanvas.height = videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(videoElement, 0, 0);
+        ctx.drawImage(tempCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
-        processingVideoFrame = true;
-        try {
-          const frame = drawVideoFrame(videoElement);
-          const frameLabel = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
-          await runDetectionOnSource(frame, frameLabel);
-        } catch (err) {
-          console.error('Fehler bei der Frame-Verarbeitung.', err);
-        } finally {
-          processingVideoFrame = false;
-        }
-
-        if (pendingVideoFrame) {
-          pendingVideoFrame = false;
-          processVideoFrame();
-          return;
+        // Starte Inferenz nur alle `inferenceInterval` ms
+        const now = performance.now();
+        if (!processingVideoFrame && now - lastProcessingTime >= inferenceInterval) {
+          lastProcessingTime = now;
+          processingVideoFrame = true;
+          (async () => {
+            try {
+              const frame = tempCanvas;
+              const frameLabel = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
+              await runDetectionOnSource(frame, frameLabel);
+            } catch (err) {
+              console.error('Fehler bei der Frame-Verarbeitung.', err);
+            } finally {
+              processingVideoFrame = false;
+            }
+          })();
         }
 
         if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
-          videoElement.requestVideoFrameCallback(() => processVideoFrame());
+          videoElement.requestVideoFrameCallback(() => renderLoop());
         } else {
-          requestAnimationFrame(processVideoFrame);
+          requestAnimationFrame(renderLoop);
         }
       };
 
-      processVideoFrame();
+      renderLoop();
     } else {
       const img = await loadImage(file);
       outputCanvas.width = img.naturalWidth;
