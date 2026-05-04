@@ -53,6 +53,8 @@ const frameCtx = frameCanvas.getContext('2d');
 let currentMediaType = null;
 let videoElement = null;
 let videoProcessing = false;
+let processingVideoFrame = false;
+let pendingVideoFrame = false;
 
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
@@ -234,16 +236,11 @@ async function runDetectionOnSource(source, frameLabel = '') {
     detectionInfo.innerHTML = `${infoPrefix}Keine Objekte erkannt.`;
   } else {
     detectionInfo.innerHTML = `${infoPrefix}<strong>Erkannte Objekte:</strong> ${selected.length}`;
-    const list = document.createElement('ul');
     selected.forEach(det => {
       const name = classNames[det.classId] || 'unknown';
       const label = `${name} (${det.confidence.toFixed(2)})`;
-      const li = document.createElement('li');
-      li.innerText = label;
-      list.appendChild(li);
       drawBox(det.box, label, 'magenta');
     });
-    detectionInfo.appendChild(list);
   }
 }
 
@@ -370,9 +367,6 @@ async function runDetection() {
       videoProcessing = true;
 
       await videoElement.play();
-      const fps = 5;
-      const interval = 1000 / fps;
-      let lastTime = 0;
 
       const processVideoFrame = async () => {
         if (!videoProcessing || videoElement.paused || videoElement.ended) {
@@ -383,15 +377,33 @@ async function runDetection() {
           return;
         }
 
-        const now = performance.now();
-        if (now - lastTime >= interval) {
-          lastTime = now;
-          const frame = drawVideoFrame(videoElement);
-          const frameLabel = `Frame ${Math.floor(videoElement.currentTime * fps)}`;
-          await runDetectionOnSource(frame, frameLabel);
+        if (processingVideoFrame) {
+          pendingVideoFrame = true;
+          return;
         }
 
-        requestAnimationFrame(processVideoFrame);
+        processingVideoFrame = true;
+        try {
+          const frame = drawVideoFrame(videoElement);
+          const frameLabel = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
+          await runDetectionOnSource(frame, frameLabel);
+        } catch (err) {
+          console.error('Fehler bei der Frame-Verarbeitung.', err);
+        } finally {
+          processingVideoFrame = false;
+        }
+
+        if (pendingVideoFrame) {
+          pendingVideoFrame = false;
+          processVideoFrame();
+          return;
+        }
+
+        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+          videoElement.requestVideoFrameCallback(() => processVideoFrame());
+        } else {
+          requestAnimationFrame(processVideoFrame);
+        }
       };
 
       processVideoFrame();
