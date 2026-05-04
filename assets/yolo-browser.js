@@ -55,7 +55,11 @@ let videoElement = null;
 let videoProcessing = false;
 let processingVideoFrame = false;
 let lastProcessingTime = 0;
-const inferenceInterval = 150; // ms zwischen Erkennungen
+const inferenceInterval = 100; // ms zwischen Erkennungen (ca 10 fps für Inferenz)
+
+// Gespeicherte Detektionen für das aktuelle Frame
+let lastDetections = [];
+let lastDetectionTime = '';
 
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
@@ -245,6 +249,65 @@ async function runDetectionOnSource(source, frameLabel = '') {
   }
 }
 
+// Nur Inferenz ohne Zeichnen - gibt Detektionen zurück
+async function runInferenceOnly(source) {
+  const { floatData, scale, padLeft, padTop } = preprocessImage(source);
+  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
+  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
+  const feeds = { [inputName]: inputTensor };
+  const results = await session.run(feeds);
+  const outputData = results[outputName].data;
+
+  const detections = [];
+  const numDetections = outputData.length / 85;
+
+  for (let i = 0; i < numDetections; i++) {
+    const base = i * 85;
+    const objectness = outputData[base + 4];
+    let classId = 0;
+    let classScore = 0;
+    for (let c = 0; c < 80; c++) {
+      const score = outputData[base + 5 + c];
+      if (score > classScore) {
+        classScore = score;
+        classId = c;
+      }
+    }
+    const confidence = objectness * classScore;
+    if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
+    const cx = outputData[base];
+    const cy = outputData[base + 1];
+    const w = outputData[base + 2];
+    const h = outputData[base + 3];
+    let x;
+    let y;
+    let width;
+    let height;
+    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
+    if (normalized) {
+      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
+      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
+      width = (w * inputSize) / scale;
+      height = (h * inputSize) / scale;
+    } else {
+      x = (cx - w / 2 - padLeft) / scale;
+      y = (cy - h / 2 - padTop) / scale;
+      width = w / scale;
+      height = h / scale;
+    }
+    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
+    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
+    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
+    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
+    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
+  }
+
+  const boxes = detections.map(d => d.box);
+  const scores = detections.map(d => d.confidence);
+  const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
+  return keep.map(i => detections[i]);
+}
+
 function preprocessImage(img) {
   const mat = cv.imread(img);
   const rgb = new cv.Mat();
@@ -369,6 +432,7 @@ async function runDetection() {
 
       await videoElement.play();
 
+      // Render-Loop: Zeichnet Video-Frames + gespeicherte Detektionen (sehr schnell)
       const renderLoop = () => {
         if (!videoProcessing || videoElement.paused || videoElement.ended) {
           videoProcessing = false;
@@ -378,40 +442,54 @@ async function runDetection() {
           return;
         }
 
-        // Zeichne den aktuellen Frame
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = videoElement.videoWidth;
-        tempCanvas.height = videoElement.videoHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(videoElement, 0, 0);
-        ctx.drawImage(tempCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+        // Zeichne aktuellen Video-Frame direkt
+        ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
 
-        // Starte Inferenz nur alle `inferenceInterval` ms
+        // Zeichne gespeicherte Detektionen über das Frame
+        lastDetections.forEach(det => {
+          const name = classNames[det.classId] || 'unknown';
+          const label = `${name} (${det.confidence.toFixed(2)})`;
+          drawBox(det.box, label, 'magenta');
+        });
+
+        // Aktualisiere Status
+        if (lastDetectionTime) {
+          detectionInfo.innerHTML = `${lastDetectionTime}`;
+        }
+
+        requestAnimationFrame(renderLoop);
+      };
+
+      // Inferenz-Loop: Läuft unabhängig und aktualisiert Detektionen
+      const inferenceLoop = async () => {
+        if (!videoProcessing) return;
+
         const now = performance.now();
-        if (!processingVideoFrame && now - lastProcessingTime >= inferenceInterval) {
+        if (now - lastProcessingTime >= inferenceInterval) {
           lastProcessingTime = now;
           processingVideoFrame = true;
-          (async () => {
-            try {
-              const frame = tempCanvas;
-              const frameLabel = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
-              await runDetectionOnSource(frame, frameLabel);
-            } catch (err) {
-              console.error('Fehler bei der Frame-Verarbeitung.', err);
-            } finally {
-              processingVideoFrame = false;
-            }
-          })();
+
+          try {
+            // Nutze frameCanvas für Inferenz
+            frameCanvas.width = videoElement.videoWidth;
+            frameCanvas.height = videoElement.videoHeight;
+            frameCtx.drawImage(videoElement, 0, 0);
+
+            const detections = await runInferenceOnly(frameCanvas);
+            lastDetections = detections;
+            lastDetectionTime = `Zeit ${videoElement.currentTime.toFixed(2)}s`;
+          } catch (err) {
+            console.error('Fehler bei der Inferenz.', err);
+          } finally {
+            processingVideoFrame = false;
+          }
         }
 
-        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
-          videoElement.requestVideoFrameCallback(() => renderLoop());
-        } else {
-          requestAnimationFrame(renderLoop);
-        }
+        setTimeout(() => inferenceLoop(), 10);
       };
 
       renderLoop();
+      inferenceLoop();
     } else {
       const img = await loadImage(file);
       outputCanvas.width = img.naturalWidth;
