@@ -83,8 +83,8 @@ Live‑Webcam oder Video‑Upload mit Erkennung
 
 ### Bedienung
 
-<label for="fileInput">Bild auswählen</label>
-<input id="fileInput" type="file" accept="image/*" />
+<label for="fileInput">Datei auswählen</label>
+<input id="fileInput" type="file"/>
 
 <button id="runButton" disabled>Erkennung starten</button>
 
