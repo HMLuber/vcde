@@ -235,7 +235,7 @@ async function runDetectionOnSource(source, frameLabel = '') {
   if (selected.length === 0) {
     detectionInfo.innerHTML = `${infoPrefix}Keine Objekte erkannt.`;
   } else {
-    detectionInfo.innerHTML = `${infoPrefix}<strong>Erkannte Objekte:</strong> ${selected.length}`;
+    detectionInfo.innerHTML = infoPrefix || 'Erkennung abgeschlossen.';
     selected.forEach(det => {
       const name = classNames[det.classId] || 'unknown';
       const label = `${name} (${det.confidence.toFixed(2)})`;
