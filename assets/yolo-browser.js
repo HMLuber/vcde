@@ -1,533 +1,546 @@
 // OpenCV.js benötigt dieses globale Modul-Objekt, damit es uns benachrichtigt,
 // wenn die WebAssembly-Laufzeit von OpenCV vollständig initialisiert ist.
 window.Module = {
-  onRuntimeInitialized: function() {
+  onRuntimeInitialized: function () {
     if (typeof window.onOpenCvReady === 'function') {
       window.onOpenCvReady();
     }
   }
 };
 
-// Pfad zum ONNX-Modell, das im Browser geladen und ausgeführt wird.
-const modelPath = 'models/yolov5n.onnx';
-// Das Eintragsbild wird auf 640x640 pixel verarbeitet, wie das YOLO-Modell erwartet.
-const inputSize = 640;
-// Schwellwerte für die Erkennung: je niedriger, desto empfindlicher die Erkennung.
-const confThreshold = 0.20;
-const minObjectness = 0.20;
-const minClassScore = 0.20;
-const nmsThreshold = 0.45;
+// ── Konfiguration ────────────────────────────────────────────────────────────
+const modelPath      = 'models/yolov5n.onnx';
+const inputSize      = 640;
+const confThreshold  = 0.20;
+const minObjectness  = 0.20;
+const minClassScore  = 0.20;
+const nmsThreshold   = 0.45;
+const modelInputType = 'float16';
+
+// Inferenz-Intervall in ms (höher = weniger CPU-Last, geringere Latenz bei ~100ms)
+const INFERENCE_INTERVAL_MS = 100;
+
 const classNames = [
   'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
   'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog',
   'horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella',
-  'handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat',
-  'baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork',
-  'knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog',
-  'pizza','donut','cake','chair','sofa','pottedplant','bed','diningtable','toilet','tvmonitor',
-  'laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator',
+  'handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite',
+  'baseball bat','baseball glove','skateboard','surfboard','tennis racket','bottle',
+  'wine glass','cup','fork','knife','spoon','bowl','banana','apple','sandwich',
+  'orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','sofa',
+  'pottedplant','bed','diningtable','toilet','tvmonitor','laptop','mouse','remote',
+  'keyboard','cell phone','microwave','oven','toaster','sink','refrigerator',
   'book','clock','vase','scissors','teddy bear','hair drier','toothbrush'
 ];
 
-// Das Modell erwartet float16-Eingaben. Wir konvertieren die Pixelwerte daher
-// von Float32 nach Float16, bevor sie als Tensor an den ONNX-Laufzeit übergeben werden.
-const modelInputType = 'float16';
-
-// Globale Variablen für das ONNX-Session-Objekt und den Zustand der Bibliotheken.
-let session = null;
-let inputName = null;
-let outputName = null;
-let cvReady = false;
-let ortReady = false;
+// ── Globaler Zustand ─────────────────────────────────────────────────────────
+let session     = null;
+let inputName   = null;
+let outputName  = null;
+let cvReady     = false;
+let ortReady    = false;
 let openCvLoaded = false;
 
-// HTML-Elemente aus der Seite, die wir später aktualisieren und lesen.
-const fileInput = document.getElementById('fileInput');
-const runButton = document.getElementById('runButton');
-const outputCanvas = document.getElementById('outputCanvas');
-const detectionInfo = document.getElementById('detectionInfo');
-const debug = document.getElementById('debug');
-const ctx = outputCanvas.getContext('2d');
-const frameCanvas = document.createElement('canvas');
-const frameCtx = frameCanvas.getContext('2d');
-let currentMediaType = null;
-let videoElement = null;
-let videoProcessing = false;
-let processingFrame = false;
-let lastDetections = [];
-let inferenceTimer = null;
+// Video-Zustand
+let videoElement     = null;
+let videoProcessing  = false;
+let processingFrame  = false;   // Mutex: verhindert parallele Inferenz-Aufrufe
+let lastDetections   = [];      // Zuletzt berechnete Boxen (für Render-Loop)
+let renderLoopId     = null;    // requestAnimationFrame Handle
+let inferenceTimer   = null;    // setInterval Handle
+let frameCount       = 0;
+let inferenceCount   = 0;
 
+// ── DOM-Elemente ─────────────────────────────────────────────────────────────
+const fileInput     = document.getElementById('fileInput');
+const runButton     = document.getElementById('runButton');
+const outputCanvas  = document.getElementById('outputCanvas');
+const detectionInfo = document.getElementById('detectionInfo');
+const debug         = document.getElementById('debug');
+const ctx           = outputCanvas.getContext('2d');
+
+// Separates Offscreen-Canvas ausschließlich für Inferenz-Frames
+const frameCanvas = document.createElement('canvas');
+const frameCtx    = frameCanvas.getContext('2d', { willReadFrequently: true });
+
+// ── Hilfsfunktionen ──────────────────────────────────────────────────────────
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
+}
+
+function stopVideoProcessing() {
+  videoProcessing = false;
+
+  if (renderLoopId !== null) {
+    cancelAnimationFrame(renderLoopId);
+    renderLoopId = null;
+  }
+  if (inferenceTimer !== null) {
+    clearInterval(inferenceTimer);
+    inferenceTimer = null;
+  }
+  if (videoElement) {
+    videoElement.pause();
+    if (videoElement.src) URL.revokeObjectURL(videoElement.src);
+    videoElement.remove();
+    videoElement = null;
+  }
+
+  lastDetections  = [];
+  processingFrame = false;
+  frameCount      = 0;
+  inferenceCount  = 0;
 }
 
 function loadVideo(file) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
-    video.muted = true;
+    video.muted       = true;
     video.playsInline = true;
     video.crossOrigin = 'anonymous';
     video.style.display = 'none';
-    video.src = URL.createObjectURL(file);
 
     video.addEventListener('loadedmetadata', () => {
       if (!video.videoWidth || !video.videoHeight) {
-        reject(new Error('Video konnte nicht geladen werden.'));
+        reject(new Error('Video-Metadaten konnten nicht gelesen werden.'));
         return;
       }
       document.body.appendChild(video);
       resolve(video);
     });
 
-    video.addEventListener('error', (event) => {
-      reject(new Error('Fehler beim Laden des Videos.'));
-    });
-
+    video.addEventListener('error', () => reject(new Error('Fehler beim Laden des Videos.')));
+    video.src = URL.createObjectURL(file);
     video.load();
   });
 }
 
-function stopVideoProcessing() {
-  videoProcessing = false;
-  if (inferenceTimer) {
-    clearInterval(inferenceTimer);
-    inferenceTimer = null;
-  }
-  if (videoElement) {
-    videoElement.pause();
-    URL.revokeObjectURL(videoElement.src);
-    videoElement.remove();
-    videoElement = null;
-  }
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload  = () => resolve(img);
+    img.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'));
+    img.src = URL.createObjectURL(file);
+  });
 }
 
+// ── Modell & OpenCV laden ────────────────────────────────────────────────────
 async function loadModel() {
-  // Lädt das ONNX-Modell asynchron in den Browser. Die ONNX Runtime kann dann
-  // das Modell direkt in WebAssembly ausführen.
   try {
-    console.log('Versuche Modell zu laden:', modelPath);
-    session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
-    // Merke uns die Namen der Eingabe- und Ausgabe-Tensoren für später.
-    inputName = session.inputNames[0];
+    console.log('Lade Modell:', modelPath);
+    session    = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
+    inputName  = session.inputNames[0];
     outputName = session.outputNames[0];
-    ortReady = true;
-    console.log('Modell geladen:', modelPath);
-    console.log('Session inputNames:', session.inputNames);
-    console.log('Session outputNames:', session.outputNames);
-    console.log('Verwendeter Eingabetyp:', modelInputType);
+    ortReady   = true;
+    console.log('Modell geladen. Input:', inputName, '| Output:', outputName);
     loadOpenCv();
     updateReadyState();
   } catch (err) {
-    console.error('Modell konnte nicht geladen werden.', err);
-    debug.innerText = `Modell-Fehler: ${err.message || err.toString()}`;
-    if (err.stack) debug.innerText += `\n${err.stack}`;
+    console.error('Modell konnte nicht geladen werden:', err);
+    debug.innerText = `Modell-Fehler: ${err.message || err}`;
   }
 }
 
 function loadOpenCv() {
-  // Lädt OpenCV.js dynamisch als <script>-Tag. OpenCV.js wird benötigt, um das
-  // Eingangsbild zu lesen, zu skalieren und in das YOLO-Format zu bringen.
   if (openCvLoaded) return;
   openCvLoaded = true;
-  const script = document.createElement('script');
-  script.src = 'https://docs.opencv.org/master/opencv.js';
-  script.async = true;
+  const script  = document.createElement('script');
+  script.src    = 'https://docs.opencv.org/master/opencv.js';
+  script.async  = true;
   script.onerror = () => {
-    console.error('OpenCV konnte nicht geladen werden.');
+    console.error('OpenCV.js konnte nicht geladen werden.');
     debug.innerText = 'Fehler beim Laden von OpenCV.js';
   };
   document.head.appendChild(script);
 }
 
 function updateReadyState() {
-  if (cvReady && ortReady) {
-    runButton.disabled = false;
-  }
+  const file = fileInput.files && fileInput.files[0];
+  runButton.disabled = !(cvReady && ortReady && file);
 }
 
-window.onOpenCvReady = function() {
+window.onOpenCvReady = function () {
   cvReady = true;
-  console.log('OpenCV geladen.');
+  console.log('OpenCV bereit.');
   updateReadyState();
 };
 
-window.addEventListener('error', (event) => {
-  console.error('Unerwarteter Fehler:', event.error || event.message);
-  debug.innerText = `Fehler: ${event.error?.message || event.message}`;
-});
+// ── Preprocessing ────────────────────────────────────────────────────────────
+/**
+ * Liest ein CanvasImageSource (Image, HTMLCanvasElement, HTMLVideoElement) ein,
+ * skaliert es mit Letterbox-Padding auf inputSize × inputSize und gibt die
+ * normalisierten Float32-Daten sowie die Skalierungsparameter zurück.
+ *
+ * WICHTIG: Wir lesen Pixel über ein Hilfs-Canvas (imageDataCanvas), damit
+ * cv.imread() immer ein gültiges Canvas-Element bekommt – auch bei direkten
+ * HTMLVideoElement-Quellen, bei denen cv.imread() manchmal versagt.
+ */
+function preprocessSource(source) {
+  // Schritt 1: Quelle auf ein temporäres Canvas zeichnen, damit OpenCV es lesen kann
+  const w = source.videoWidth  || source.naturalWidth  || source.width;
+  const h = source.videoHeight || source.naturalHeight || source.height;
 
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled Promise Rejection:', event.reason);
-  debug.innerText = `Promise-Fehler: ${event.reason?.message || event.reason}`;
-});
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width  = w;
+  tmpCanvas.height = h;
+  tmpCanvas.getContext('2d', { willReadFrequently: true }).drawImage(source, 0, 0, w, h);
 
-function loadImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = (event) => reject(new Error('Bild konnte nicht geladen werden.'));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-function drawVideoFrame(video) {
-  frameCanvas.width = video.videoWidth;
-  frameCanvas.height = video.videoHeight;
-  frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-  return frameCanvas;
-}
-
-async function runDetectionOnSource(source, frameLabel = '') {
-  const { floatData, scale, padLeft, padTop } = preprocessImage(source);
-  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
-  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
-  const feeds = { [inputName]: inputTensor };
-  const results = await session.run(feeds);
-  const outputData = results[outputName].data;
-
-  const detections = [];
-  const numDetections = outputData.length / 85;
-
-  for (let i = 0; i < numDetections; i++) {
-    const base = i * 85;
-    const objectness = outputData[base + 4];
-    let classId = 0;
-    let classScore = 0;
-    for (let c = 0; c < 80; c++) {
-      const score = outputData[base + 5 + c];
-      if (score > classScore) {
-        classScore = score;
-        classId = c;
-      }
-    }
-    const confidence = objectness * classScore;
-    if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
-    const cx = outputData[base];
-    const cy = outputData[base + 1];
-    const w = outputData[base + 2];
-    const h = outputData[base + 3];
-    let x;
-    let y;
-    let width;
-    let height;
-    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
-    if (normalized) {
-      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
-      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
-      width = (w * inputSize) / scale;
-      height = (h * inputSize) / scale;
-    } else {
-      x = (cx - w / 2 - padLeft) / scale;
-      y = (cy - h / 2 - padTop) / scale;
-      width = w / scale;
-      height = h / scale;
-      console.log('Detected coordinates appear absolute, switching mapping:', { cx, cy, w, h, normalized });
-    }
-    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
-    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
-    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
-    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
-    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
-  }
-
-  const boxes = detections.map(d => d.box);
-  const scores = detections.map(d => d.confidence);
-  const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
-  const selected = keep.map(i => detections[i]);
-
-  ctx.drawImage(source, 0, 0, outputCanvas.width, outputCanvas.height);
-  const infoPrefix = frameLabel ? `${frameLabel} ` : '';
-  if (selected.length === 0) {
-    detectionInfo.innerHTML = `${infoPrefix}Keine Objekte erkannt.`;
-  } else {
-    detectionInfo.innerHTML = infoPrefix || 'Erkennung abgeschlossen.';
-    selected.forEach(det => {
-      const name = classNames[det.classId] || 'unknown';
-      const label = `${name} (${det.confidence.toFixed(2)})`;
-      drawBox(det.box, label, 'magenta');
-    });
-  }
-}
-
-// Nur Inferenz ohne Zeichnen - gibt Detektionen zurück
-async function runInferenceOnly(source) {
-  const { floatData, scale, padLeft, padTop } = preprocessImage(source);
-  const inputData = modelInputType === 'float16' ? convertFloat32ToFloat16Array(floatData) : floatData;
-  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
-  const feeds = { [inputName]: inputTensor };
-  const results = await session.run(feeds);
-  const outputData = results[outputName].data;
-
-  const detections = [];
-  const numDetections = outputData.length / 85;
-
-  for (let i = 0; i < numDetections; i++) {
-    const base = i * 85;
-    const objectness = outputData[base + 4];
-    let classId = 0;
-    let classScore = 0;
-    for (let c = 0; c < 80; c++) {
-      const score = outputData[base + 5 + c];
-      if (score > classScore) {
-        classScore = score;
-        classId = c;
-      }
-    }
-    const confidence = objectness * classScore;
-    if (objectness < minObjectness || classScore < minClassScore || confidence < confThreshold) continue;
-    const cx = outputData[base];
-    const cy = outputData[base + 1];
-    const w = outputData[base + 2];
-    const h = outputData[base + 3];
-    let x;
-    let y;
-    let width;
-    let height;
-    const normalized = cx <= 1 && cy <= 1 && w <= 1 && h <= 1;
-    if (normalized) {
-      x = ((cx * inputSize) - (w * inputSize) / 2 - padLeft) / scale;
-      y = ((cy * inputSize) - (h * inputSize) / 2 - padTop) / scale;
-      width = (w * inputSize) / scale;
-      height = (h * inputSize) / scale;
-    } else {
-      x = (cx - w / 2 - padLeft) / scale;
-      y = (cy - h / 2 - padTop) / scale;
-      width = w / scale;
-      height = h / scale;
-    }
-    const clampedX = Math.max(0, Math.min(outputCanvas.width, x));
-    const clampedY = Math.max(0, Math.min(outputCanvas.height, y));
-    const clampedW = Math.max(0, Math.min(outputCanvas.width - clampedX, width));
-    const clampedH = Math.max(0, Math.min(outputCanvas.height - clampedY, height));
-    detections.push({ classId, classScore, objectness, confidence, box: [clampedX, clampedY, clampedW, clampedH] });
-  }
-
-  const boxes = detections.map(d => d.box);
-  const scores = detections.map(d => d.confidence);
-  const keep = nonMaxSuppression(boxes, scores, nmsThreshold);
-  return keep.map(i => detections[i]);
-}
-
-function preprocessImage(img) {
-  const mat = cv.imread(img);
-  const rgb = new cv.Mat();
+  // Schritt 2: OpenCV liest das Canvas und konvertiert RGBA → RGB
+  const mat = cv.imread(tmpCanvas);
+  const rgb  = new cv.Mat();
   cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
 
-  const srcHeight = rgb.rows;
-  const srcWidth = rgb.cols;
-  const scale = Math.min(inputSize / srcWidth, inputSize / srcHeight);
-  const resizedWidth = Math.round(srcWidth * scale);
-  const resizedHeight = Math.round(srcHeight * scale);
+  // Schritt 3: Letterbox-Skalierung (Seitenverhältnis beibehalten)
+  const scale        = Math.min(inputSize / w, inputSize / h);
+  const resizedW     = Math.round(w * scale);
+  const resizedH     = Math.round(h * scale);
+  const padLeft      = Math.floor((inputSize - resizedW) / 2);
+  const padTop       = Math.floor((inputSize - resizedH) / 2);
+  const padRight     = inputSize - resizedW - padLeft;
+  const padBottom    = inputSize - resizedH - padTop;
 
   const resized = new cv.Mat();
-  cv.resize(rgb, resized, new cv.Size(resizedWidth, resizedHeight), 0, 0, cv.INTER_AREA);
-
-  const top = Math.floor((inputSize - resizedHeight) / 2);
-  const bottom = inputSize - resizedHeight - top;
-  const left = Math.floor((inputSize - resizedWidth) / 2);
-  const right = inputSize - resizedWidth - left;
+  cv.resize(rgb, resized, new cv.Size(resizedW, resizedH), 0, 0, cv.INTER_LINEAR);
 
   const padded = new cv.Mat();
-  cv.copyMakeBorder(resized, padded, top, bottom, left, right, cv.BORDER_CONSTANT, new cv.Scalar(114, 114, 114));
+  cv.copyMakeBorder(
+    resized, padded,
+    padTop, padBottom, padLeft, padRight,
+    cv.BORDER_CONSTANT, new cv.Scalar(114, 114, 114)
+  );
 
+  // Schritt 4: HWC-Byte-Array → CHW-Float32-Array (normalisiert auf [0, 1])
   const floatData = new Float32Array(inputSize * inputSize * 3);
-  for (let y = 0; y < inputSize; y++) {
-    for (let x = 0; x < inputSize; x++) {
-      const i = y * inputSize + x;
-      floatData[i] = padded.data[i * 3] / 255.0;
-      floatData[inputSize * inputSize + i] = padded.data[i * 3 + 1] / 255.0;
-      floatData[2 * inputSize * inputSize + i] = padded.data[i * 3 + 2] / 255.0;
-    }
+  const pixels    = padded.data;           // Uint8Array, Reihenfolge: R G B R G B ...
+  const area      = inputSize * inputSize;
+
+  for (let i = 0; i < area; i++) {
+    floatData[i]          = pixels[i * 3]     / 255.0;  // R-Kanal
+    floatData[area + i]   = pixels[i * 3 + 1] / 255.0;  // G-Kanal
+    floatData[2 * area + i] = pixels[i * 3 + 2] / 255.0; // B-Kanal
   }
 
+  // OpenCV-Speicher freigeben (verhindert Memory-Leaks in WASM)
   mat.delete();
   rgb.delete();
   resized.delete();
   padded.delete();
-  return { floatData, scale, padLeft: left, padTop: top };
+
+  return { floatData, scale, padLeft, padTop, srcWidth: w, srcHeight: h };
 }
 
-// ONNX Runtime Web unterstützt float16-Eingaben, aber JavaScript hat keinen
-// nativen Float16-Typ. Deshalb wandeln wir jeden Float32-Wert selbst um.
+// ── Float32 → Float16 Konvertierung ─────────────────────────────────────────
 function float32ToFloat16(value) {
-  const floatView = new Float32Array(1);
-  const int32View = new Int32Array(floatView.buffer);
-  floatView[0] = value;
+  const f32 = new Float32Array(1);
+  const i32 = new Int32Array(f32.buffer);
+  f32[0] = value;
+  const x        = i32[0];
+  const sign     = (x >> 16) & 0x8000;
+  const rawExp   = (x >> 23) & 0xff;
+  let   exp      = rawExp - 127 + 15;
+  let   mantissa = x & 0x007fffff;
 
-  // Diese Bitoperationen konvertieren die 32-Bit-Fließkommazahl in das 16-Bit-Format.
-  const x = int32View[0];
-  const sign = (x >> 16) & 0x8000;
-  const rawExponent = (x >> 23) & 0xff;
-  let exponent = rawExponent - 127 + 15;
-  let mantissa = x & 0x007fffff;
-
-  if (rawExponent === 255) {
-    return sign | 0x7c00 | (mantissa ? 0x200 : 0);
-  }
-
-  if (exponent <= 0) {
-    if (exponent < -10) {
-      return sign;
-    }
-    mantissa = (mantissa | 0x00800000) >> (1 - exponent);
+  if (rawExp === 255) return sign | 0x7c00 | (mantissa ? 0x200 : 0);
+  if (exp <= 0) {
+    if (exp < -10) return sign;
+    mantissa = (mantissa | 0x00800000) >> (1 - exp);
     return sign | ((mantissa + 0x0fff + ((mantissa >> 13) & 1)) >> 13);
   }
-
-  if (exponent > 30) {
-    return sign | 0x7c00;
-  }
-
-  return sign | (exponent << 10) | (mantissa >> 13);
+  if (exp > 30) return sign | 0x7c00;
+  return sign | (exp << 10) | (mantissa >> 13);
 }
 
-function convertFloat32ToFloat16Array(float32Array) {
-  // Konvertiert das gesamte Bilder-Array von Float32 nach Float16.
-  const float16Array = new Uint16Array(float32Array.length);
+function toFloat16Array(float32Array) {
+  const out = new Uint16Array(float32Array.length);
   for (let i = 0; i < float32Array.length; i++) {
-    float16Array[i] = float32ToFloat16(float32Array[i]);
+    out[i] = float32ToFloat16(float32Array[i]);
   }
-  return float16Array;
+  return out;
 }
 
+// ── Non-Maximum-Suppression ──────────────────────────────────────────────────
 function nonMaxSuppression(boxes, scores, threshold) {
-  // Diese Funktion entfernt sich stark überlappende Boxen, damit nur die beste
-  // Box pro Objekt erhalten bleibt. Das ist wichtig, weil YOLO viele ähnliche
-  // Detektionen für ein Objekt erzeugen kann.
-  const order = scores.map((score, idx) => ({ score, idx })).sort((a, b) => b.score - a.score).map(item => item.idx);
+  const order = scores
+    .map((score, idx) => ({ score, idx }))
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.idx);
+
   const keep = [];
   while (order.length > 0) {
-    const idx = order.shift();
+    const idx  = order.shift();
     keep.push(idx);
-    const boxA = boxes[idx];
-    const [xA1, yA1, xA2, yA2] = [boxA[0], boxA[1], boxA[0] + boxA[2], boxA[1] + boxA[3]];
+    const [xA1, yA1, wA, hA] = boxes[idx];
+    const xA2 = xA1 + wA, yA2 = yA1 + hA;
+
     for (let j = order.length - 1; j >= 0; j--) {
-      const boxB = boxes[order[j]];
-      const [xB1, yB1, xB2, yB2] = [boxB[0], boxB[1], boxB[0] + boxB[2], boxB[1] + boxB[3]];
-      const interArea = Math.max(0, Math.min(xA2, xB2) - Math.max(xA1, xB1)) * Math.max(0, Math.min(yA2, yB2) - Math.max(yA1, yB1));
-      const areaA = (xA2 - xA1) * (yA2 - yA1);
-      const areaB = (xB2 - xB1) * (yB2 - yB1);
-      const ovr = interArea / (areaA + areaB - interArea);
-      if (ovr > threshold) order.splice(j, 1);
+      const [xB1, yB1, wB, hB] = boxes[order[j]];
+      const xB2 = xB1 + wB, yB2 = yB1 + hB;
+
+      const interW  = Math.max(0, Math.min(xA2, xB2) - Math.max(xA1, xB1));
+      const interH  = Math.max(0, Math.min(yA2, yB2) - Math.max(yA1, yB1));
+      const inter   = interW * interH;
+      const union   = wA * hA + wB * hB - inter;
+      if (inter / union > threshold) order.splice(j, 1);
     }
   }
   return keep;
 }
 
-// Hauptfunktion: wird aufgerufen, wenn der Benutzer ein Bild hochlädt und die Erkennung startet.
-// Sie führt alle Schritte aus: Laden, Preprocessing, Inferenz, NMS und Zeichnen.
+// ── Inferenz-Kern ────────────────────────────────────────────────────────────
+/**
+ * Führt Preprocessing, ONNX-Inferenz und NMS auf einer beliebigen
+ * CanvasImageSource durch. Gibt das Array der gefilterten Detektionen zurück.
+ *
+ * Die Koordinaten werden direkt auf die Pixelgröße der Quelle (srcWidth × srcHeight)
+ * zurückgerechnet, damit sie im Render-Loop korrekt skaliert werden können.
+ */
+async function runInference(source) {
+  const { floatData, scale, padLeft, padTop, srcWidth, srcHeight } =
+    preprocessSource(source);
+
+  const inputData   = modelInputType === 'float16'
+    ? toFloat16Array(floatData)
+    : floatData;
+  const inputTensor = new ort.Tensor(modelInputType, inputData, [1, 3, inputSize, inputSize]);
+  const results     = await session.run({ [inputName]: inputTensor });
+  const output      = results[outputName].data;
+
+  const raw          = [];
+  const numDetections = output.length / 85;
+
+  for (let i = 0; i < numDetections; i++) {
+    const base       = i * 85;
+    const objectness = output[base + 4];
+    if (objectness < minObjectness) continue;
+
+    let classId = 0, classScore = 0;
+    for (let c = 0; c < 80; c++) {
+      const s = output[base + 5 + c];
+      if (s > classScore) { classScore = s; classId = c; }
+    }
+    if (classScore < minClassScore) continue;
+
+    const confidence = objectness * classScore;
+    if (confidence < confThreshold) continue;
+
+    // YOLO gibt Mittelpunkt + Breite/Höhe zurück (absolut in inputSize-Koordinaten)
+    const cx = output[base], cy = output[base + 1];
+    const bw = output[base + 2], bh = output[base + 3];
+
+    // Normalisiert (0..1) oder absolut (0..640) – beides abfangen
+    const isNorm = cx <= 1 && cy <= 1 && bw <= 1 && bh <= 1;
+    const px = isNorm ? cx * inputSize : cx;
+    const py = isNorm ? cy * inputSize : cy;
+    const pw = isNorm ? bw * inputSize : bw;
+    const ph = isNorm ? bh * inputSize : bh;
+
+    // Letterbox rückgängig machen → Quellbild-Koordinaten
+    const x = (px - pw / 2 - padLeft) / scale;
+    const y = (py - ph / 2 - padTop)  / scale;
+    const w = pw / scale;
+    const h = ph / scale;
+
+    // Auf Bildgrenzen begrenzen
+    const cx1 = Math.max(0, Math.min(srcWidth,  x));
+    const cy1 = Math.max(0, Math.min(srcHeight, y));
+    const cw  = Math.max(0, Math.min(srcWidth  - cx1, w));
+    const ch  = Math.max(0, Math.min(srcHeight - cy1, h));
+
+    raw.push({ classId, classScore, objectness, confidence, box: [cx1, cy1, cw, ch] });
+  }
+
+  const boxes  = raw.map(d => d.box);
+  const scores = raw.map(d => d.confidence);
+  const keep   = nonMaxSuppression(boxes, scores, nmsThreshold);
+  return keep.map(i => raw[i]);
+}
+
+// ── Zeichnen ─────────────────────────────────────────────────────────────────
+/**
+ * Zeichnet eine Bounding-Box mit Label auf das outputCanvas.
+ * scaleX / scaleY ermöglichen die Skalierung von Quellkoordinaten auf Canvas-Koordinaten.
+ */
+function drawBox(box, label, color, scaleX = 1, scaleY = 1) {
+  const [bx, by, bw, bh] = [
+    box[0] * scaleX,
+    box[1] * scaleY,
+    box[2] * scaleX,
+    box[3] * scaleY
+  ];
+
+  ctx.lineWidth   = 2;
+  ctx.strokeStyle = color;
+  ctx.strokeRect(bx, by, bw, bh);
+
+  ctx.font = '16px Arial';
+  const tw = ctx.measureText(label).width + 8;
+  const th = 20;
+  ctx.fillStyle = color;
+  ctx.fillRect(bx, by - th - 2, tw, th);
+  ctx.fillStyle = '#000';
+  ctx.fillText(label, bx + 4, by - 6);
+}
+
+// ── Render-Loop (requestAnimationFrame) ──────────────────────────────────────
+/**
+ * Zeichnet jeden Frame: erst das aktuelle Video-Frame, dann alle gespeicherten
+ * Detektionen. Koordinaten wurden in Quellbildgröße gespeichert → Skalierung
+ * auf Canvas-Größe erfolgt hier über scaleX / scaleY.
+ */
+function renderLoop() {
+  if (!videoProcessing) return;
+  if (videoElement.paused || videoElement.ended) {
+    if (videoElement.ended) {
+      detectionInfo.innerHTML += ' — Videoende erreicht.';
+      stopVideoProcessing();
+    }
+    return;
+  }
+
+  // Video-Frame auf Canvas zeichnen
+  ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
+
+  // Skalierungsfaktoren: Quellbild → Canvas
+  const scaleX = outputCanvas.width  / videoElement.videoWidth;
+  const scaleY = outputCanvas.height / videoElement.videoHeight;
+
+  // Detektionen overlay
+  lastDetections.forEach(det => {
+    const name  = classNames[det.classId] || 'unknown';
+    const label = `${name} ${(det.confidence * 100).toFixed(0)}%`;
+    drawBox(det.box, label, 'magenta', scaleX, scaleY);
+  });
+
+  detectionInfo.innerHTML =
+    `Frame: ${frameCount} | Inferenz-Runs: ${inferenceCount} | ` +
+    `Erkennungen: ${lastDetections.length}`;
+
+  frameCount++;
+  renderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// ── Inferenz-Loop (setInterval) ───────────────────────────────────────────────
+/**
+ * Läuft asynchron parallel zum Render-Loop. Kopiert den aktuellen Video-Frame
+ * auf das Offscreen-Canvas und führt dann ONNX-Inferenz durch.
+ * Der Mutex `processingFrame` verhindert überlappende Inferenz-Aufrufe.
+ */
+function startInferenceLoop() {
+  inferenceTimer = setInterval(async () => {
+    if (!videoProcessing || processingFrame || !videoElement || videoElement.paused) return;
+
+    processingFrame = true;
+    try {
+      // Frame in Offscreen-Canvas kopieren (konsistenter Snapshot für Inferenz)
+      frameCanvas.width  = videoElement.videoWidth;
+      frameCanvas.height = videoElement.videoHeight;
+      frameCtx.drawImage(videoElement, 0, 0);
+
+      // Inferenz auf Offscreen-Canvas (nicht auf videoElement direkt, da cv.imread
+      // bei HTMLVideoElement unzuverlässig ist)
+      lastDetections = await runInference(frameCanvas);
+      inferenceCount++;
+    } catch (err) {
+      console.error('Inferenz-Fehler:', err);
+      debug.innerText = `Inferenz-Fehler: ${err.message || err}`;
+    } finally {
+      processingFrame = false;
+    }
+  }, INFERENCE_INTERVAL_MS);
+}
+
+// ── Haupt-Einstiegspunkt ─────────────────────────────────────────────────────
 async function runDetection() {
   if (!fileInput.files || !fileInput.files[0]) return;
   const file = fileInput.files[0];
-  if (videoProcessing) {
-    stopVideoProcessing();
-  }
+
+  // Vorherige Verarbeitung stoppen
+  stopVideoProcessing();
+
+  runButton.disabled = true;
+  detectionInfo.innerHTML = 'Starte Erkennung…';
 
   try {
     if (isVideoFile(file)) {
+      // ── Video-Modus ───────────────────────────────────────────────────────
       videoElement = await loadVideo(file);
-      outputCanvas.width = videoElement.videoWidth;
-      outputCanvas.height = videoElement.videoHeight;
-      detectionInfo.innerHTML = 'Video geladen. Erkennung startet...';
-      videoProcessing = true;
-      lastDetections = [];
 
+      // Canvas auf Video-Auflösung setzen (max. 1280 px Breite für Performance)
+      const maxW = 1280;
+      const vw   = videoElement.videoWidth;
+      const vh   = videoElement.videoHeight;
+      if (vw > maxW) {
+        outputCanvas.width  = maxW;
+        outputCanvas.height = Math.round(vh * maxW / vw);
+      } else {
+        outputCanvas.width  = vw;
+        outputCanvas.height = vh;
+      }
+
+      videoProcessing = true;
       await videoElement.play();
 
-      let frameCount = 0;
-      let inferenceCount = 0;
+      renderLoop();           // Render-Loop starten
+      startInferenceLoop();   // Inferenz-Loop starten
 
-      // Render Loop - sehr schnell (60+ FPS)
-      const renderLoop = () => {
-        if (!videoProcessing || videoElement.paused || videoElement.ended) {
-          videoProcessing = false;
-          if (videoElement && videoElement.ended) {
-            detectionInfo.innerHTML = `${detectionInfo.innerHTML} (Videoende erreicht)`;
-          }
-          return;
-        }
+    } else {
+      // ── Bild-Modus ────────────────────────────────────────────────────────
+      const img = await loadImage(file);
+      outputCanvas.width  = img.naturalWidth;
+      outputCanvas.height = img.naturalHeight;
 
-        // Zeichne aktuellen Video-Frame auf outputCanvas
-        ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
+      ctx.drawImage(img, 0, 0);
+      detectionInfo.innerHTML = 'Inferenz läuft…';
 
-        // Zeichne alle gespeicherten Detektionen
-        lastDetections.forEach(det => {
-          const name = classNames[det.classId] || 'unknown';
-          const label = `${name} (${det.confidence.toFixed(2)})`;
+      const detections = await runInference(img);
+
+      ctx.drawImage(img, 0, 0);   // Canvas frisch zeichnen vor den Boxen
+      if (detections.length === 0) {
+        detectionInfo.innerHTML = 'Keine Objekte erkannt.';
+      } else {
+        detections.forEach(det => {
+          const name  = classNames[det.classId] || 'unknown';
+          const label = `${name} ${(det.confidence * 100).toFixed(0)}%`;
           drawBox(det.box, label, 'magenta');
         });
-
-        frameCount++;
-        detectionInfo.innerHTML = `Frame: ${frameCount} | Erkennungen: ${inferenceCount}`;
-
-        requestAnimationFrame(renderLoop);
-      };
-
-      // Starte Rendering
-      renderLoop();
-
-      // Inferenz Loop - läuft alle 100ms unabhängig
-      inferenceTimer = setInterval(async () => {
-        if (!videoProcessing || processingFrame) return;
-
-        processingFrame = true;
-        try {
-          // Extrahiere aktuellen Frame
-          frameCanvas.width = videoElement.videoWidth;
-          frameCanvas.height = videoElement.videoHeight;
-          frameCtx.drawImage(videoElement, 0, 0);
-
-          // Laufe Inferenz
-          const detections = await runInferenceOnly(frameCanvas);
-          lastDetections = detections;
-          inferenceCount++;
-        } catch (err) {
-          console.error('Fehler bei Inferenz:', err);
-        } finally {
-          processingFrame = false;
-        }
-      }, 100);
-    } else {
-      const img = await loadImage(file);
-      outputCanvas.width = img.naturalWidth;
-      outputCanvas.height = img.naturalHeight;
-      await runDetectionOnSource(img);
+        detectionInfo.innerHTML =
+          `Erkennung abgeschlossen — ${detections.length} Objekt(e) gefunden.`;
+      }
+      runButton.disabled = false;
     }
   } catch (err) {
-    console.error('Fehler bei der Erkennung.', err);
-    detectionInfo.innerText = `Erkennungsfehler: ${err.message || err.toString()}`;
+    console.error('Erkennungsfehler:', err);
+    detectionInfo.innerHTML = `Fehler: ${err.message || err}`;
+    if (err.stack) debug.innerText = err.stack;
+    runButton.disabled = false;
   }
 }
 
-// Zeichnet eine erkannte Box und das zugehörige Label auf das Canvas.
-function drawBox(box, label, color) {
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.strokeRect(box[0], box[1], box[2], box[3]);
-  ctx.font = '18px Arial';
-  ctx.fillStyle = color;
-  const textWidth = ctx.measureText(label).width + 8;
-  const textHeight = 22;
-  ctx.fillRect(box[0], box[1] - textHeight - 4, textWidth, textHeight);
-  ctx.fillStyle = '#000';
-  ctx.fillText(label, box[0] + 4, box[1] - 8);
-}
-
+// ── Event-Listener ───────────────────────────────────────────────────────────
 fileInput.addEventListener('change', () => {
+  stopVideoProcessing();
   const file = fileInput.files && fileInput.files[0];
-  if (videoProcessing) {
-    stopVideoProcessing();
-  }
-  currentMediaType = file ? (isVideoFile(file) ? 'video' : 'image') : null;
-  runButton.disabled = !file || !cvReady || !ortReady;
-  if (!file) {
-    detectionInfo.innerHTML = 'Warte auf Eingabe...';
-  } else if (currentMediaType === 'video') {
-    detectionInfo.innerHTML = 'Video geladen. Drücke Erkennung starten.';
+  if (file) {
+    detectionInfo.innerHTML = isVideoFile(file)
+      ? 'Video ausgewählt. Drücke „Erkennung starten".'
+      : 'Bild ausgewählt. Drücke „Erkennung starten".';
   } else {
-    detectionInfo.innerHTML = 'Bereit zur Erkennung.';
+    detectionInfo.innerHTML = 'Warte auf Eingabe…';
   }
+  updateReadyState();
 });
 
 runButton.addEventListener('click', runDetection);
+
+window.addEventListener('error', (e) => {
+  console.error('Globaler Fehler:', e.error || e.message);
+  debug.innerText = `Fehler: ${e.error?.message || e.message}`;
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unbehandelte Promise-Ablehnung:', e.reason);
+  debug.innerText = `Promise-Fehler: ${e.reason?.message || e.reason}`;
+});
+
+// ── Start ─────────────────────────────────────────────────────────────────────
 loadModel();
