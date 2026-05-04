@@ -60,6 +60,7 @@ const inferenceInterval = 100; // ms zwischen Erkennungen (ca 10 fps für Infere
 // Gespeicherte Detektionen für das aktuelle Frame
 let lastDetections = [];
 let lastDetectionTime = '';
+let lastInferenceFrameCanvas = null;
 
 function isVideoFile(file) {
   return file && file.type.startsWith('video/');
@@ -432,7 +433,7 @@ async function runDetection() {
 
       await videoElement.play();
 
-      // Render-Loop: Zeichnet Video-Frames + gespeicherte Detektionen (sehr schnell)
+      // Render-Loop: Zeichnet den Frame, auf dem die Inferenz lief + Detektionen
       const renderLoop = () => {
         if (!videoProcessing || videoElement.paused || videoElement.ended) {
           videoProcessing = false;
@@ -442,10 +443,15 @@ async function runDetection() {
           return;
         }
 
-        // Zeichne aktuellen Video-Frame direkt
-        ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
+        // Zeichne den Frame, auf dem die Inferenz läuft (nicht den Live-Stream!)
+        if (lastInferenceFrameCanvas) {
+          ctx.drawImage(lastInferenceFrameCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+        } else {
+          // Fallback: Zeige Live-Video, bis erste Inferenz fertig ist
+          ctx.drawImage(videoElement, 0, 0, outputCanvas.width, outputCanvas.height);
+        }
 
-        // Zeichne gespeicherte Detektionen über das Frame
+        // Zeichne Detektionen über dem Frame
         lastDetections.forEach(det => {
           const name = classNames[det.classId] || 'unknown';
           const label = `${name} (${det.confidence.toFixed(2)})`;
@@ -470,10 +476,15 @@ async function runDetection() {
           processingVideoFrame = true;
 
           try {
-            // Nutze frameCanvas für Inferenz
+            // Extrahiere den aktuellen Video-Frame in frameCanvas
             frameCanvas.width = videoElement.videoWidth;
             frameCanvas.height = videoElement.videoHeight;
             frameCtx.drawImage(videoElement, 0, 0);
+
+            // Speichere diesen Frame für die Render-Loop
+            lastInferenceFrameCanvas = frameCanvas.cloneNode(true);
+            const clonedCtx = lastInferenceFrameCanvas.getContext('2d');
+            clonedCtx.drawImage(frameCanvas, 0, 0);
 
             const detections = await runInferenceOnly(frameCanvas);
             lastDetections = detections;
