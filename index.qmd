@@ -561,19 +561,21 @@ function setStatus(msg, mode = 'idle') {
 // ── Modell laden ──────────────────────────────────────────────────────────────
 async function loadModel() {
   try {
-    const useWebGPU = 'gpu' in navigator;
-    if (useWebGPU) {
-      ort.env.webgpu.powerPreference = 'high-performance';
-    } else {
-      ort.env.wasm.numThreads = 1;
-      ort.env.wasm.simd       = true;
-    }
+    // WASM immer konfigurieren (auch als WebGPU-Fallback)
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.simd       = true;
+
+    // WebGPU nur nutzen wenn requestAdapter() wirklich einen Adapter liefert
+    let useWebGPU = false;
+    try { useWebGPU = !!(await navigator.gpu?.requestAdapter()); } catch (_) {}
+    if (useWebGPU) ort.env.webgpu.powerPreference = 'high-performance';
+
     const providers = useWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
     session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: providers });
     inputName  = session.inputNames[0];
     outputName = session.outputNames[0];
     const ep   = session.handler?.executionProviderName ?? (useWebGPU ? 'webgpu' : 'wasm');
-    epInfo.textContent                      = ep.toUpperCase();
+    epInfo.textContent = ep.toUpperCase();
     document.getElementById('epBadge').textContent = `YOLOv5n · ONNX · ${ep.toUpperCase()}`;
     ortReady = true;
     updateReadyState();
