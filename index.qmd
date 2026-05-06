@@ -9,15 +9,6 @@ format:
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
-        <script>
-        window.Module = {
-          onRuntimeInitialized: function () {
-            cvReady = true;
-            updateReadyState();
-          }
-        };
-        </script>
-        <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
 ---
 
 ```{=html}
@@ -213,12 +204,6 @@ format:
     max-height: 70vh;
     object-fit: contain;
   }
-  #imageCanvas {
-    display: none;
-    width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-  }
   #overlayCanvas {
     position: absolute;
     top: 0; left: 0;
@@ -394,7 +379,7 @@ format:
 
   <header class="app-header">
     <h1>YOLO<span>v5</span> — Objekterkennung</h1>
-    <div class="badge">YOLOv5n · ONNX · Browser</div>
+    <div class="badge" id="epBadge">YOLOv5n · ONNX · WebGPU</div>
   </header>
 
   <!-- Einführung -->
@@ -485,11 +470,11 @@ format:
   </section>
 
   <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="image/*,video/*" />
+    <input type="file" id="fileInput" accept="video/*" />
     <div class="upload-icon">📂</div>
     <div class="upload-text">
-      <strong>Bild oder Video auswählen</strong>
-      <span>JPG · PNG · MP4 · WebM — alles läuft lokal, nichts wird hochgeladen</span>
+      <strong>Video auswählen</strong>
+      <span>MP4 · WebM · MOV — läuft lokal, nichts wird hochgeladen</span>
     </div>
     <div class="file-name" id="fileNameEl">—</div>
   </div>
@@ -498,7 +483,7 @@ format:
 
   <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
-    <span id="statusText">Modell und OpenCV werden initialisiert…</span>
+    <span id="statusText">Modell wird geladen…</span>
     <span id="detCount"></span>
   </div>
 
@@ -508,17 +493,16 @@ format:
       <div>Noch keine Datei geladen</div>
     </div>
     <video id="videoEl" muted playsinline></video>
-    <canvas id="imageCanvas"></canvas>
     <canvas id="overlayCanvas"></canvas>
   </div>
 
   <div id="debugEl"></div>
 
   <div class="info-strip">
-    <div class="info-item">Modell: <span>YOLOv5n (float16)</span></div>
+    <div class="info-item">Modell: <span>YOLOv5n</span></div>
     <div class="info-item">Eingabe: <span>640 × 640</span></div>
     <div class="info-item">Konfidenz: <span>≥ 20 %</span></div>
-    <div class="info-item">Inferenz-Intervall: <span>200 ms</span></div>
+    <div class="info-item">Ausführung: <span id="epInfo">WebGPU → WASM</span></div>
     <div class="info-item">Klassen: <span>80 (COCO)</span></div>
   </div>
 
@@ -532,7 +516,6 @@ const CONF_THRESHOLD        = 0.20;
 const MIN_OBJECTNESS        = 0.20;
 const MIN_CLASS_SCORE       = 0.20;
 const NMS_THRESHOLD         = 0.45;
-const INFERENCE_INTERVAL_MS = 200;
 
 const CLASS_NAMES = [
   'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
@@ -549,29 +532,25 @@ const CLASS_NAMES = [
 ];
 
 // ── Zustand ───────────────────────────────────────────────────────────────────
-let session        = null;
-let inputName      = null;
-let outputName     = null;
-var cvReady        = false;  // var: wird von window.Module.onRuntimeInitialized gesetzt
-let ortReady       = false;
-let lastDets       = [];
-let inferenceTimer = null;
-let isRunning      = false;
+let session   = null;
+let inputName = null;
+let outputName= null;
+let ortReady  = false;
+let isRunning = false;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const fileInput     = document.getElementById('fileInput');
 const runButton     = document.getElementById('runButton');
 const videoEl       = document.getElementById('videoEl');
 const overlayCanvas = document.getElementById('overlayCanvas');
-const imageCanvas   = document.getElementById('imageCanvas');
 const placeholder   = document.getElementById('placeholder');
 const statusDot     = document.getElementById('statusDot');
 const statusText    = document.getElementById('statusText');
 const detCount      = document.getElementById('detCount');
 const fileNameEl    = document.getElementById('fileNameEl');
 const debugEl       = document.getElementById('debugEl');
+const epInfo        = document.getElementById('epInfo');
 const overlayCtx    = overlayCanvas.getContext('2d');
-const imageCtx      = imageCanvas.getContext('2d');
 
 // Offscreen-Canvas für Inferenz-Snapshots (niemals direkt angezeigt)
 const snapCanvas = document.createElement('canvas');
@@ -586,13 +565,21 @@ function setStatus(msg, mode = 'idle') {
 // ── Modell laden ──────────────────────────────────────────────────────────────
 async function loadModel() {
   try {
-    // numThreads = 1: kein SharedArrayBuffer nötig → funktioniert auf GitHub Pages
-    ort.env.wasm.numThreads = 1;
-    ort.env.wasm.simd       = true;
-    session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: ['wasm'] });
+    const useWebGPU = 'gpu' in navigator;
+    if (useWebGPU) {
+      ort.env.webgpu.powerPreference = 'high-performance';
+    } else {
+      ort.env.wasm.numThreads = 1;
+      ort.env.wasm.simd       = true;
+    }
+    const providers = useWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
+    session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: providers });
     inputName  = session.inputNames[0];
     outputName = session.outputNames[0];
-    ortReady   = true;
+    const ep   = session.handler?.executionProviderName ?? (useWebGPU ? 'webgpu' : 'wasm');
+    epInfo.textContent                      = ep.toUpperCase();
+    document.getElementById('epBadge').textContent = `YOLOv5n · ONNX · ${ep.toUpperCase()}`;
+    ortReady = true;
     updateReadyState();
   } catch (err) {
     setStatus('Modell konnte nicht geladen werden.', 'error');
@@ -601,60 +588,39 @@ async function loadModel() {
 }
 
 function updateReadyState() {
-  if (!cvReady || !ortReady) return;
+  if (!ortReady) return;
   const hasFile = !!fileInput.files?.length;
   runButton.disabled    = !hasFile;
   runButton.textContent = '▶  Erkennung starten';
-  setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Datei auswählen.', 'ready');
+  setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Video auswählen.', 'ready');
 }
 
-// ── Preprocessing ─────────────────────────────────────────────────────────────
-// Zeichnet Quelle auf temporäres Canvas → OpenCV liest es → Letterbox → CHW Float32
+// ── Preprocessing (pure Canvas, kein OpenCV) ──────────────────────────────────
+const prepCanvas = document.createElement('canvas');
+prepCanvas.width  = INPUT_SIZE;
+prepCanvas.height = INPUT_SIZE;
+const prepCtx = prepCanvas.getContext('2d', { willReadFrequently: true });
+
 function preprocessSource(source, srcW, srcH) {
-  const tmp = document.createElement('canvas');
-  tmp.width  = srcW;
-  tmp.height = srcH;
-  tmp.getContext('2d', { willReadFrequently: true }).drawImage(source, 0, 0, srcW, srcH);
-
-  const mat = cv.imread(tmp);
-  const rgb  = new cv.Mat();
-  cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
-
   const scale   = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
   const resW    = Math.round(srcW * scale);
   const resH    = Math.round(srcH * scale);
   const padLeft = Math.floor((INPUT_SIZE - resW) / 2);
   const padTop  = Math.floor((INPUT_SIZE - resH) / 2);
 
-  const resized = new cv.Mat();
-  cv.resize(rgb, resized, new cv.Size(resW, resH), 0, 0, cv.INTER_LINEAR);
+  prepCtx.fillStyle = 'rgb(114,114,114)';
+  prepCtx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
+  prepCtx.drawImage(source, 0, 0, srcW, srcH, padLeft, padTop, resW, resH);
 
-  const padded = new cv.Mat();
-  cv.copyMakeBorder(
-    resized, padded,
-    padTop,  INPUT_SIZE - resH - padTop,
-    padLeft, INPUT_SIZE - resW - padLeft,
-    cv.BORDER_CONSTANT, new cv.Scalar(114, 114, 114)
-  );
-
-  const area      = INPUT_SIZE * INPUT_SIZE;
+  const px   = prepCtx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
+  const area = INPUT_SIZE * INPUT_SIZE;
   const floatData = new Float32Array(area * 3);
-  const px        = padded.data;
   for (let i = 0; i < area; i++) {
-    floatData[i]            = px[i * 3]     / 255.0;
-    floatData[area + i]     = px[i * 3 + 1] / 255.0;
-    floatData[2 * area + i] = px[i * 3 + 2] / 255.0;
+    floatData[i]            = px[i * 4]     / 255.0;
+    floatData[area + i]     = px[i * 4 + 1] / 255.0;
+    floatData[2 * area + i] = px[i * 4 + 2] / 255.0;
   }
-
-  mat.delete(); rgb.delete(); resized.delete(); padded.delete();
   return { floatData, scale, padLeft, padTop };
-}
-
-// ── Float32 → Float16 ─────────────────────────────────────────────────────────
-function toF16(arr) {
-  const out = new Float16Array(arr.length);
-  for (let i = 0; i < arr.length; i++) out[i] = arr[i];
-  return out;
 }
 
 // ── NMS ───────────────────────────────────────────────────────────────────────
@@ -677,7 +643,7 @@ function nms(boxes, scores, thresh) {
 // ── Inferenz ──────────────────────────────────────────────────────────────────
 async function runInference(source, srcW, srcH) {
   const { floatData, scale, padLeft, padTop } = preprocessSource(source, srcW, srcH);
-  const tensor  = new ort.Tensor('float16', toF16(floatData), [1, 3, INPUT_SIZE, INPUT_SIZE]);
+  const tensor  = new ort.Tensor('float32', floatData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
   const results = await session.run({ [inputName]: tensor });
   const output  = results[outputName].data;
   const raw     = [];
@@ -752,94 +718,51 @@ function drawDetections(ctx, dets, scaleX, scaleY) {
 }
 
 // ── Video-Modus ───────────────────────────────────────────────────────────────
-// Das Video läuft vollständig nativ. Der Inferenz-Loop läuft separat per
-// setInterval und schreibt nur auf das transparente overlayCanvas darüber.
+// Inferenz-Loop via rAF: nächster Frame startet erst nach abgeschlossenem await →
+// Lag = reine Inferenzzeit, kein festes Intervall-Overhead mehr.
 function startVideo(file) {
   stopAll();
   placeholder.style.display = 'none';
   videoEl.style.display     = 'block';
-  imageCanvas.style.display = 'none';
   videoEl.src = URL.createObjectURL(file);
 
   videoEl.onloadedmetadata = async () => {
     const vw = videoEl.videoWidth;
     const vh = videoEl.videoHeight;
 
-    // Overlay-Canvas auf exakte Video-Pixelgröße setzen (nicht CSS-Größe).
-    // Da das Overlay CSS width:100% height:100% hat, stimmt die Darstellung
-    // immer – unabhängig von der angezeigten Canvas-Größe.
     overlayCanvas.width  = vw;
     overlayCanvas.height = vh;
+    snapCanvas.width     = vw;
+    snapCanvas.height    = vh;
 
     await videoEl.play();
     isRunning = true;
-    setStatus('Video läuft — Erkennung alle 200 ms.', 'running');
+    setStatus('Video läuft — Erkennung aktiv.', 'running');
 
-    let busy = false;
-    inferenceTimer = setInterval(async () => {
-      if (!isRunning || busy || videoEl.paused || videoEl.ended) return;
-      busy = true;
+    async function inferLoop() {
+      if (!isRunning || videoEl.paused || videoEl.ended) return;
+      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
       try {
-        // Frame-Snapshot auf Offscreen-Canvas
-        snapCanvas.width  = vw;
-        snapCanvas.height = vh;
-        snapCtx.drawImage(videoEl, 0, 0, vw, vh);
-
-        // Inferenz — Koordinaten in Quellbild-Pixel (vw × vh)
-        lastDets = await runInference(snapCanvas, vw, vh);
-
-        // Overlay zeichnen: overlayCanvas hat dieselbe Pixelgröße → Scale = 1
-        drawDetections(overlayCtx, lastDets, 1, 1);
-        detCount.textContent = lastDets.length ? `${lastDets.length} Obj.` : '';
+        const dets = await runInference(snapCanvas, vw, vh);
+        if (!isRunning) return;
+        drawDetections(overlayCtx, dets, 1, 1);
+        detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
       } catch (err) {
         debugEl.textContent = err.message || err;
-      } finally {
-        busy = false;
       }
-    }, INFERENCE_INTERVAL_MS);
+      requestAnimationFrame(inferLoop);
+    }
 
+    requestAnimationFrame(inferLoop);
     videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
   };
-}
-
-// ── Bild-Modus ────────────────────────────────────────────────────────────────
-async function startImage(file) {
-  stopAll();
-  placeholder.style.display = 'none';
-  videoEl.style.display     = 'none';
-  imageCanvas.style.display = 'block';
-  setStatus('Inferenz läuft…', 'running');
-
-  const img = await new Promise((res, rej) => {
-    const i = new Image();
-    i.onload  = () => res(i);
-    i.onerror = () => rej(new Error('Bild konnte nicht geladen werden.'));
-    i.src = URL.createObjectURL(file);
-  });
-
-  imageCanvas.width  = img.naturalWidth;
-  imageCanvas.height = img.naturalHeight;
-  imageCtx.drawImage(img, 0, 0);
-
-  try {
-    const dets = await runInference(img, img.naturalWidth, img.naturalHeight);
-    imageCtx.drawImage(img, 0, 0);
-    drawDetections(imageCtx, dets, 1, 1);
-    detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
-    setStatus(`Abgeschlossen — ${dets.length} Objekt(e) erkannt.`, 'ready');
-  } catch (err) {
-    debugEl.textContent = err.message || err;
-    setStatus('Fehler bei der Inferenz.', 'error');
-  }
 }
 
 // ── Aufräumen ─────────────────────────────────────────────────────────────────
 function stopAll() {
   isRunning = false;
-  if (inferenceTimer) { clearInterval(inferenceTimer); inferenceTimer = null; }
-  if (videoEl.src)    { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
+  if (videoEl.src) { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-  lastDets = [];
   detCount.textContent = '';
 }
 
@@ -849,9 +772,9 @@ fileInput.addEventListener('change', () => {
   debugEl.textContent = '';
   const file = fileInput.files?.[0];
   fileNameEl.textContent = file ? file.name : '—';
-  if (cvReady && ortReady) {
+  if (ortReady) {
     runButton.disabled = !file;
-    setStatus(file ? 'Bereit.' : 'Datei auswählen.', 'ready');
+    setStatus(file ? 'Bereit.' : 'Video auswählen.', 'ready');
   }
 });
 
@@ -859,7 +782,7 @@ runButton.addEventListener('click', () => {
   const file = fileInput.files?.[0];
   if (!file) return;
   debugEl.textContent = '';
-  file.type.startsWith('video/') ? startVideo(file) : startImage(file);
+  startVideo(file);
 });
 
 const zone = document.getElementById('uploadZone');
