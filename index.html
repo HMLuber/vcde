@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Objekterkennung – Browserbasierte YOLO-Objekterkennung</title>
+<title>Browserbasierte YOLO-Objekterkennung</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -69,23 +69,20 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;family=DM+Sans:wght@300;400;500&amp;display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 
 
 </head>
 
-<body class="quarto-light">
+<body class="fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
+<main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -94,7 +91,7 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<div class="quarto-title-meta column-page">
+<div class="quarto-title-meta">
 
     
   
@@ -270,6 +267,7 @@ ul.task-list li input[type="checkbox"] {
 
   /* Viewer */
   .viewer {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -291,10 +289,7 @@ ul.task-list li input[type="checkbox"] {
   }
   .viewer-placeholder .big-icon { font-size: 2.4rem; opacity: 0.25; }
 
-  /* Video nur für Dekodierung (nie sichtbar) */
   #videoEl { display: none !important; }
-
-  /* Canvas zeigt analysierten Frame + Boxen — immer synchron */
   #overlayCanvas {
     display: none;
     max-width: 100%;
@@ -610,16 +605,19 @@ ul.task-list li input[type="checkbox"] {
     <div class="info-item">Konfidenz: <span>≥ 20 %</span></div>
     <div class="info-item">Ausführung: <span id="epInfo">WebGPU → WASM</span></div>
     <div class="info-item">Klassen: <span>80 (COCO)</span></div>
-    <div class="info-item">Inferenz-FPS: <span id="fpsEl">—</span></div>
+    <div class="info-item">FPS: <span id="fpsEl">—</span></div>
   </div>
 
 </div>
 
 <script>
 // ── Konfiguration ─────────────────────────────────────────────────────────────
-const MODEL_PATH   = 'models/yolov5n.onnx';
-const INPUT_SIZE   = 640;
-const ORT_CDN      = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
+const MODEL_PATH            = 'models/yolov5n.onnx';
+const INPUT_SIZE            = 640;
+const CONF_THRESHOLD        = 0.20;
+const MIN_OBJECTNESS        = 0.20;
+const MIN_CLASS_SCORE       = 0.20;
+const NMS_THRESHOLD         = 0.45;
 
 const CLASS_NAMES = [
   'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
@@ -635,74 +633,12 @@ const CLASS_NAMES = [
   'toothbrush'
 ];
 
-// ── Web Worker (läuft auf separatem Thread — blockiert nie den Hauptthread) ────
-const _WORKER = new Worker(URL.createObjectURL(new Blob([`
-const SZ=640, CONF=0.20, OBJ=0.20, CLS=0.20, NMS_T=0.45, A=SZ*SZ;
-let session, iName, oName;
-
-function nms(boxes,scores,t){
-  const ord=scores.map((_,i)=>i).sort((a,b)=>scores[b]-scores[a]),keep=[];
-  while(ord.length){
-    const i=ord.shift();keep.push(i);
-    const[ax,ay,aw,ah]=boxes[i];
-    for(let j=ord.length-1;j>=0;j--){
-      const[bx,by,bw,bh]=boxes[ord[j]];
-      const iw=Math.max(0,Math.min(ax+aw,bx+bw)-Math.max(ax,bx));
-      const ih=Math.max(0,Math.min(ay+ah,by+bh)-Math.max(ay,by));
-      if(iw*ih/(aw*ah+bw*bh-iw*ih)>t)ord.splice(j,1);
-    }
-  }
-  return keep;
-}
-
-self.onmessage=async({data:d})=>{
-  if(d.type==='load'){
-    try{
-      importScripts('${ORT_CDN}ort.min.js');
-      ort.env.wasm.wasmPaths='${ORT_CDN}';
-      ort.env.wasm.numThreads=1;
-      ort.env.wasm.simd=true;
-      let gpu=false;
-      try{gpu=!!(await navigator.gpu?.requestAdapter());}catch(_){}
-      if(gpu)ort.env.webgpu.powerPreference='high-performance';
-      session=await ort.InferenceSession.create(d.model,{executionProviders:gpu?['webgpu','wasm']:['wasm']});
-      iName=session.inputNames[0];oName=session.outputNames[0];
-      const ep=session.handler?.executionProviderName??(gpu?'webgpu':'wasm');
-      self.postMessage({type:'ready',ep});
-    }catch(e){self.postMessage({type:'error',msg:e.message||String(e)});}
-    return;
-  }
-  if(d.type==='infer'){
-    try{
-      const px=new Uint8ClampedArray(d.pixels);
-      const f32=new Float32Array(A*3);
-      for(let i=0;i<A;i++){f32[i]=px[i*4]/255;f32[A+i]=px[i*4+1]/255;f32[2*A+i]=px[i*4+2]/255;}
-      const out=(await session.run({[iName]:new ort.Tensor('float32',f32,[1,3,SZ,SZ])}))[oName].data;
-      const raw=[];
-      for(let i=0,n=out.length/85;i<n;i++){
-        const b=i*85,obj=out[b+4];if(obj<OBJ)continue;
-        let cid=0,cs=0;
-        for(let c=0;c<80;c++)if(out[b+5+c]>cs){cs=out[b+5+c];cid=c;}
-        if(cs<CLS)continue;const conf=obj*cs;if(conf<CONF)continue;
-        const cx=out[b],cy=out[b+1],bw=out[b+2],bh=out[b+3];
-        const nm=cx<=1&&cy<=1&&bw<=1&&bh<=1;
-        const px2=nm?cx*SZ:cx,py2=nm?cy*SZ:cy,pw=nm?bw*SZ:bw,ph=nm?bh*SZ:bh;
-        const x=(px2-pw/2-d.padLeft)/d.scale,y=(py2-ph/2-d.padTop)/d.scale;
-        const w=pw/d.scale,h=ph/d.scale,x1=Math.max(0,x),y1=Math.max(0,y);
-        raw.push({cid,conf,box:[x1,y1,Math.min(d.srcW-x1,w),Math.min(d.srcH-y1,h)]});
-      }
-      const keep=nms(raw.map(r=>r.box),raw.map(r=>r.conf),NMS_T);
-      self.postMessage({type:'result',dets:keep.map(i=>raw[i])});
-    }catch(e){self.postMessage({type:'error',msg:e.message||String(e)});}
-  }
-};
-`], { type: 'application/javascript' })));
-
 // ── Zustand ───────────────────────────────────────────────────────────────────
-let ortReady      = false;
-let isRunning     = false;
-let _busy         = false;
-let _resolveInfer = null;  // löst das Inferenz-Promise auf wenn Worker fertig ist
+let session   = null;
+let inputName = null;
+let outputName= null;
+let ortReady  = false;
+let isRunning = false;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const fileInput     = document.getElementById('fileInput');
@@ -719,14 +655,9 @@ const epInfo        = document.getElementById('epInfo');
 const fpsEl         = document.getElementById('fpsEl');
 const overlayCtx    = overlayCanvas.getContext('2d');
 
-// Preprocessing-Canvas: Letterboxing auf 640×640 für ONNX (nie sichtbar)
-const prepCanvas = document.createElement('canvas');
-prepCanvas.width = prepCanvas.height = INPUT_SIZE;
-const prepCtx = prepCanvas.getContext('2d', { willReadFrequently: true });
-
-// Snap-Canvas: speichert den analysierten Frame (wird zusammen mit Boxen angezeigt)
+// Offscreen-Canvas für Inferenz-Snapshots (niemals direkt angezeigt)
 const snapCanvas = document.createElement('canvas');
-const snapCtx    = snapCanvas.getContext('2d');
+const snapCtx    = snapCanvas.getContext('2d', { willReadFrequently: true });
 
 // ── Status ────────────────────────────────────────────────────────────────────
 function setStatus(msg, mode = 'idle') {
@@ -734,14 +665,28 @@ function setStatus(msg, mode = 'idle') {
   statusDot.className    = 'status-dot' + (mode !== 'idle' ? ' ' + mode : '');
 }
 
-// ── Modell laden (fetch → ArrayBuffer → Worker) ───────────────────────────────
+// ── Modell laden ──────────────────────────────────────────────────────────────
 async function loadModel() {
   try {
-    const model = await (await fetch(MODEL_PATH)).arrayBuffer();
-    _WORKER.postMessage({ type: 'load', model }, [model]);
+    const useWebGPU = 'gpu' in navigator;
+    if (useWebGPU) {
+      ort.env.webgpu.powerPreference = 'high-performance';
+    } else {
+      ort.env.wasm.numThreads = 1;
+      ort.env.wasm.simd       = true;
+    }
+    const providers = useWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
+    session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: providers });
+    inputName  = session.inputNames[0];
+    outputName = session.outputNames[0];
+    const ep   = session.handler?.executionProviderName ?? (useWebGPU ? 'webgpu' : 'wasm');
+    epInfo.textContent                      = ep.toUpperCase();
+    document.getElementById('epBadge').textContent = `YOLOv5n · ONNX · ${ep.toUpperCase()}`;
+    ortReady = true;
+    updateReadyState();
   } catch (err) {
     setStatus('Modell konnte nicht geladen werden.', 'error');
-    debugEl.textContent = 'Fetch-Fehler: ' + (err.message || err);
+    debugEl.textContent = 'Modell-Fehler: ' + (err.message || err);
   }
 }
 
@@ -753,150 +698,234 @@ function updateReadyState() {
   setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Video auswählen.', 'ready');
 }
 
-// ── Worker-Nachrichten ────────────────────────────────────────────────────────
-_WORKER.onmessage = ({ data }) => {
-  if (data.type === 'ready') {
-    epInfo.textContent = data.ep.toUpperCase();
-    document.getElementById('epBadge').textContent = `YOLOv5n · ONNX · ${data.ep.toUpperCase()}`;
-    ortReady = true;
-    updateReadyState();
-  } else if (data.type === 'result') {
-    _busy = false;
-    if (_resolveInfer) { const r = _resolveInfer; _resolveInfer = null; r(data.dets); }
-  } else if (data.type === 'error') {
-    _busy = false;
-    if (_resolveInfer) { const r = _resolveInfer; _resolveInfer = null; r([]); }
-    setStatus('Modell-Fehler.', 'error');
-    debugEl.textContent = 'Worker-Fehler: ' + data.msg;
-  }
-};
-_WORKER.onerror = e => { debugEl.textContent = 'Worker-Fehler: ' + (e.message || e); };
+// ── Preprocessing (pure Canvas, kein OpenCV) ──────────────────────────────────
+const prepCanvas = document.createElement('canvas');
+prepCanvas.width  = INPUT_SIZE;
+prepCanvas.height = INPUT_SIZE;
+const prepCtx = prepCanvas.getContext('2d', { willReadFrequently: true });
 
-// ── Inferenz als Promise ──────────────────────────────────────────────────────
-// Letterboxt aktuellen videoEl-Frame, schickt ihn an Worker, gibt Promise zurück.
-// await infer() blockiert den async-Loop bis der Worker antwortet.
-function infer(vw, vh, scale, padLeft, padTop) {
-  const resW = Math.round(vw*scale), resH = Math.round(vh*scale);
+// Pre-allokierter Buffer — keine Heap-Allokation pro Frame
+const _area     = INPUT_SIZE * INPUT_SIZE;
+const _floatBuf = new Float32Array(_area * 3);
+
+function preprocessSource(source, srcW, srcH) {
+  const scale   = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
+  const resW    = Math.round(srcW * scale);
+  const resH    = Math.round(srcH * scale);
+  const padLeft = Math.floor((INPUT_SIZE - resW) / 2);
+  const padTop  = Math.floor((INPUT_SIZE - resH) / 2);
+
   prepCtx.fillStyle = 'rgb(114,114,114)';
   prepCtx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
-  prepCtx.drawImage(videoEl, 0, 0, vw, vh, padLeft, padTop, resW, resH);
-  const buf = prepCtx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data.buffer.slice(0);
-  _busy = true;
-  return new Promise(resolve => {
-    _resolveInfer = resolve;
-    _WORKER.postMessage({ type: 'infer', pixels: buf, scale, padLeft, padTop, srcW: vw, srcH: vh }, [buf]);
-  });
+  prepCtx.drawImage(source, 0, 0, srcW, srcH, padLeft, padTop, resW, resH);
+
+  const px = prepCtx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
+  for (let i = 0; i < _area; i++) {
+    _floatBuf[i]             = px[i * 4]     / 255.0;
+    _floatBuf[_area + i]     = px[i * 4 + 1] / 255.0;
+    _floatBuf[2 * _area + i] = px[i * 4 + 2] / 255.0;
+  }
+  return { scale, padLeft, padTop };
+}
+
+// ── NMS ───────────────────────────────────────────────────────────────────────
+function nms(boxes, scores, thresh) {
+  const order = scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
+  const keep  = [];
+  while (order.length) {
+    const i = order.shift(); keep.push(i);
+    const [ax, ay, aw, ah] = boxes[i];
+    for (let j = order.length - 1; j >= 0; j--) {
+      const [bx, by, bw, bh] = boxes[order[j]];
+      const iw = Math.max(0, Math.min(ax+aw, bx+bw) - Math.max(ax, bx));
+      const ih = Math.max(0, Math.min(ay+ah, by+bh) - Math.max(ay, by));
+      if (iw * ih / (aw*ah + bw*bh - iw*ih) > thresh) order.splice(j, 1);
+    }
+  }
+  return keep;
+}
+
+// ── Inferenz ──────────────────────────────────────────────────────────────────
+async function runInference(source, srcW, srcH) {
+  const { scale, padLeft, padTop } = preprocessSource(source, srcW, srcH);
+  const tensor  = new ort.Tensor('float32', _floatBuf, [1, 3, INPUT_SIZE, INPUT_SIZE]);
+  const results = await session.run({ [inputName]: tensor });
+  const output  = results[outputName].data;
+  const raw     = [];
+
+  for (let i = 0, n = output.length / 85; i < n; i++) {
+    const b   = i * 85;
+    const obj = output[b + 4];
+    if (obj < MIN_OBJECTNESS) continue;
+
+    let cid = 0, cs = 0;
+    for (let c = 0; c < 80; c++) {
+      if (output[b + 5 + c] > cs) { cs = output[b + 5 + c]; cid = c; }
+    }
+    if (cs < MIN_CLASS_SCORE) continue;
+    const conf = obj * cs;
+    if (conf < CONF_THRESHOLD) continue;
+
+    const cx = output[b], cy = output[b+1], bw = output[b+2], bh = output[b+3];
+    const norm = cx <= 1 && cy <= 1 && bw <= 1 && bh <= 1;
+    const px = norm ? cx * INPUT_SIZE : cx;
+    const py = norm ? cy * INPUT_SIZE : cy;
+    const pw = norm ? bw * INPUT_SIZE : bw;
+    const ph = norm ? bh * INPUT_SIZE : bh;
+
+    const x  = (px - pw/2 - padLeft) / scale;
+    const y  = (py - ph/2 - padTop)  / scale;
+    const w  = pw / scale;
+    const h  = ph / scale;
+    const x1 = Math.max(0, x);
+    const y1 = Math.max(0, y);
+
+    raw.push({ cid, conf, box: [x1, y1, Math.min(srcW - x1, w), Math.min(srcH - y1, h)] });
+  }
+
+  return nms(raw.map(d => d.box), raw.map(d => d.conf), NMS_THRESHOLD).map(i => raw[i]);
 }
 
 // ── Zeichnen ──────────────────────────────────────────────────────────────────
+// scaleX/Y: Quellbild-Koordinaten → Canvas-Pixel
 function drawDetections(ctx, dets, scaleX, scaleY) {
   dets.forEach(({ cid, conf, box }) => {
-    const x = box[0]*scaleX, y = box[1]*scaleY, w = box[2]*scaleX, h = box[3]*scaleY;
-    const label = `${CLASS_NAMES[cid]||'?'} ${(conf*100).toFixed(0)}%`;
-    ctx.lineWidth = 2; ctx.strokeStyle = '#e8ff47';
+    const x = box[0] * scaleX, y = box[1] * scaleY;
+    const w = box[2] * scaleX, h = box[3] * scaleY;
+    const label = `${CLASS_NAMES[cid] || '?'} ${(conf * 100).toFixed(0)}%`;
+
+    // Bounding-Box
+    ctx.lineWidth   = 2;
+    ctx.strokeStyle = '#e8ff47';
     ctx.strokeRect(x, y, w, h);
-    const cs = Math.min(14, w*0.18, h*0.18);
-    ctx.lineWidth = 3; ctx.strokeStyle = '#ff2d78';
-    [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(([cx,cy,dx,dy]) => {
-      ctx.beginPath(); ctx.moveTo(cx+dx*cs,cy); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+dy*cs); ctx.stroke();
+
+    // Ecken-Akzente in Akzentfarbe
+    const cs = Math.min(14, w * 0.18, h * 0.18);
+    ctx.lineWidth   = 3;
+    ctx.strokeStyle = '#ff2d78';
+    [[x, y, 1, 1],[x+w, y, -1, 1],[x, y+h, 1, -1],[x+w, y+h, -1, -1]].forEach(([cx, cy, dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * cs, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * cs);
+      ctx.stroke();
     });
+
+    // Label
     ctx.font = 'bold 24px "Space Mono", monospace';
     const tw = ctx.measureText(label).width + 14;
-    ctx.fillStyle = '#e8ff47'; ctx.fillRect(x-1, y-32, tw, 30);
-    ctx.fillStyle = '#000';    ctx.fillText(label, x+6, y-7);
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillRect(x - 1, y - 32, tw, 30);
+    ctx.fillStyle = '#000';
+    ctx.fillText(label, x + 6, y - 7);
   });
 }
 
 // ── Video-Modus ───────────────────────────────────────────────────────────────
-// Sequenzieller async-Loop:
-//   1. Snap des aktuellen Video-Frames machen
-//   2. await infer()  ← gibt Event Loop frei, Worker läuft parallel
-//   3. Snap + Boxen zusammen auf Canvas zeichnen
-//   4. repeat
-// → jedes angezeigte Bild hat perfekt synchrone Boxen, kein Lag, kein Springen.
+// Inferenz-Loop via rAF: nächster Frame startet erst nach abgeschlossenem await →
+// Lag = reine Inferenzzeit, kein festes Intervall-Overhead mehr.
 function startVideo(file) {
   stopAll();
-  placeholder.style.display   = 'none';
+  placeholder.style.display  = 'none';
   overlayCanvas.style.display = 'block';
   videoEl.src = URL.createObjectURL(file);
 
   videoEl.onloadedmetadata = async () => {
-    const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
-    overlayCanvas.width = vw; overlayCanvas.height = vh;
-    snapCanvas.width    = vw; snapCanvas.height    = vh;
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
 
-    const scale   = Math.min(INPUT_SIZE/vw, INPUT_SIZE/vh);
-    const padLeft = Math.floor((INPUT_SIZE - Math.round(vw*scale)) / 2);
-    const padTop  = Math.floor((INPUT_SIZE - Math.round(vh*scale)) / 2);
+    overlayCanvas.width  = vw;
+    overlayCanvas.height = vh;
+    snapCanvas.width     = vw;
+    snapCanvas.height    = vh;
 
     await videoEl.play();
     isRunning = true;
-    setStatus('Erkennung läuft…', 'running');
+    setStatus('Video läuft — Erkennung aktiv.', 'running');
 
-    let fpsIdx = 0, lastTs = 0;
-    const fpsSamples = new Float32Array(10);
+    let _lastTs = 0;
+    const _fpsSamples = new Float32Array(10);
+    let _fpsIdx = 0;
 
-    while (isRunning && !videoEl.ended) {
-      // 1. Aktuellen Frame sichern (synchron, vor dem await)
-      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+    async function inferLoop() {
+      if (!isRunning || videoEl.paused || videoEl.ended) return;
 
-      // 2. Inferenz abwarten — Video läuft unsichtbar weiter, wir warten auf Worker
-      const dets = await infer(vw, vh, scale, padLeft, padTop);
-      if (!isRunning) break;
-
-      // FPS messen
       const now = performance.now();
-      if (lastTs > 0) {
-        fpsSamples[fpsIdx % 10] = 1000 / (now - lastTs);
-        fpsIdx++;
-        const n = Math.min(fpsIdx, 10);
-        let s = 0; for (let i = 0; i < n; i++) s += fpsSamples[i];
-        fpsEl.textContent = (s / n).toFixed(1);
+      if (_lastTs > 0) {
+        _fpsSamples[_fpsIdx % 10] = 1000 / (now - _lastTs);
+        _fpsIdx++;
+        const n = Math.min(_fpsIdx, 10);
+        let sum = 0;
+        for (let i = 0; i < n; i++) sum += _fpsSamples[i];
+        fpsEl.textContent = (sum / n).toFixed(1);
       }
-      lastTs = now;
+      _lastTs = now;
 
-      // 3. Snap und Boxen zusammen anzeigen — immer synchron
-      overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
-      drawDetections(overlayCtx, dets, 1, 1);
-      detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
+      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+      try {
+        const dets = await runInference(snapCanvas, vw, vh);
+        if (!isRunning) return;
+        // Snap-Frame auf Canvas malen → Boxes liegen immer auf dem analysierten Bild
+        overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
+        drawDetections(overlayCtx, dets, 1, 1);
+        detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
+      } catch (err) {
+        debugEl.textContent = err.message || err;
+      }
+      requestAnimationFrame(inferLoop);
     }
 
-    if (isRunning) { stopAll(); setStatus('Video beendet.', 'ready'); }
+    requestAnimationFrame(inferLoop);
+    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
   };
 }
 
 // ── Aufräumen ─────────────────────────────────────────────────────────────────
 function stopAll() {
-  isRunning = false; _busy = false;
-  // Hängendes Inferenz-Promise sofort auflösen damit der async-Loop nicht blockiert
-  if (_resolveInfer) { const r = _resolveInfer; _resolveInfer = null; r([]); }
+  isRunning = false;
   if (videoEl.src) { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
   overlayCanvas.style.display = 'none';
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   placeholder.style.display = 'flex';
-  detCount.textContent = ''; fpsEl.textContent = '—';
+  detCount.textContent = '';
+  fpsEl.textContent = '—';
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
 fileInput.addEventListener('change', () => {
-  stopAll(); debugEl.textContent = '';
+  stopAll();
+  debugEl.textContent = '';
   const file = fileInput.files?.[0];
   fileNameEl.textContent = file ? file.name : '—';
-  if (ortReady) { runButton.disabled = !file; setStatus(file ? 'Bereit.' : 'Video auswählen.', 'ready'); }
+  if (ortReady) {
+    runButton.disabled = !file;
+    setStatus(file ? 'Bereit.' : 'Video auswählen.', 'ready');
+  }
 });
+
 runButton.addEventListener('click', () => {
-  const file = fileInput.files?.[0]; if (!file) return;
-  debugEl.textContent = ''; startVideo(file);
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  debugEl.textContent = '';
+  startVideo(file);
 });
+
 const zone = document.getElementById('uploadZone');
 zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
 zone.addEventListener('drop', e => {
-  e.preventDefault(); zone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) {
+    fileInput.files = e.dataTransfer.files;
+    fileInput.dispatchEvent(new Event('change'));
+  }
 });
-window.addEventListener('error', e => { debugEl.textContent = 'Fehler: ' + (e.error?.message || e.message); });
-window.addEventListener('unhandledrejection', e => { debugEl.textContent = 'Promise-Fehler: ' + (e.reason?.message || e.reason); });
+
+window.addEventListener('error', e =>
+  { debugEl.textContent = 'Fehler: ' + (e.error?.message || e.message); });
+window.addEventListener('unhandledrejection', e =>
+  { debugEl.textContent = 'Promise-Fehler: ' + (e.reason?.message || e.reason); });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 loadModel();
