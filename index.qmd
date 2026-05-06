@@ -198,11 +198,17 @@ format:
   }
   .viewer-placeholder .big-icon { font-size: 2.4rem; opacity: 0.25; }
 
-  #videoEl { display: none !important; }
-  #overlayCanvas {
+  #videoEl {
     display: none;
-    max-width: 100%;
+    width: 100%;
     max-height: 70vh;
+    object-fit: contain;
+  }
+  #overlayCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
   }
 
   /* Debug */
@@ -684,6 +690,7 @@ async function runInference(source, srcW, srcH) {
 // ── Zeichnen ──────────────────────────────────────────────────────────────────
 // scaleX/Y: Quellbild-Koordinaten → Canvas-Pixel
 function drawDetections(ctx, dets, scaleX, scaleY) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   dets.forEach(({ cid, conf, box }) => {
     const x = box[0] * scaleX, y = box[1] * scaleY;
     const w = box[2] * scaleX, h = box[3] * scaleY;
@@ -717,12 +724,11 @@ function drawDetections(ctx, dets, scaleX, scaleY) {
 }
 
 // ── Video-Modus ───────────────────────────────────────────────────────────────
-// Inferenz-Loop via rAF: nächster Frame startet erst nach abgeschlossenem await →
-// Lag = reine Inferenzzeit, kein festes Intervall-Overhead mehr.
+// Video spielt nativ mit 30 FPS; Inferenz läuft in eigenem while-Loop parallel.
 function startVideo(file) {
   stopAll();
-  placeholder.style.display  = 'none';
-  overlayCanvas.style.display = 'block';
+  placeholder.style.display = 'none';
+  videoEl.style.display     = 'block';
   videoEl.src = URL.createObjectURL(file);
 
   videoEl.onloadedmetadata = async () => {
@@ -742,36 +748,34 @@ function startVideo(file) {
     const _fpsSamples = new Float32Array(10);
     let _fpsIdx = 0;
 
-    async function inferLoop() {
-      if (!isRunning || videoEl.paused || videoEl.ended) return;
+    (async function inferLoop() {
+      while (isRunning && !videoEl.ended) {
+        const now = performance.now();
+        if (_lastTs > 0) {
+          _fpsSamples[_fpsIdx % 10] = 1000 / (now - _lastTs);
+          _fpsIdx++;
+          const n = Math.min(_fpsIdx, 10);
+          let sum = 0;
+          for (let i = 0; i < n; i++) sum += _fpsSamples[i];
+          fpsEl.textContent = (sum / n).toFixed(1);
+        }
+        _lastTs = now;
 
-      const now = performance.now();
-      if (_lastTs > 0) {
-        _fpsSamples[_fpsIdx % 10] = 1000 / (now - _lastTs);
-        _fpsIdx++;
-        const n = Math.min(_fpsIdx, 10);
-        let sum = 0;
-        for (let i = 0; i < n; i++) sum += _fpsSamples[i];
-        fpsEl.textContent = (sum / n).toFixed(1);
+        snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+        try {
+          const dets = await runInference(snapCanvas, vw, vh);
+          if (!isRunning) break;
+          drawDetections(overlayCtx, dets, 1, 1);
+          detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
+        } catch (err) {
+          debugEl.textContent = err.message || err;
+          break;
+        }
       }
-      _lastTs = now;
+      if (videoEl.ended) { stopAll(); setStatus('Video beendet.', 'ready'); }
+    })();
 
-      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
-      try {
-        const dets = await runInference(snapCanvas, vw, vh);
-        if (!isRunning) return;
-        // Snap-Frame auf Canvas malen → Boxes liegen immer auf dem analysierten Bild
-        overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
-        drawDetections(overlayCtx, dets, 1, 1);
-        detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
-      } catch (err) {
-        debugEl.textContent = err.message || err;
-      }
-      requestAnimationFrame(inferLoop);
-    }
-
-    requestAnimationFrame(inferLoop);
-    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
+    videoEl.onended = () => {};
   };
 }
 
@@ -779,7 +783,7 @@ function startVideo(file) {
 function stopAll() {
   isRunning = false;
   if (videoEl.src) { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
-  overlayCanvas.style.display = 'none';
+  videoEl.style.display = 'none';
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   placeholder.style.display = 'flex';
   detCount.textContent = '';
