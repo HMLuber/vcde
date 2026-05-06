@@ -834,7 +834,8 @@ function drawDetections(ctx, dets, scaleX, scaleY) {
 }
 
 // ── Video-Modus ───────────────────────────────────────────────────────────────
-// Video spielt nativ mit 30 FPS; Inferenz läuft in eigenem while-Loop parallel.
+// Video spielt nativ (30 FPS). rAF gibt dem Browser zwischen Inferenz-Calls
+// immer einen Render-Tick — verhindert Hang auf WASM/WebGPU.
 function startVideo(file) {
   stopAll();
   placeholder.style.display = 'none';
@@ -858,34 +859,34 @@ function startVideo(file) {
     const _fpsSamples = new Float32Array(10);
     let _fpsIdx = 0;
 
-    (async function inferLoop() {
-      while (isRunning && !videoEl.ended) {
-        const now = performance.now();
-        if (_lastTs > 0) {
-          _fpsSamples[_fpsIdx % 10] = 1000 / (now - _lastTs);
-          _fpsIdx++;
-          const n = Math.min(_fpsIdx, 10);
-          let sum = 0;
-          for (let i = 0; i < n; i++) sum += _fpsSamples[i];
-          fpsEl.textContent = (sum / n).toFixed(1);
-        }
-        _lastTs = now;
+    async function inferLoop() {
+      if (!isRunning || videoEl.paused || videoEl.ended) return;
 
-        snapCtx.drawImage(videoEl, 0, 0, vw, vh);
-        try {
-          const dets = await runInference(snapCanvas, vw, vh);
-          if (!isRunning) break;
-          drawDetections(overlayCtx, dets, 1, 1);
-          detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
-        } catch (err) {
-          debugEl.textContent = err.message || err;
-          break;
-        }
+      const now = performance.now();
+      if (_lastTs > 0) {
+        _fpsSamples[_fpsIdx % 10] = 1000 / (now - _lastTs);
+        _fpsIdx++;
+        const n = Math.min(_fpsIdx, 10);
+        let sum = 0;
+        for (let i = 0; i < n; i++) sum += _fpsSamples[i];
+        fpsEl.textContent = (sum / n).toFixed(1);
       }
-      if (videoEl.ended) { stopAll(); setStatus('Video beendet.', 'ready'); }
-    })();
+      _lastTs = now;
 
-    videoEl.onended = () => {};
+      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+      try {
+        const dets = await runInference(snapCanvas, vw, vh);
+        if (!isRunning) return;
+        drawDetections(overlayCtx, dets, 1, 1);
+        detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
+      } catch (err) {
+        debugEl.textContent = err.message || err;
+      }
+      requestAnimationFrame(inferLoop);
+    }
+
+    requestAnimationFrame(inferLoop);
+    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
   };
 }
 
