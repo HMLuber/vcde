@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Echtzeit-Objekterkennung – Browserbasierte YOLO-Objekterkennung</title>
+<title>Objekterkennung – Browserbasierte YOLO-Objekterkennung</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -69,29 +69,41 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;family=DM+Sans:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+<script>
+window.Module = {
+  onRuntimeInitialized: function () {
+    cvReady = true;
+    updateReadyState();
+  }
+};
+</script>
+<script async="" src="https://docs.opencv.org/4.8.0/opencv.js"></script>
 
 
 </head>
 
-<body class="fullcontent quarto-light">
+<body class="quarto-light">
 
 <div id="quarto-search-results"></div>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content column-page" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Echtzeit-Objekterkennung</h1>
+<h1 class="title">Objekterkennung</h1>
 </div>
 
 
 
-<div class="quarto-title-meta">
+<div class="quarto-title-meta column-page">
 
     
   
@@ -103,141 +115,649 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="kurz-erklärt-was-ist-echtzeitobjekterkennung" class="level3">
-<h3 class="anchored" data-anchor-id="kurz-erklärt-was-ist-echtzeitobjekterkennung">Kurz erklärt: Was ist Echtzeit‑Objekterkennung?</h3>
-<p>Echtzeit-Objekterkennung ist die <strong>automatische Identifikation und Lokalisierung von Objekten in Bildern oder Videoströmen</strong> mit minimaler Verzögerung. Im Gegensatz zu klassischen Bildanalyseverfahren ermöglicht sie die <strong>gleichzeitige Erkennung mehrerer Objekte</strong> und deren Klassifizierung in wenigen Millisekunden.</p>
-<p>Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und präzise Bounding Boxes um Objekte zu zeichnen. Dies ermöglicht praktische Anwendungen wie autonomes Fahren, Videoüberwachung, medizinische Bilddiagnose und industrielle Qualitätsprüfung.</p>
-</section>
-<section id="kurze-livedemo-webcam-oder-beispielvideo" class="level3">
-<h3 class="anchored" data-anchor-id="kurze-livedemo-webcam-oder-beispielvideo">Kurze Live‑Demo (Webcam oder Beispielvideo)</h3>
-<p>HIER DEMO VIDEO EINFÜGEN</p>
-</section>
-<section id="grundlagen" class="level2">
-<h2 class="anchored" data-anchor-id="grundlagen">Grundlagen</h2>
-<section id="geschichte-der-objekterkennung" class="level3">
-<h3 class="anchored" data-anchor-id="geschichte-der-objekterkennung">Geschichte der Objekterkennung</h3>
-<p>Die Objekterkennung hat sich über Jahrzehnte entwickelt:</p>
-<ul>
-<li><strong>1960er-1990er</strong>: Klassische Methoden wie <strong>Edge Detection</strong> und <strong>Feature Matching</strong> (z.B. Haar Cascades) dominieren</li>
-<li><strong>2012</strong>: Ein Wendepunkt – <strong>AlexNet</strong> gewinnt ImageNet-Wettbewerb mit Deep Learning und zeigt Überlegenheit von CNNs</li>
-<li><strong>2015-2016</strong>: <strong>Faster R-CNN</strong> und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, dafür aber mit längerer Verarbeitung</li>
-<li><strong>2016 – heute</strong>: <strong>YOLO</strong> (You Only Look Once) revolutioniert das Feld durch <strong>Echtzeit-Erkennung auf normaler Hardware</strong>. Weitere Varianten wie SSD und andere moderne Architekturen folgen.</li>
-</ul>
-</section>
-<section id="begriffserklärungen" class="level3">
-<h3 class="anchored" data-anchor-id="begriffserklärungen">Begriffserklärungen</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 45%">
-<col style="width: 55%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Begriff</th>
-<th>Erklärung</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>CNN</strong> (Convolutional Neural Network)</td>
-<td>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder</td>
-</tr>
-<tr class="even">
-<td><strong>Bounding Box</strong></td>
-<td>Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe)</td>
-</tr>
-<tr class="odd">
-<td><strong>Confidence Score</strong></td>
-<td>Wahrscheinlichkeit (0-1), ob ein erkanntes Objekt echt ist</td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="typische-anwendungsfälle" class="level3">
-<h3 class="anchored" data-anchor-id="typische-anwendungsfälle">Typische Anwendungsfälle</h3>
-<ul>
-<li><strong>Autonomes Fahren</strong>: Erkennung von Fußgängern, Fahrzeugen, Verkehrszeichen in Echtzeit</li>
-<li><strong>Videoüberwachung</strong>: Personen- und Fahrzeugerkennung, Sicherheitsamplifikationen</li>
-<li><strong>Sportanalyse</strong>: Tracking von Spielern, Bällen und Bewegungsanalyse</li>
-<li><strong>Medizin</strong>: Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern</li>
-<li><strong>Industrielle Inspektion</strong>: Qualitätskontrolle, Defekterkennung an Produktionslinien</li>
-</ul>
-</section>
-</section>
-<section id="motivation" class="level2">
-<h2 class="anchored" data-anchor-id="motivation">Motivation</h2>
-<section id="warum-echtzeit-objekterkennung-heute-essentiell-ist" class="level3">
-<h3 class="anchored" data-anchor-id="warum-echtzeit-objekterkennung-heute-essentiell-ist">Warum Echtzeit-Objekterkennung heute essentiell ist</h3>
-<p>Die Fähigkeit, <strong>Objekte augenblicklich und präzise zu erkennen</strong>, ist in einer zunehmend vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig für moderne Anforderungen.</p>
-</section>
-<section id="wie-yolo-grob-funktioniert" class="level3">
-<h3 class="anchored" data-anchor-id="wie-yolo-grob-funktioniert">Wie YOLO grob funktioniert</h3>
-<ol type="1">
-<li><strong>Input</strong>: Ein Bild beliebiger Größe wird auf ein festes Format normalisiert</li>
-<li><strong>Backbone-Netzwerk</strong>: Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten</li>
-<li><strong>Gitter-Struktur</strong>: Das Bild wird in eine Gerade von Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig</li>
-<li><strong>Vorhersage</strong>: Für jede Zelle werden folgende Werte vorhergesagt:
-<ul>
-<li><strong>Bounding Boxes</strong>: Mehrere Boxen mit verschiedenen Aspect Ratios</li>
-<li><strong>Objectness Score</strong>: Wahrscheinlichkeit, dass ein Objekt in der Box ist</li>
-<li><strong>Klassenwahrscheinlichkeiten</strong>: Likelihood für jede Objektklasse (z.B. “Auto”, “Person”, “Hund”)</li>
-</ul></li>
-<li><strong>Output</strong>: Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung</li>
-<li><strong>Post-Processing</strong>: NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen</li>
-</ol>
-</section>
-<section id="rolle-von-opencv-für-video-capture-und-vorverarbeitung" class="level3">
-<h3 class="anchored" data-anchor-id="rolle-von-opencv-für-video-capture-und-vorverarbeitung">Rolle von OpenCV für Video-Capture und Vorverarbeitung</h3>
-<p><strong>OpenCV</strong> (Open Source Computer Vision) ist das Rückgrat für praktische Bildbearbeitung:</p>
-<ul>
-<li><strong>Video-Capture</strong>: Aufnahme von Webcam-, Datei- oder Netzwerk-Streams</li>
-<li><strong>Bildvorverarbeitung</strong>:
-<ul>
-<li>Skalierung und Normalisierung für das Netzwerk</li>
-<li>Farbkonvertierung (RGB ↔︎ BGR)</li>
-<li>Helligkeits-/Kontrastanpassung</li>
-</ul></li>
-<li><strong>Rendering</strong>: Zeichnen von Bounding Boxes, Labels und Scores auf das Bild</li>
-<li><strong>Speicherung</strong>: Speichern von Ergebnisbildern oder -videos</li>
-</ul>
-</section>
-</section>
-<section id="demobereich" class="level2">
-<h2 class="anchored" data-anchor-id="demobereich">Demo‑Bereich</h2>
-<p>Live‑Webcam oder Video‑Upload mit Erkennung</p>
-<section id="bedienung" class="level3">
-<h3 class="anchored" data-anchor-id="bedienung">Bedienung</h3>
-<p><label for="fileInput">Datei auswählen</label> <input id="fileInput" type="file"></p>
-<button id="runButton" disabled="">
-Erkennung starten
-</button>
-</section>
-<section id="ergebnisse" class="level3">
-<h3 class="anchored" data-anchor-id="ergebnisse">Ergebnisse</h3>
-<div id="detectionInfo">
-Warte auf Eingabe…
-</div>
-<canvas id="outputCanvas">
-</canvas>
-<div id="debug" class="note">
-
-</div>
 <style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f5f7; color: #222; }
-  main, section { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
-  .note { font-size: 0.95rem; color: #555; margin-top: 1rem; }
-  label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
-  input[type=file] { width: 100%; margin-bottom: 1rem; }
-  button { margin-top: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 8px; background: #0b74de; color: #fff; cursor: pointer; }
-  button:disabled { background: #888; cursor: not-allowed; }
-  canvas { width: 100%; height: auto; border-radius: 12px; background: #000; margin-top: 1rem; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0a0a0a;
+    --surface: #111111;
+    --border:  #222222;
+    --accent:  #e8ff47;
+    --accent2: #ff2d78;
+    --text:    #f0f0f0;
+    --muted:   #666;
+    --radius:  4px;
+    --mono:    'Space Mono', monospace;
+    --sans:    'DM Sans', sans-serif;
+  }
+
+  body, .page-layout-full {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    font-family: var(--sans) !important;
+  }
+
+  .quarto-title-block, h1.title { display: none !important; }
+
+  #yolo-app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
+  .app-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+  .app-header h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .app-header h1 span { color: var(--accent); }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--border);
+    color: var(--muted);
+    padding: 3px 8px;
+    border-radius: var(--radius);
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.03);
+  }
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .upload-icon {
+    width: 44px; height: 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.3rem;
+  }
+  .upload-text { flex: 1; }
+  .upload-text strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .upload-text span { font-size: 0.78rem; color: var(--muted); }
+  .file-name {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Button */
+  #runButton {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 13px 28px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  #runButton:disabled { opacity: 0.22; cursor: not-allowed; }
+  #runButton:not(:disabled):hover  { opacity: 0.82; }
+  #runButton:not(:disabled):active { transform: scale(0.985); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.ready   { background: var(--accent);  box-shadow: 0 0 6px var(--accent); }
+  .status-dot.running { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); animation: pulse 1s infinite; }
+  .status-dot.error   { background: #ff4444; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  #statusText { flex: 1; }
+  #detCount   { color: var(--accent); font-weight: 700; }
+
+  /* Viewer */
+  .viewer {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .viewer-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: var(--mono);
+    padding: 60px;
+  }
+  .viewer-placeholder .big-icon { font-size: 2.4rem; opacity: 0.25; }
+
+  #videoEl {
+    display: none;
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+  #imageCanvas {
+    display: none;
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+  #overlayCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  /* Debug */
+  #debugEl {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--accent2);
+    white-space: pre-wrap;
+    min-height: 1em;
+  }
+
+  /* Info strip */
+  .info-strip {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .info-item { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+  .info-item span { color: var(--text); }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-<script src="assets/yolo-browser.js?v=2"></script>
+
+<div id="yolo-app">
+
+  <header class="app-header">
+    <h1>YOLO<span>v5</span> — Objekterkennung</h1>
+    <div class="badge">YOLOv5n · ONNX · Browser</div>
+  </header>
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*,video/*">
+    <div class="upload-icon">📂</div>
+    <div class="upload-text">
+      <strong>Bild oder Video auswählen</strong>
+      <span>JPG · PNG · MP4 · WebM — alles läuft lokal, nichts wird hochgeladen</span>
+    </div>
+    <div class="file-name" id="fileNameEl">—</div>
+  </div>
+
+  <button id="runButton" disabled="">⏳ &nbsp;Wird geladen…</button>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Modell und OpenCV werden initialisiert…</span>
+    <span id="detCount"></span>
+  </div>
+
+  <div class="viewer" id="viewer">
+    <div class="viewer-placeholder" id="placeholder">
+      <div class="big-icon">🎯</div>
+      <div>Noch keine Datei geladen</div>
+    </div>
+    <video id="videoEl" muted="" playsinline=""></video>
+    <canvas id="imageCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
+  </div>
+
+  <div id="debugEl"></div>
+
+  <div class="info-strip">
+    <div class="info-item">Modell: <span>YOLOv5n (float16)</span></div>
+    <div class="info-item">Eingabe: <span>640 × 640</span></div>
+    <div class="info-item">Konfidenz: <span>≥ 20 %</span></div>
+    <div class="info-item">Inferenz-Intervall: <span>200 ms</span></div>
+    <div class="info-item">Klassen: <span>80 (COCO)</span></div>
+  </div>
+
+</div>
+
+<script>
+// ── Konfiguration ─────────────────────────────────────────────────────────────
+const MODEL_PATH            = 'models/yolov5n.onnx';
+const INPUT_SIZE            = 640;
+const CONF_THRESHOLD        = 0.20;
+const MIN_OBJECTNESS        = 0.20;
+const MIN_CLASS_SCORE       = 0.20;
+const NMS_THRESHOLD         = 0.45;
+const INFERENCE_INTERVAL_MS = 200;
+
+const CLASS_NAMES = [
+  'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
+  'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat',
+  'dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack',
+  'umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball',
+  'kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket',
+  'bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
+  'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake',
+  'chair','sofa','pottedplant','bed','diningtable','toilet','tvmonitor','laptop',
+  'mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink',
+  'refrigerator','book','clock','vase','scissors','teddy bear','hair drier',
+  'toothbrush'
+];
+
+// ── Zustand ───────────────────────────────────────────────────────────────────
+let session        = null;
+let inputName      = null;
+let outputName     = null;
+var cvReady        = false;  // var: wird von window.Module.onRuntimeInitialized gesetzt
+let ortReady       = false;
+let lastDets       = [];
+let inferenceTimer = null;
+let isRunning      = false;
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+const fileInput     = document.getElementById('fileInput');
+const runButton     = document.getElementById('runButton');
+const videoEl       = document.getElementById('videoEl');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const imageCanvas   = document.getElementById('imageCanvas');
+const placeholder   = document.getElementById('placeholder');
+const statusDot     = document.getElementById('statusDot');
+const statusText    = document.getElementById('statusText');
+const detCount      = document.getElementById('detCount');
+const fileNameEl    = document.getElementById('fileNameEl');
+const debugEl       = document.getElementById('debugEl');
+const overlayCtx    = overlayCanvas.getContext('2d');
+const imageCtx      = imageCanvas.getContext('2d');
+
+// Offscreen-Canvas für Inferenz-Snapshots (niemals direkt angezeigt)
+const snapCanvas = document.createElement('canvas');
+const snapCtx    = snapCanvas.getContext('2d', { willReadFrequently: true });
+
+// ── Status ────────────────────────────────────────────────────────────────────
+function setStatus(msg, mode = 'idle') {
+  statusText.textContent = msg;
+  statusDot.className    = 'status-dot' + (mode !== 'idle' ? ' ' + mode : '');
+}
+
+// ── Modell laden ──────────────────────────────────────────────────────────────
+async function loadModel() {
+  try {
+    // numThreads = 1: kein SharedArrayBuffer nötig → funktioniert auf GitHub Pages
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.simd       = true;
+    session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: ['wasm'] });
+    inputName  = session.inputNames[0];
+    outputName = session.outputNames[0];
+    ortReady   = true;
+    updateReadyState();
+  } catch (err) {
+    setStatus('Modell konnte nicht geladen werden.', 'error');
+    debugEl.textContent = 'Modell-Fehler: ' + (err.message || err);
+  }
+}
+
+function updateReadyState() {
+  if (!cvReady || !ortReady) return;
+  const hasFile = !!fileInput.files?.length;
+  runButton.disabled    = !hasFile;
+  runButton.textContent = '▶  Erkennung starten';
+  setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Datei auswählen.', 'ready');
+}
+
+// ── Preprocessing ─────────────────────────────────────────────────────────────
+// Zeichnet Quelle auf temporäres Canvas → OpenCV liest es → Letterbox → CHW Float32
+function preprocessSource(source, srcW, srcH) {
+  const tmp = document.createElement('canvas');
+  tmp.width  = srcW;
+  tmp.height = srcH;
+  tmp.getContext('2d', { willReadFrequently: true }).drawImage(source, 0, 0, srcW, srcH);
+
+  const mat = cv.imread(tmp);
+  const rgb  = new cv.Mat();
+  cv.cvtColor(mat, rgb, cv.COLOR_RGBA2RGB);
+
+  const scale   = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
+  const resW    = Math.round(srcW * scale);
+  const resH    = Math.round(srcH * scale);
+  const padLeft = Math.floor((INPUT_SIZE - resW) / 2);
+  const padTop  = Math.floor((INPUT_SIZE - resH) / 2);
+
+  const resized = new cv.Mat();
+  cv.resize(rgb, resized, new cv.Size(resW, resH), 0, 0, cv.INTER_LINEAR);
+
+  const padded = new cv.Mat();
+  cv.copyMakeBorder(
+    resized, padded,
+    padTop,  INPUT_SIZE - resH - padTop,
+    padLeft, INPUT_SIZE - resW - padLeft,
+    cv.BORDER_CONSTANT, new cv.Scalar(114, 114, 114)
+  );
+
+  const area      = INPUT_SIZE * INPUT_SIZE;
+  const floatData = new Float32Array(area * 3);
+  const px        = padded.data;
+  for (let i = 0; i < area; i++) {
+    floatData[i]            = px[i * 3]     / 255.0;
+    floatData[area + i]     = px[i * 3 + 1] / 255.0;
+    floatData[2 * area + i] = px[i * 3 + 2] / 255.0;
+  }
+
+  mat.delete(); rgb.delete(); resized.delete(); padded.delete();
+  return { floatData, scale, padLeft, padTop };
+}
+
+// ── Float32 → Float16 ─────────────────────────────────────────────────────────
+function f32ToF16(v) {
+  const fa = new Float32Array(1); fa[0] = v;
+  const ia = new Int32Array(fa.buffer);
+  const x = ia[0], s = (x >> 16) & 0x8000;
+  const e = (x >> 23) & 0xff; let ex = e - 127 + 15, m = x & 0x7fffff;
+  if (e  === 255) return s | 0x7c00 | (m ? 0x200 : 0);
+  if (ex <= 0)   { if (ex < -10) return s; m = (m|0x800000)>>(1-ex); return s|((m+0x0fff+((m>>13)&1))>>13); }
+  if (ex > 30)   return s | 0x7c00;
+  return s | (ex << 10) | (m >> 13);
+}
+function toF16(arr) {
+  const out = new Uint16Array(arr.length);
+  for (let i = 0; i < arr.length; i++) out[i] = f32ToF16(arr[i]);
+  return out;
+}
+
+// ── NMS ───────────────────────────────────────────────────────────────────────
+function nms(boxes, scores, thresh) {
+  const order = scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
+  const keep  = [];
+  while (order.length) {
+    const i = order.shift(); keep.push(i);
+    const [ax, ay, aw, ah] = boxes[i];
+    for (let j = order.length - 1; j >= 0; j--) {
+      const [bx, by, bw, bh] = boxes[order[j]];
+      const iw = Math.max(0, Math.min(ax+aw, bx+bw) - Math.max(ax, bx));
+      const ih = Math.max(0, Math.min(ay+ah, by+bh) - Math.max(ay, by));
+      if (iw * ih / (aw*ah + bw*bh - iw*ih) > thresh) order.splice(j, 1);
+    }
+  }
+  return keep;
+}
+
+// ── Inferenz ──────────────────────────────────────────────────────────────────
+async function runInference(source, srcW, srcH) {
+  const { floatData, scale, padLeft, padTop } = preprocessSource(source, srcW, srcH);
+  const tensor  = new ort.Tensor('float16', toF16(floatData), [1, 3, INPUT_SIZE, INPUT_SIZE]);
+  const results = await session.run({ [inputName]: tensor });
+  const output  = results[outputName].data;
+  const raw     = [];
+
+  for (let i = 0, n = output.length / 85; i < n; i++) {
+    const b   = i * 85;
+    const obj = output[b + 4];
+    if (obj < MIN_OBJECTNESS) continue;
+
+    let cid = 0, cs = 0;
+    for (let c = 0; c < 80; c++) {
+      if (output[b + 5 + c] > cs) { cs = output[b + 5 + c]; cid = c; }
+    }
+    if (cs < MIN_CLASS_SCORE) continue;
+    const conf = obj * cs;
+    if (conf < CONF_THRESHOLD) continue;
+
+    const cx = output[b], cy = output[b+1], bw = output[b+2], bh = output[b+3];
+    const norm = cx <= 1 && cy <= 1 && bw <= 1 && bh <= 1;
+    const px = norm ? cx * INPUT_SIZE : cx;
+    const py = norm ? cy * INPUT_SIZE : cy;
+    const pw = norm ? bw * INPUT_SIZE : bw;
+    const ph = norm ? bh * INPUT_SIZE : bh;
+
+    const x  = (px - pw/2 - padLeft) / scale;
+    const y  = (py - ph/2 - padTop)  / scale;
+    const w  = pw / scale;
+    const h  = ph / scale;
+    const x1 = Math.max(0, x);
+    const y1 = Math.max(0, y);
+
+    raw.push({ cid, conf, box: [x1, y1, Math.min(srcW - x1, w), Math.min(srcH - y1, h)] });
+  }
+
+  return nms(raw.map(d => d.box), raw.map(d => d.conf), NMS_THRESHOLD).map(i => raw[i]);
+}
+
+// ── Zeichnen ──────────────────────────────────────────────────────────────────
+// scaleX/Y: Quellbild-Koordinaten → Canvas-Pixel
+function drawDetections(ctx, dets, scaleX, scaleY) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  dets.forEach(({ cid, conf, box }) => {
+    const x = box[0] * scaleX, y = box[1] * scaleY;
+    const w = box[2] * scaleX, h = box[3] * scaleY;
+    const label = `${CLASS_NAMES[cid] || '?'} ${(conf * 100).toFixed(0)}%`;
+
+    // Bounding-Box
+    ctx.lineWidth   = 2;
+    ctx.strokeStyle = '#e8ff47';
+    ctx.strokeRect(x, y, w, h);
+
+    // Ecken-Akzente in Akzentfarbe
+    const cs = Math.min(14, w * 0.18, h * 0.18);
+    ctx.lineWidth   = 3;
+    ctx.strokeStyle = '#ff2d78';
+    [[x, y, 1, 1],[x+w, y, -1, 1],[x, y+h, 1, -1],[x+w, y+h, -1, -1]].forEach(([cx, cy, dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * cs, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * cs);
+      ctx.stroke();
+    });
+
+    // Label
+    ctx.font = 'bold 12px "Space Mono", monospace';
+    const tw = ctx.measureText(label).width + 10;
+    ctx.fillStyle = '#e8ff47';
+    ctx.fillRect(x - 1, y - 22, tw, 20);
+    ctx.fillStyle = '#000';
+    ctx.fillText(label, x + 4, y - 7);
+  });
+}
+
+// ── Video-Modus ───────────────────────────────────────────────────────────────
+// Das Video läuft vollständig nativ. Der Inferenz-Loop läuft separat per
+// setInterval und schreibt nur auf das transparente overlayCanvas darüber.
+function startVideo(file) {
+  stopAll();
+  placeholder.style.display = 'none';
+  videoEl.style.display     = 'block';
+  imageCanvas.style.display = 'none';
+  videoEl.src = URL.createObjectURL(file);
+
+  videoEl.onloadedmetadata = async () => {
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
+
+    // Overlay-Canvas auf exakte Video-Pixelgröße setzen (nicht CSS-Größe).
+    // Da das Overlay CSS width:100% height:100% hat, stimmt die Darstellung
+    // immer – unabhängig von der angezeigten Canvas-Größe.
+    overlayCanvas.width  = vw;
+    overlayCanvas.height = vh;
+
+    await videoEl.play();
+    isRunning = true;
+    setStatus('Video läuft — Erkennung alle 200 ms.', 'running');
+
+    let busy = false;
+    inferenceTimer = setInterval(async () => {
+      if (!isRunning || busy || videoEl.paused || videoEl.ended) return;
+      busy = true;
+      try {
+        // Frame-Snapshot auf Offscreen-Canvas
+        snapCanvas.width  = vw;
+        snapCanvas.height = vh;
+        snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+
+        // Inferenz — Koordinaten in Quellbild-Pixel (vw × vh)
+        lastDets = await runInference(snapCanvas, vw, vh);
+
+        // Overlay zeichnen: overlayCanvas hat dieselbe Pixelgröße → Scale = 1
+        drawDetections(overlayCtx, lastDets, 1, 1);
+        detCount.textContent = lastDets.length ? `${lastDets.length} Obj.` : '';
+      } catch (err) {
+        debugEl.textContent = err.message || err;
+      } finally {
+        busy = false;
+      }
+    }, INFERENCE_INTERVAL_MS);
+
+    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
+  };
+}
+
+// ── Bild-Modus ────────────────────────────────────────────────────────────────
+async function startImage(file) {
+  stopAll();
+  placeholder.style.display = 'none';
+  videoEl.style.display     = 'none';
+  imageCanvas.style.display = 'block';
+  setStatus('Inferenz läuft…', 'running');
+
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload  = () => res(i);
+    i.onerror = () => rej(new Error('Bild konnte nicht geladen werden.'));
+    i.src = URL.createObjectURL(file);
+  });
+
+  imageCanvas.width  = img.naturalWidth;
+  imageCanvas.height = img.naturalHeight;
+  imageCtx.drawImage(img, 0, 0);
+
+  try {
+    const dets = await runInference(img, img.naturalWidth, img.naturalHeight);
+    imageCtx.drawImage(img, 0, 0);
+    drawDetections(imageCtx, dets, 1, 1);
+    detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
+    setStatus(`Abgeschlossen — ${dets.length} Objekt(e) erkannt.`, 'ready');
+  } catch (err) {
+    debugEl.textContent = err.message || err;
+    setStatus('Fehler bei der Inferenz.', 'error');
+  }
+}
+
+// ── Aufräumen ─────────────────────────────────────────────────────────────────
+function stopAll() {
+  isRunning = false;
+  if (inferenceTimer) { clearInterval(inferenceTimer); inferenceTimer = null; }
+  if (videoEl.src)    { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  lastDets = [];
+  detCount.textContent = '';
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+fileInput.addEventListener('change', () => {
+  stopAll();
+  debugEl.textContent = '';
+  const file = fileInput.files?.[0];
+  fileNameEl.textContent = file ? file.name : '—';
+  if (cvReady && ortReady) {
+    runButton.disabled = !file;
+    setStatus(file ? 'Bereit.' : 'Datei auswählen.', 'ready');
+  }
+});
+
+runButton.addEventListener('click', () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  debugEl.textContent = '';
+  file.type.startsWith('video/') ? startVideo(file) : startImage(file);
+});
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) {
+    fileInput.files = e.dataTransfer.files;
+    fileInput.dispatchEvent(new Event('change'));
+  }
+});
+
+window.addEventListener('error', e =>
+  { debugEl.textContent = 'Fehler: ' + (e.error?.message || e.message); });
+window.addEventListener('unhandledrejection', e =>
+  { debugEl.textContent = 'Promise-Fehler: ' + (e.reason?.message || e.reason); });
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+loadModel();
+</script>
 
 
-</section>
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
