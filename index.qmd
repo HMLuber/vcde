@@ -245,6 +245,149 @@ format:
   }
   .info-item { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
   .info-item span { color: var(--text); }
+
+  /* ── Educational sections ─────────────────────────────────────────────────── */
+  .edu-section {
+    margin-bottom: 52px;
+    padding-bottom: 44px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section-heading {
+    font-family: var(--mono);
+    font-size: clamp(0.95rem, 2vw, 1.25rem);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 18px;
+    letter-spacing: -0.02em;
+  }
+  .edu-text {
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: #aaa;
+    max-width: 740px;
+    margin-bottom: 12px;
+  }
+  .edu-text strong { color: var(--text); }
+  .timeline {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 28px;
+  }
+  .timeline li {
+    display: flex;
+    gap: 16px;
+    font-size: 0.83rem;
+    color: #aaa;
+    line-height: 1.55;
+  }
+  .tl-year {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 90px;
+    padding-top: 1px;
+  }
+  .tl-text strong { color: var(--text); }
+  .terms-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 28px;
+    font-size: 0.83rem;
+  }
+  .terms-table th {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .terms-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: #aaa;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .terms-table td:first-child {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--accent);
+    white-space: nowrap;
+    padding-right: 20px;
+  }
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .usecase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .usecase-card strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .usecase-card p { font-size: 0.78rem; color: #888; line-height: 1.55; margin: 0; }
+  .steps-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .steps-list li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    font-size: 0.83rem;
+    color: #aaa;
+    line-height: 1.55;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #000;
+    background: var(--accent);
+    min-width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .steps-list li strong { color: var(--text); }
+  .sub-heading {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 24px 0 12px;
+    letter-spacing: -0.01em;
+  }
 </style>
 
 <div id="yolo-app">
@@ -253,6 +396,93 @@ format:
     <h1>YOLO<span>v5</span> — Objekterkennung</h1>
     <div class="badge">YOLOv5n · ONNX · Browser</div>
   </header>
+
+  <!-- Einführung -->
+  <section class="edu-section">
+    <div class="section-label">Einführung</div>
+    <h2 class="section-heading">Was ist Echtzeit-Objekterkennung?</h2>
+    <p class="edu-text">
+      Echtzeit-Objekterkennung ist die <strong>automatische Identifikation und Lokalisierung von Objekten in Bildern oder Videoströmen</strong> mit minimaler Verzögerung. Im Gegensatz zu klassischen Bildanalyseverfahren ermöglicht sie die <strong>gleichzeitige Erkennung mehrerer Objekte</strong> und deren Klassifizierung in wenigen Millisekunden.
+    </p>
+    <p class="edu-text">
+      Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und präzise Bounding Boxes um Objekte zu zeichnen – Grundlage für autonomes Fahren, Videoüberwachung, medizinische Bilddiagnose und industrielle Qualitätsprüfung.
+    </p>
+  </section>
+
+  <!-- Grundlagen -->
+  <section class="edu-section">
+    <div class="section-label">Grundlagen</div>
+
+    <h2 class="section-heading">Geschichte der Objekterkennung</h2>
+    <ul class="timeline">
+      <li>
+        <span class="tl-year">1960er–1990er</span>
+        <span class="tl-text">Klassische Methoden wie <strong>Edge Detection</strong> und <strong>Feature Matching</strong> (z.B. Haar Cascades) dominieren.</span>
+      </li>
+      <li>
+        <span class="tl-year">2012</span>
+        <span class="tl-text"><strong>AlexNet</strong> gewinnt den ImageNet-Wettbewerb mit Deep Learning und zeigt die Überlegenheit von CNNs.</span>
+      </li>
+      <li>
+        <span class="tl-year">2015–2016</span>
+        <span class="tl-text"><strong>Faster R-CNN</strong> und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit.</span>
+      </li>
+      <li>
+        <span class="tl-year">2016 – heute</span>
+        <span class="tl-text"><strong>YOLO</strong> (You Only Look Once) revolutioniert das Feld durch Echtzeit-Erkennung auf normaler Hardware. Weitere Varianten wie SSD und andere moderne Architekturen folgen.</span>
+      </li>
+    </ul>
+
+    <h2 class="section-heading">Begriffserklärungen</h2>
+    <table class="terms-table">
+      <thead><tr><th>Begriff</th><th>Erklärung</th></tr></thead>
+      <tbody>
+        <tr><td>CNN</td><td>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder (Convolutional Neural Network)</td></tr>
+        <tr><td>Bounding Box</td><td>Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe)</td></tr>
+        <tr><td>Confidence Score</td><td>Wahrscheinlichkeit (0–1), ob ein erkanntes Objekt echt ist</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="section-heading">Typische Anwendungsfälle</h2>
+    <div class="usecase-grid">
+      <div class="usecase-card"><strong>Autonomes Fahren</strong><p>Erkennung von Fußgängern, Fahrzeugen und Verkehrszeichen in Echtzeit.</p></div>
+      <div class="usecase-card"><strong>Videoüberwachung</strong><p>Personen- und Fahrzeugerkennung, Sicherheitsanwendungen.</p></div>
+      <div class="usecase-card"><strong>Sportanalyse</strong><p>Tracking von Spielern, Bällen und Bewegungsanalyse.</p></div>
+      <div class="usecase-card"><strong>Medizin</strong><p>Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern.</p></div>
+      <div class="usecase-card"><strong>Industrielle Inspektion</strong><p>Qualitätskontrolle und Defekterkennung an Produktionslinien.</p></div>
+    </div>
+  </section>
+
+  <!-- Motivation -->
+  <section class="edu-section">
+    <div class="section-label">Motivation</div>
+
+    <h2 class="section-heading">Warum Echtzeit-Objekterkennung heute essentiell ist</h2>
+    <p class="edu-text">
+      Die Fähigkeit, <strong>Objekte augenblicklich und präzise zu erkennen</strong>, ist in einer zunehmend vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig für moderne Anforderungen.
+    </p>
+
+    <h2 class="section-heading">Wie YOLO grob funktioniert</h2>
+    <ol class="steps-list">
+      <li><span class="step-num">1</span><span><strong>Input:</strong> Ein Bild beliebiger Größe wird auf ein festes Format normalisiert.</span></li>
+      <li><span class="step-num">2</span><span><strong>Backbone-Netzwerk:</strong> Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten.</span></li>
+      <li><span class="step-num">3</span><span><strong>Gitter-Struktur:</strong> Das Bild wird in Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig.</span></li>
+      <li><span class="step-num">4</span><span><strong>Vorhersage:</strong> Für jede Zelle werden Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt.</span></li>
+      <li><span class="step-num">5</span><span><strong>Output:</strong> Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung.</span></li>
+      <li><span class="step-num">6</span><span><strong>Post-Processing:</strong> NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen.</span></li>
+    </ol>
+
+    <h2 class="section-heading">Rolle von OpenCV</h2>
+    <p class="edu-text">
+      <strong>OpenCV</strong> (Open Source Computer Vision) übernimmt die Bildvorverarbeitung: Skalierung und Normalisierung für das Netzwerk, Farbkonvertierung (RGB ↔ BGR) sowie das Zeichnen von Bounding Boxes und Labels auf das Ausgabebild.
+    </p>
+  </section>
+
+  <!-- Live-Demo -->
+  <section style="margin-bottom: 28px;">
+    <div class="section-label">Live-Demo</div>
+    <h2 class="section-heading">Webcam oder Video-Upload mit Erkennung</h2>
+  </section>
 
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="fileInput" accept="image/*,video/*" />
