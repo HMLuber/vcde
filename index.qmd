@@ -505,7 +505,7 @@ ort.env.wasm.simd       = true;    // SIMD ist überall sicher
 // ─── Konfiguration ────────────────────────────────────────────────────────────
 // Lokal abgelegt: lege deine YOLOv5n ONNX nach `models/yolov5n.onnx` relativ zur
 // gerenderten HTML-Datei. Falls nicht vorhanden, wird unten ein Fehler gezeigt.
-const MODEL_PATH      = 'models/yolov5n.onnx';
+const MODEL_PATH      = './models/yolov5n.onnx';
 const INPUT_SIZE      = 640;
 const CONF_THRESHOLD  = 0.25;
 const MIN_OBJECTNESS  = 0.20;
