@@ -575,9 +575,8 @@ async function loadModel() {
     }
     const providers = useWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
     session    = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: providers });
-    inputName      = session.inputNames[0];
-    outputName     = session.outputNames[0];
-    modelInputType = session.inputMetadata?.[inputName]?.type ?? 'float32';
+    inputName  = session.inputNames[0];
+    outputName = session.outputNames[0];
     const ep   = session.handler?.executionProviderName ?? (useWebGPU ? 'webgpu' : 'wasm');
     epInfo.textContent                      = ep.toUpperCase();
     document.getElementById('epBadge').textContent = `YOLOv5n · ONNX · ${ep.toUpperCase()}`;
@@ -664,9 +663,21 @@ function float32ToFloat16(f32) {
 // ── Inferenz ──────────────────────────────────────────────────────────────────
 async function runInference(source, srcW, srcH) {
   const { floatData, scale, padLeft, padTop } = preprocessSource(source, srcW, srcH);
-  const tensorData = modelInputType === 'float16' ? float32ToFloat16(floatData) : floatData;
-  const tensor     = new ort.Tensor(modelInputType, tensorData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
-  const results = await session.run({ [inputName]: tensor });
+
+  function makeTensor(dtype) {
+    const data = dtype === 'float16' ? float32ToFloat16(floatData) : floatData;
+    return new ort.Tensor(dtype, data, [1, 3, INPUT_SIZE, INPUT_SIZE]);
+  }
+
+  let results;
+  try {
+    results = await session.run({ [inputName]: makeTensor(modelInputType) });
+  } catch (e) {
+    if (modelInputType === 'float32' && e.message?.includes('float16')) {
+      modelInputType = 'float16';
+      results = await session.run({ [inputName]: makeTensor('float16') });
+    } else { throw e; }
+  }
   const output  = results[outputName].data;
   const raw     = [];
 
