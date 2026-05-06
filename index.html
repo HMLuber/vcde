@@ -103,8 +103,6 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
-
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -604,6 +602,25 @@ ul.task-list li input[type="checkbox"] {
 <script>
 'use strict';
 
+// Warte, bis ort verfügbar ist
+function waitForOrt(callback, maxWait = 5000) {
+  const start = Date.now();
+  function check() {
+    if (typeof ort !== 'undefined') {
+      callback();
+    } else if (Date.now() - start < maxWait) {
+      setTimeout(check, 50);
+    } else {
+      console.error('ONNX Runtime konnte nicht geladen werden');
+      document.getElementById('debugEl').textContent = '❌ ONNX Runtime nicht verfügbar.';
+    }
+  }
+  check();
+}
+
+// Alle Initialisierungslogik hier drin
+function initializeApp() {
+
 // ─── KRITISCH: ORT-Web muss wissen, wo seine WASM-Dateien liegen ─────────────
 // Ohne das schlägt InferenceSession.create() lautlos oder mit
 // "no available backend found" fehl.
@@ -1051,6 +1068,11 @@ window.addEventListener('unhandledrejection',
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 loadModel();
+
+} // Ende initializeApp()
+
+// Starte die App sobald ort verfügbar ist
+waitForOrt(initializeApp);
 </script>
 
 
