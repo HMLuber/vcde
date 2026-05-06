@@ -292,17 +292,11 @@ ul.task-list li input[type="checkbox"] {
   }
   .viewer-placeholder .big-icon { font-size: 2.4rem; opacity: 0.25; }
 
-  #videoEl {
-    display: none;
-    width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-  }
+  #videoEl { display: none !important; }
   #overlayCanvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
+    display: none;
+    max-width: 100%;
+    max-height: 70vh;
   }
 
   /* Debug */
@@ -800,7 +794,6 @@ async function runInference(source, srcW, srcH) {
 // ── Zeichnen ──────────────────────────────────────────────────────────────────
 // scaleX/Y: Quellbild-Koordinaten → Canvas-Pixel
 function drawDetections(ctx, dets, scaleX, scaleY) {
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   dets.forEach(({ cid, conf, box }) => {
     const x = box[0] * scaleX, y = box[1] * scaleY;
     const w = box[2] * scaleX, h = box[3] * scaleY;
@@ -838,8 +831,8 @@ function drawDetections(ctx, dets, scaleX, scaleY) {
 // Lag = reine Inferenzzeit, kein festes Intervall-Overhead mehr.
 function startVideo(file) {
   stopAll();
-  placeholder.style.display = 'none';
-  videoEl.style.display     = 'block';
+  placeholder.style.display  = 'none';
+  overlayCanvas.style.display = 'block';
   videoEl.src = URL.createObjectURL(file);
 
   videoEl.onloadedmetadata = async () => {
@@ -877,6 +870,8 @@ function startVideo(file) {
       try {
         const dets = await runInference(snapCanvas, vw, vh);
         if (!isRunning) return;
+        // Snap-Frame auf Canvas malen → Boxes liegen immer auf dem analysierten Bild
+        overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
         drawDetections(overlayCtx, dets, 1, 1);
         detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
       } catch (err) {
@@ -894,7 +889,9 @@ function startVideo(file) {
 function stopAll() {
   isRunning = false;
   if (videoEl.src) { videoEl.pause(); URL.revokeObjectURL(videoEl.src); videoEl.src = ''; }
+  overlayCanvas.style.display = 'none';
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  placeholder.style.display = 'flex';
   detCount.textContent = '';
   fpsEl.textContent = '—';
 }
