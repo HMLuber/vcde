@@ -641,22 +641,8 @@ function nms(boxes, scores, thresh) {
 }
 
 // ── float32 → float16 Konvertierung ───────────────────────────────────────────
-function toF16(v) {
-  if (v === 0) return 0;
-  const b = new DataView(new ArrayBuffer(4));
-  b.setFloat32(0, v);
-  const u = b.getUint32(0);
-  const sign = (u >> 16) & 0x8000;
-  const exp  = ((u >> 23) & 0xff) - 127 + 15;
-  const frac = u & 0x7fffff;
-  if (exp <= 0) return sign;
-  if (exp >= 31) return sign | 0x7c00;
-  return sign | (exp << 10) | (frac >> 13);
-}
 function float32ToFloat16(f32) {
-  const f16 = new Uint16Array(f32.length);
-  for (let i = 0; i < f32.length; i++) f16[i] = toF16(f32[i]);
-  return f16;
+  return new Float16Array(f32);
 }
 
 // ── Inferenz ──────────────────────────────────────────────────────────────────
