@@ -119,13 +119,13 @@ window.Module = {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:      #0a0a0a;
-    --surface: #111111;
-    --border:  #222222;
-    --accent:  #e8ff47;
-    --accent2: #ff2d78;
-    --text:    #f0f0f0;
-    --muted:   #666;
+    --bg:      #ffffff;
+    --surface: #f3f4f6;
+    --border:  #d1d5db;
+    --accent:  #2563eb;
+    --accent2: #e8175d;
+    --text:    #0a0a0a;
+    --muted:   #6b7280;
     --radius:  4px;
     --mono:    'Space Mono', monospace;
     --sans:    'DM Sans', sans-serif;
@@ -189,7 +189,7 @@ window.Module = {
   }
   .upload-zone:hover, .upload-zone.drag-over {
     border-color: var(--accent);
-    background: rgba(232,255,71,0.03);
+    background: rgba(37,99,235,0.04);
   }
   .upload-zone input[type="file"] {
     position: absolute;
@@ -236,7 +236,7 @@ window.Module = {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     background: var(--accent);
-    color: #000;
+    color: #fff;
     border: none;
     padding: 13px 28px;
     border-radius: var(--radius);
@@ -365,7 +365,7 @@ window.Module = {
   .edu-text {
     font-size: 0.88rem;
     line-height: 1.8;
-    color: #aaa;
+    color: #4b5563;
     max-width: 740px;
     margin-bottom: 12px;
   }
@@ -381,7 +381,7 @@ window.Module = {
     display: flex;
     gap: 16px;
     font-size: 0.83rem;
-    color: #aaa;
+    color: #4b5563;
     line-height: 1.55;
   }
   .tl-year {
@@ -412,7 +412,7 @@ window.Module = {
   .terms-table td {
     padding: 10px 14px;
     border-bottom: 1px solid var(--border);
-    color: #aaa;
+    color: #4b5563;
     vertical-align: top;
     line-height: 1.5;
   }
@@ -442,7 +442,7 @@ window.Module = {
     color: var(--accent);
     margin-bottom: 6px;
   }
-  .usecase-card p { font-size: 0.78rem; color: #888; line-height: 1.55; margin: 0; }
+  .usecase-card p { font-size: 0.78rem; color: #6b7280; line-height: 1.55; margin: 0; }
   .steps-list {
     list-style: none;
     display: flex;
@@ -455,14 +455,14 @@ window.Module = {
     gap: 14px;
     align-items: flex-start;
     font-size: 0.83rem;
-    color: #aaa;
+    color: #4b5563;
     line-height: 1.55;
   }
   .step-num {
     font-family: var(--mono);
     font-size: 0.65rem;
     font-weight: 700;
-    color: #000;
+    color: #fff;
     background: var(--accent);
     min-width: 20px;
     height: 20px;
@@ -761,19 +761,9 @@ function preprocessSource(source, srcW, srcH) {
 }
 
 // ── Float32 → Float16 ─────────────────────────────────────────────────────────
-function f32ToF16(v) {
-  const fa = new Float32Array(1); fa[0] = v;
-  const ia = new Int32Array(fa.buffer);
-  const x = ia[0], s = (x >> 16) & 0x8000;
-  const e = (x >> 23) & 0xff; let ex = e - 127 + 15, m = x & 0x7fffff;
-  if (e  === 255) return s | 0x7c00 | (m ? 0x200 : 0);
-  if (ex <= 0)   { if (ex < -10) return s; m = (m|0x800000)>>(1-ex); return s|((m+0x0fff+((m>>13)&1))>>13); }
-  if (ex > 30)   return s | 0x7c00;
-  return s | (ex << 10) | (m >> 13);
-}
 function toF16(arr) {
-  const out = new Uint16Array(arr.length);
-  for (let i = 0; i < arr.length; i++) out[i] = f32ToF16(arr[i]);
+  const out = new Float16Array(arr.length);
+  for (let i = 0; i < arr.length; i++) out[i] = arr[i];
   return out;
 }
 
