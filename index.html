@@ -817,12 +817,12 @@ function drawDetections(ctx, dets, scaleX, scaleY) {
     });
 
     // Label
-    ctx.font = 'bold 12px "Space Mono", monospace';
-    const tw = ctx.measureText(label).width + 10;
+    ctx.font = 'bold 24px "Space Mono", monospace';
+    const tw = ctx.measureText(label).width + 14;
     ctx.fillStyle = '#e8ff47';
-    ctx.fillRect(x - 1, y - 22, tw, 20);
+    ctx.fillRect(x - 1, y - 32, tw, 30);
     ctx.fillStyle = '#000';
-    ctx.fillText(label, x + 4, y - 7);
+    ctx.fillText(label, x + 6, y - 7);
   });
 }
 
