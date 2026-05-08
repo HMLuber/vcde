@@ -524,26 +524,31 @@ format:
 <script>
 'use strict';
 
-async function initializeApp() {
-  if (typeof ort === 'undefined') {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js';
-      s.onload = () => typeof ort !== 'undefined' ? resolve() : reject(new Error('ort nicht definiert nach Load'));
-      s.onerror = () => reject(new Error('Netzwerkfehler beim Laden von ONNX Runtime'));
-      document.head.appendChild(s);
-    }).catch(err => {
-      document.getElementById('debugEl').textContent = '❌ ' + err.message;
-      throw err;
-    });
-  }
+// ─── ORT laden (Fallback falls Header-Script noch nicht fertig) ───────────────
+async function ensureOrt() {
+  if (typeof ort !== 'undefined') return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src    = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js';
+    s.onload = () => (typeof ort !== 'undefined' ? resolve() : reject(new Error('ort nach Load nicht definiert')));
+    s.onerror = () => reject(new Error('Netzwerkfehler: ONNX Runtime konnte nicht geladen werden'));
+    document.head.appendChild(s);
+  });
+}
 
-  // ─── KRITISCH: ORT-Web muss wissen, wo seine WASM-Dateien liegen ─────────────
+// ─── App ──────────────────────────────────────────────────────────────────────
+async function initializeApp() {
+  await ensureOrt().catch(err => {
+    document.getElementById('debugEl').textContent = '❌ ' + err.message;
+    throw err;
+  });
+
+  // ORT-Konfiguration
   ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.simd       = true;
 
-  // ─── Konfiguration ────────────────────────────────────────────────────────────
+  // ── Konstanten ───────────────────────────────────────────────────────────────
   const MODEL_PATH      = 'models/yolov5n.onnx';
   const INPUT_SIZE      = 640;
   const MIN_OBJECTNESS  = 0.20;
@@ -566,7 +571,7 @@ async function initializeApp() {
     'toothbrush'
   ];
 
-  // ─── DOM-Referenzen ───────────────────────────────────────────────────────────
+  // ── DOM ──────────────────────────────────────────────────────────────────────
   const fileInput     = document.getElementById('fileInput');
   const runButton     = document.getElementById('runButton');
   const videoEl       = document.getElementById('videoEl');
@@ -586,88 +591,105 @@ async function initializeApp() {
   const nmsVal        = document.getElementById('nmsVal');
   const overlayCtx    = overlayCanvas.getContext('2d');
 
-  // ─── Zustand ──────────────────────────────────────────────────────────────────
+  // ── Applikations-Zustand ─────────────────────────────────────────────────────
   let session          = null;
   let inputName        = null;
   let outputName       = null;
   let ortReady         = false;
-  let isRunning        = false;
   let activeBackend    = 'wasm';
   let currentObjectURL = null;
+  let isPlaying        = false;
 
-  // ─── Hilfs-Canvas ────────────────────────────────────────────────────────────
+  // Render-Loop: läuft bei Video-FPS, unabhängig von Inferenz-Geschwindigkeit
+  let renderHandle = null;
+  const useRVFC    = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+
+  // Inferenz-Loop: feuert so schnell wie möglich, blockiert Render nicht
+  let inferBusy  = false;
+  let latestDets = [];   // zuletzt berechnete Bounding Boxes, vom Render-Loop genutzt
+
+  // FPS-Zähler für die Videoanzeige
+  let fpsLastTs  = 0;
+  let fpsIdx     = 0;
+  let fpsFilled  = 0;
+  const fpsBuf   = new Float32Array(30);
+
+  // ── Offscreen-Canvas ─────────────────────────────────────────────────────────
+  // snapCanvas: Standbild des aktuellen Frames für die Inferenz
   const snapCanvas = document.createElement('canvas');
   const snapCtx    = snapCanvas.getContext('2d', { willReadFrequently: true });
 
+  // prepCanvas: 640×640 Letterbox-Eingabe für das Netz
   const prepCanvas = document.createElement('canvas');
   prepCanvas.width  = INPUT_SIZE;
   prepCanvas.height = INPUT_SIZE;
-  const prepCtx = prepCanvas.getContext('2d', { willReadFrequently: true });
+  const prepCtx     = prepCanvas.getContext('2d', { willReadFrequently: true });
 
-  // Pre-allokierter Float32-Buffer — keine Heap-Allokation pro Frame
+  // Pre-allokierter Buffer: keine GC-Drücke pro Frame
   const _area     = INPUT_SIZE * INPUT_SIZE;
   const _floatBuf = new Float32Array(_area * 3);
 
-  // ─── UI-Helfer ───────────────────────────────────────────────────────────────
-  function setStatus(msg, mode = 'idle') {
+  // ── UI-Helfer ────────────────────────────────────────────────────────────────
+  const setStatus = (msg, mode = 'idle') => {
     statusText.textContent = msg;
     statusDot.className    = 'status-dot' + (mode !== 'idle' ? ' ' + mode : '');
+  };
+  const setDebug = (msg) => { debugEl.textContent = msg || ''; };
+
+  function trackFps(now) {
+    if (fpsLastTs > 0) {
+      fpsBuf[fpsIdx] = 1000 / (now - fpsLastTs);
+      fpsIdx    = (fpsIdx + 1) % fpsBuf.length;
+      fpsFilled = Math.min(fpsFilled + 1, fpsBuf.length);
+      let sum = 0;
+      for (let i = 0; i < fpsFilled; i++) sum += fpsBuf[i];
+      fpsEl.textContent = (sum / fpsFilled).toFixed(1);
+    }
+    fpsLastTs = now;
   }
 
-  function setDebug(msg) {
-    debugEl.textContent = msg || '';
-  }
-
-  // ─── Modell laden ────────────────────────────────────────────────────────────
+  // ── Modell laden (WebGPU → WASM-Fallback) ────────────────────────────────────
   async function loadModel() {
     setStatus('Modell wird geladen…', 'running');
 
+    // WebGPU prüfen: echter Adapter-Request, kein reiner navigator.gpu-Check
     let providers = ['wasm'];
     try {
-      if (navigator.gpu && (await navigator.gpu.requestAdapter())) {
-        providers = ['webgpu', 'wasm'];
+      if (navigator.gpu) {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (adapter) providers = ['webgpu', 'wasm'];
       }
     } catch (_) {}
 
+    // Sauberer 404-Check bevor ORT einen kryptischen Fehler wirft
     try {
-      const head = await fetch(MODEL_PATH, { method: 'HEAD' });
-      if (!head.ok) throw new Error(`HTTP ${head.status}`);
+      const r = await fetch(MODEL_PATH, { method: 'HEAD' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
     } catch (err) {
       setStatus('Modell nicht gefunden.', 'error');
       setDebug(
-        `❌ Kann '${MODEL_PATH}' nicht öffnen (${err.message || err}).\n\n` +
-        `So beheben:\n` +
-        `  • Lege die Datei yolov5n.onnx in einen Ordner 'models/' \n` +
-        `    direkt neben der gerenderten HTML.\n` +
-        `  • Bezugsquelle: https://github.com/ultralytics/yolov5/releases\n` +
-        `    (oder per Python:  yolo export model=yolov5n.pt format=onnx imgsz=640)\n` +
-        `  • Prüfe, dass du via http(s):// servest, nicht via file://`
+        `❌ Kann '${MODEL_PATH}' nicht öffnen (${err.message}).\n\n` +
+        `  • yolov5n.onnx → Ordner models/ neben der HTML ablegen\n` +
+        `  • Quelle: github.com/ultralytics/yolov5/releases\n` +
+        `  • Muss via http(s):// serviert werden, nicht file://`
       );
       return;
     }
 
+    // Session erzeugen — bei WebGPU-Fehler automatisch auf WASM zurückfallen
+    const tryCreate = (eps) => ort.InferenceSession.create(MODEL_PATH, {
+      executionProviders: eps,
+      graphOptimizationLevel: 'all',
+    });
+
     try {
-      session = await ort.InferenceSession.create(MODEL_PATH, {
-        executionProviders: providers,
-        graphOptimizationLevel: 'all',
-      });
-    } catch (err) {
+      session = await tryCreate(providers);
+    } catch (_) {
       if (providers[0] === 'webgpu') {
-        try {
-          session = await ort.InferenceSession.create(MODEL_PATH, {
-            executionProviders: ['wasm'],
-            graphOptimizationLevel: 'all',
-          });
-          providers = ['wasm'];
-        } catch (err2) {
-          setStatus('Modell konnte nicht initialisiert werden.', 'error');
-          setDebug('ORT-Fehler: ' + (err2.message || err2));
-          return;
-        }
+        try   { session = await tryCreate(['wasm']); providers = ['wasm']; }
+        catch (err2) { setStatus('Session-Fehler.', 'error'); setDebug('ORT: ' + err2.message); return; }
       } else {
-        setStatus('Modell konnte nicht initialisiert werden.', 'error');
-        setDebug('ORT-Fehler: ' + (err.message || err));
-        return;
+        setStatus('Session-Fehler.', 'error'); return;
       }
     }
 
@@ -677,15 +699,14 @@ async function initializeApp() {
     epInfo.textContent  = activeBackend.toUpperCase();
     epBadge.textContent = `YOLOv5n · ONNX · ${activeBackend.toUpperCase()}`;
 
+    // Warmup: erster Durchlauf ist immer langsam (Shader-Kompilierung)
+    try {
+      const w = new ort.Tensor('float32', new Float32Array(_area * 3), [1, 3, INPUT_SIZE, INPUT_SIZE]);
+      await session.run({ [inputName]: w });
+    } catch (_) {}
+
     ortReady = true;
     updateReadyState();
-
-    try {
-      const warm = new ort.Tensor('float32',
-        new Float32Array(3 * INPUT_SIZE * INPUT_SIZE),
-        [1, 3, INPUT_SIZE, INPUT_SIZE]);
-      await session.run({ [inputName]: warm });
-    } catch (_) {}
   }
 
   function updateReadyState() {
@@ -696,28 +717,28 @@ async function initializeApp() {
     setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Video auswählen.', 'ready');
   }
 
-  // ─── Preprocessing: Letterbox + RGB-CHW Float ────────────────────────────────
-  function preprocessSource(source, srcW, srcH) {
-    const scale   = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
-    const resW    = Math.round(srcW * scale);
-    const resH    = Math.round(srcH * scale);
-    const padLeft = Math.floor((INPUT_SIZE - resW) / 2);
-    const padTop  = Math.floor((INPUT_SIZE - resH) / 2);
+  // ── Preprocessing: Letterbox + RGB-CHW ───────────────────────────────────────
+  function preprocess(source, srcW, srcH) {
+    const scale = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
+    const rW    = Math.round(srcW * scale);
+    const rH    = Math.round(srcH * scale);
+    const padL  = Math.floor((INPUT_SIZE - rW) / 2);
+    const padT  = Math.floor((INPUT_SIZE - rH) / 2);
 
     prepCtx.fillStyle = 'rgb(114,114,114)';
     prepCtx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
-    prepCtx.drawImage(source, 0, 0, srcW, srcH, padLeft, padTop, resW, resH);
+    prepCtx.drawImage(source, 0, 0, srcW, srcH, padL, padT, rW, rH);
 
     const px = prepCtx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
     for (let i = 0; i < _area; i++) {
-      _floatBuf[i]             = px[i * 4]     / 255.0;
-      _floatBuf[_area + i]     = px[i * 4 + 1] / 255.0;
-      _floatBuf[2 * _area + i] = px[i * 4 + 2] / 255.0;
+      _floatBuf[i]             = px[i * 4]     / 255;
+      _floatBuf[_area + i]     = px[i * 4 + 1] / 255;
+      _floatBuf[2 * _area + i] = px[i * 4 + 2] / 255;
     }
-    return { scale, padLeft, padTop };
+    return { scale, padL, padT };
   }
 
-  // ─── Non-Maximum-Suppression ────────────────────────────────────────────────
+  // ── NMS ──────────────────────────────────────────────────────────────────────
   function nms(boxes, scores, thresh) {
     const order = scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
     const keep  = [];
@@ -730,181 +751,165 @@ async function initializeApp() {
         const iw = Math.max(0, Math.min(ax + aw, bx + bw) - Math.max(ax, bx));
         const ih = Math.max(0, Math.min(ay + ah, by + bh) - Math.max(ay, by));
         const ua = aw * ah + bw * bh - iw * ih;
-        if (ua > 0 && (iw * ih) / ua > thresh) order.splice(j, 1);
+        if (ua > 0 && iw * ih / ua > thresh) order.splice(j, 1);
       }
     }
     return keep;
   }
 
-  // ─── Inferenz ────────────────────────────────────────────────────────────────
-  async function runInference(source, srcW, srcH) {
-    const { scale, padLeft, padTop } = preprocessSource(source, srcW, srcH);
-    // Float32 direkt verwenden — kein unnötiger Float16-Konvertierungsschritt
-    const tensor  = new ort.Tensor('float32', _floatBuf, [1, 3, INPUT_SIZE, INPUT_SIZE]);
-    const results = await session.run({ [inputName]: tensor });
-    const output  = results[outputName].data;
-    const stride  = 85;
-    const N       = output.length / stride;
+  // ── Inferenz-Loop: asynchron, blockiert Render-Loop nicht ────────────────────
+  // Feuert kontinuierlich, aber nie parallel (inferBusy-Flag).
+  // Aktualisiert latestDets; der Render-Loop liest diese unabhängig.
+  async function inferLoop(vw, vh) {
+    if (!isPlaying || inferBusy) return;
+    inferBusy = true;
+    try {
+      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+      const { scale, padL, padT } = preprocess(snapCanvas, vw, vh);
+      const tensor  = new ort.Tensor('float32', _floatBuf, [1, 3, INPUT_SIZE, INPUT_SIZE]);
+      const out     = (await session.run({ [inputName]: tensor }))[outputName].data;
+      const N       = out.length / 85;
 
-    const rawBoxes  = [];
-    const rawScores = [];
-    const rawClass  = [];
+      const boxes = [], scores = [], classes = [];
+      for (let i = 0; i < N; i++) {
+        const b   = i * 85;
+        const obj = out[b + 4];
+        if (obj < MIN_OBJECTNESS) continue;
 
-    for (let i = 0; i < N; i++) {
-      const b   = i * stride;
-      const obj = output[b + 4];
-      if (obj < MIN_OBJECTNESS) continue;
+        let cid = 0, cs = 0;
+        for (let c = 0; c < 80; c++) {
+          const s = out[b + 5 + c];
+          if (s > cs) { cs = s; cid = c; }
+        }
+        if (cs < MIN_CLASS_SCORE) continue;
 
-      let cid = 0, cs = 0;
-      for (let c = 0; c < 80; c++) {
-        const s = output[b + 5 + c];
-        if (s > cs) { cs = s; cid = c; }
+        const conf = obj * cs;
+        if (conf < CONF_THRESHOLD) continue;
+
+        // Standard YOLOv5 ONNX: xywh in Pixeln des 640×640-Inputs
+        const cx = out[b], cy = out[b + 1], bw = out[b + 2], bh = out[b + 3];
+        let x = (cx - bw / 2 - padL) / scale;
+        let y = (cy - bh / 2 - padT) / scale;
+        let w = bw / scale, h = bh / scale;
+
+        if (x < 0) { w += x; x = 0; }
+        if (y < 0) { h += y; y = 0; }
+        if (x + w > vw) w = vw - x;
+        if (y + h > vh) h = vh - y;
+        if (w <= 1 || h <= 1) continue;
+
+        boxes.push([x, y, w, h]); scores.push(conf); classes.push(cid);
       }
-      if (cs < MIN_CLASS_SCORE) continue;
 
-      const conf = obj * cs;
-      if (conf < CONF_THRESHOLD) continue;
-
-      // Standard YOLOv5 ONNX-Export: xywh in Pixeln des 640×640-Inputs
-      const cx = output[b],     cy = output[b + 1];
-      const bw = output[b + 2], bh = output[b + 3];
-
-      // Letterbox rückwärts → Quellbild-Pixelkoordinaten
-      let x = (cx - bw / 2 - padLeft) / scale;
-      let y = (cy - bh / 2 - padTop)  / scale;
-      let w = bw / scale;
-      let h = bh / scale;
-
-      if (x < 0) { w += x; x = 0; }
-      if (y < 0) { h += y; y = 0; }
-      if (x + w > srcW) w = srcW - x;
-      if (y + h > srcH) h = srcH - y;
-      if (w <= 1 || h <= 1) continue;
-
-      rawBoxes.push([x, y, w, h]);
-      rawScores.push(conf);
-      rawClass.push(cid);
+      const keep = nms(boxes, scores, NMS_THRESHOLD);
+      latestDets = keep.map(i => ({ box: boxes[i], conf: scores[i], cid: classes[i] }));
+      detCount.textContent = latestDets.length ? `${latestDets.length} Obj.` : '';
+    } catch (err) {
+      setDebug('Inferenz-Fehler: ' + err.message);
+    } finally {
+      inferBusy = false;
+      // Sofort nächste Inferenz anstoßen, solange Video läuft
+      if (isPlaying) inferLoop(vw, vh);
     }
-
-    const keep = nms(rawBoxes, rawScores, NMS_THRESHOLD);
-    return keep.map(i => ({ box: rawBoxes[i], conf: rawScores[i], cid: rawClass[i] }));
   }
 
-  // ─── Zeichnen ────────────────────────────────────────────────────────────────
+  // ── Render-Loop: läuft bei Video-FPS, entkoppelt von Inferenz ────────────────
+  // requestVideoFrameCallback (Chromium/Safari) feuert exakt bei jedem Video-Frame.
+  // Fallback: requestAnimationFrame (60 Hz Display-Takt).
+  function startRenderLoop(vw, vh) {
+    function onFrame(now) {
+      if (!isPlaying) return;
+      trackFps(now);
+      // Aktuellen Video-Frame + letzte Detektionen zeichnen
+      overlayCtx.drawImage(videoEl, 0, 0, vw, vh);
+      drawDetections(overlayCtx, latestDets);
+      // Nächsten Frame anfordern
+      renderHandle = useRVFC
+        ? videoEl.requestVideoFrameCallback(onFrame)
+        : requestAnimationFrame(onFrame);
+    }
+    renderHandle = useRVFC
+      ? videoEl.requestVideoFrameCallback(onFrame)
+      : requestAnimationFrame(onFrame);
+  }
+
+  function stopRenderLoop() {
+    if (renderHandle === null) return;
+    if (useRVFC) videoEl.cancelVideoFrameCallback(renderHandle);
+    else         cancelAnimationFrame(renderHandle);
+    renderHandle = null;
+  }
+
+  // ── Zeichnen ─────────────────────────────────────────────────────────────────
   function drawDetections(ctx, dets) {
-    ctx.font = 'bold 18px "Space Mono", monospace';
+    if (!dets.length) return;
+    ctx.font         = 'bold 18px "Space Mono", monospace';
     ctx.textBaseline = 'alphabetic';
 
-    dets.forEach(({ cid, conf, box }) => {
+    for (const { cid, conf, box } of dets) {
       const [x, y, w, h] = box;
-      const label = `${CLASS_NAMES[cid] || '?'} ${(conf * 100).toFixed(0)}%`;
+      const label = `${CLASS_NAMES[cid] ?? '?'} ${(conf * 100).toFixed(0)}%`;
 
+      // Bounding Box
       ctx.lineWidth   = 2;
       ctx.strokeStyle = '#e8ff47';
       ctx.strokeRect(x, y, w, h);
 
+      // Eck-Akzente
       const cs = Math.min(14, w * 0.18, h * 0.18);
       ctx.lineWidth   = 3;
       ctx.strokeStyle = '#ff2d78';
-      [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]
-        .forEach(([cx, cy, dx, dy]) => {
-          ctx.beginPath();
-          ctx.moveTo(cx + dx * cs, cy);
-          ctx.lineTo(cx, cy);
-          ctx.lineTo(cx, cy + dy * cs);
-          ctx.stroke();
-        });
+      for (const [ox, oy, dx, dy] of [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]]) {
+        ctx.beginPath();
+        ctx.moveTo(ox + dx * cs, oy); ctx.lineTo(ox, oy); ctx.lineTo(ox, oy + dy * cs);
+        ctx.stroke();
+      }
 
-      const padX = 6, padY = 4;
-      const tw = ctx.measureText(label).width + padX * 2;
-      const th = 22;
-      // Label innerhalb Canvas-Grenzen halten
-      const lx = Math.min(x, ctx.canvas.width - tw);
-      const ly = y - th >= 0 ? y - th : y + h + th <= ctx.canvas.height ? y + h : y;
+      // Label — bleibt immer innerhalb des Canvas
+      const padX = 6, padY = 4, th = 22;
+      const tw   = ctx.measureText(label).width + padX * 2;
+      const lx   = Math.min(x, ctx.canvas.width  - tw);
+      const ly   = y - th >= 0 ? y - th : y + h + th <= ctx.canvas.height ? y + h : y;
       ctx.fillStyle = '#e8ff47';
       ctx.fillRect(lx, ly, tw, th);
       ctx.fillStyle = '#000';
       ctx.fillText(label, lx + padX, ly + th - padY - 1);
-    });
+    }
   }
 
-  // ─── Video-Pipeline ──────────────────────────────────────────────────────────
+  // ── Video starten ─────────────────────────────────────────────────────────────
   function startVideo(file) {
     stopAll();
-    placeholder.style.display   = 'none';
     overlayCanvas.style.display = 'block';
+    placeholder.style.display   = 'none';
+
     currentObjectURL = URL.createObjectURL(file);
-    videoEl.src = currentObjectURL;
+    videoEl.src      = currentObjectURL;
 
     videoEl.onloadedmetadata = async () => {
       const vw = videoEl.videoWidth;
       const vh = videoEl.videoHeight;
+      overlayCanvas.width  = vw; overlayCanvas.height = vh;
+      snapCanvas.width     = vw; snapCanvas.height    = vh;
 
-      overlayCanvas.width  = vw;
-      overlayCanvas.height = vh;
-      snapCanvas.width     = vw;
-      snapCanvas.height    = vh;
-
-      try {
-        await videoEl.play();
-      } catch (err) {
+      try { await videoEl.play(); }
+      catch (err) {
         setStatus('Video konnte nicht abgespielt werden.', 'error');
-        setDebug('Play-Fehler: ' + (err.message || err));
+        setDebug('Play-Fehler: ' + err.message);
         return;
       }
 
-      isRunning = true;
+      isPlaying  = true;
+      latestDets = [];
+      fpsLastTs  = 0; fpsIdx = 0; fpsFilled = 0;
       setStatus('Video läuft — Erkennung aktiv.', 'running');
 
-      let lastTs    = 0;
-      let fpsIdx    = 0;
-      let fpsFilled = 0;
-      const fpsSamples = new Float32Array(15);
-
-      async function inferLoop() {
-        if (!isRunning) return;
-
-        if (videoEl.paused || videoEl.ended) {
-          if (videoEl.ended) return;
-          requestAnimationFrame(inferLoop);
-          return;
-        }
-
-        const now = performance.now();
-        if (lastTs > 0) {
-          fpsSamples[fpsIdx] = 1000 / (now - lastTs);
-          fpsIdx    = (fpsIdx + 1) % fpsSamples.length;
-          fpsFilled = Math.min(fpsFilled + 1, fpsSamples.length);
-          let sum = 0;
-          for (let i = 0; i < fpsFilled; i++) sum += fpsSamples[i];
-          fpsEl.textContent = (sum / fpsFilled).toFixed(1);
-        }
-        lastTs = now;
-
-        snapCtx.drawImage(videoEl, 0, 0, vw, vh);
-
-        try {
-          const dets = await runInference(snapCanvas, vw, vh);
-          if (!isRunning) return;
-
-          overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
-          drawDetections(overlayCtx, dets);
-          detCount.textContent = dets.length ? `${dets.length} Obj.` : '';
-        } catch (err) {
-          setDebug('Inferenz-Fehler: ' + (err.message || err));
-        }
-
-        requestAnimationFrame(inferLoop);
-      }
-
-      requestAnimationFrame(inferLoop);
-
-      videoEl.onended = () => {
-        stopAll();
-        setStatus('Video beendet.', 'ready');
-      };
+      // Beide Loops unabhängig starten
+      startRenderLoop(vw, vh);
+      inferLoop(vw, vh);
     };
 
+    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
     videoEl.onerror = () => {
       setStatus('Video konnte nicht geladen werden.', 'error');
       setDebug('Format eventuell nicht vom Browser unterstützt.');
@@ -912,7 +917,10 @@ async function initializeApp() {
   }
 
   function stopAll() {
-    isRunning = false;
+    isPlaying = false;
+    stopRenderLoop();
+    latestDets = [];
+
     if (currentObjectURL) {
       videoEl.pause();
       URL.revokeObjectURL(currentObjectURL);
@@ -920,17 +928,17 @@ async function initializeApp() {
       videoEl.removeAttribute('src');
       videoEl.load();
     }
+
     overlayCanvas.style.display = 'none';
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     placeholder.style.display = 'flex';
     detCount.textContent = '';
-    fpsEl.textContent = '—';
+    fpsEl.textContent    = '—';
   }
 
-  // ─── Events ──────────────────────────────────────────────────────────────────
+  // ── Events ───────────────────────────────────────────────────────────────────
   fileInput.addEventListener('change', () => {
-    stopAll();
-    setDebug('');
+    stopAll(); setDebug('');
     const file = fileInput.files?.[0];
     fileNameEl.textContent = file ? file.name : '—';
     if (ortReady) {
@@ -942,16 +950,14 @@ async function initializeApp() {
   runButton.addEventListener('click', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
-    setDebug('');
-    startVideo(file);
+    setDebug(''); startVideo(file);
   });
 
   const zone = document.getElementById('uploadZone');
   zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
+    e.preventDefault(); zone.classList.remove('drag-over');
     if (e.dataTransfer.files[0]) {
       fileInput.files = e.dataTransfer.files;
       fileInput.dispatchEvent(new Event('change'));
@@ -962,25 +968,20 @@ async function initializeApp() {
     CONF_THRESHOLD = confSlider.value / 100;
     confVal.textContent = confSlider.value + '%';
   });
-
   nmsSlider.addEventListener('input', () => {
     NMS_THRESHOLD = nmsSlider.value / 100;
     nmsVal.textContent = nmsSlider.value + '%';
   });
 
-  window.addEventListener('error',
-    e => setDebug('Fehler: ' + (e.error?.message || e.message)));
-  window.addEventListener('unhandledrejection',
-    e => setDebug('Promise-Fehler: ' + (e.reason?.message || e.reason)));
+  window.addEventListener('error',              e => setDebug('Fehler: '   + (e.error?.message  || e.message)));
+  window.addEventListener('unhandledrejection', e => setDebug('Promise: '  + (e.reason?.message || e.reason)));
 
-  // ─── Start ───────────────────────────────────────────────────────────────────
+  // ── Start ────────────────────────────────────────────────────────────────────
   loadModel();
-
-} // Ende initializeApp()
+}
 
 initializeApp().catch(err => {
-  console.error('App-Initialisierung fehlgeschlagen:', err);
-  document.getElementById('debugEl').textContent = '❌ Fehler: ' + err.message;
+  document.getElementById('debugEl').textContent = '❌ ' + err.message;
 });
 </script>
 ```
