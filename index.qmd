@@ -550,12 +550,11 @@ async function initializeApp() {
   });
 
   // ORT-Konfiguration
-  // proxy = false: WebGPU braucht den Main-Thread-Kontext für navigator.gpu —
-  // der Default-Worker-Proxy blockiert die GPU-Initialisierung.
+  // WASM-Fallback läuft im Worker (proxy = true, default) → kein Main-Thread-Blocking.
+  // WebGPU-JSEP läuft immer auf dem Main-Thread, unabhängig vom proxy-Setting.
   ort.env.wasm.wasmPaths  = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/';
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.simd       = true;
-  ort.env.wasm.proxy      = false;
 
   // ── Konstanten ───────────────────────────────────────────────────────────────
   const MODEL_PATH      = 'models/yolov5n.onnx';
@@ -817,8 +816,9 @@ async function initializeApp() {
       setDebug('Inferenz-Fehler: ' + err.message);
     } finally {
       inferBusy = false;
-      // Sofort nächste Inferenz anstoßen, solange Video läuft
-      if (isPlaying) inferLoop(vw, vh);
+      // Nächste Inferenz nach einem Browser-Frame anstoßen —
+      // verhindert GPU-Überlastung und gibt Render-Loop Luft zum Atmen.
+      if (isPlaying) requestAnimationFrame(() => inferLoop(vw, vh));
     }
   }
 
