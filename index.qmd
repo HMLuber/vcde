@@ -808,7 +808,7 @@ async function initializeApp() {
     if (!isPlaying || inferBusy) return;
     inferBusy = true;
     try {
-      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+      // snapCanvas wird vom Render-Loop befüllt — kein zweiter drawImage nötig
       const { scale, padL, padT } = preprocess(snapCanvas, vw, vh);
       let tensor;
       if (inputDtype === 'float16') {
@@ -858,9 +858,9 @@ async function initializeApp() {
       setDebug('Inferenz-Fehler: ' + err.message);
     } finally {
       inferBusy = false;
-      // Nächste Inferenz nach einem Browser-Frame anstoßen —
-      // verhindert GPU-Überlastung und gibt Render-Loop Luft zum Atmen.
-      if (isPlaying) requestAnimationFrame(() => inferLoop(vw, vh));
+      // Sofort nächste Inferenz — kein künstlicher Delay.
+      // session.run() ist immer async (Worker/GPU), gibt dem Browser genug Luft.
+      if (isPlaying) inferLoop(vw, vh);
     }
   }
 
@@ -871,8 +871,9 @@ async function initializeApp() {
     function onFrame(now) {
       if (!isPlaying) return;
       trackFps(now);
-      // Aktuellen Video-Frame + letzte Detektionen zeichnen
-      overlayCtx.drawImage(videoEl, 0, 0, vw, vh);
+      // Frame snapshotten — selbe Quelle für Anzeige und Inferenz
+      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
+      overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
       drawDetections(overlayCtx, latestDets);
       // Nächsten Frame anfordern
       renderHandle = useRVFC
