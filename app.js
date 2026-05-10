@@ -1,29 +1,11 @@
-/* Echtzeit-Objekterkennung — Visual Computing — YOLOv8n · ONNX Runtime Web */
+/* Echtzeit-Objekterkennung — Visual Computing
+   Main thread: UI + pre-processing only.
+   Inference runs in worker.js to keep the tab responsive. */
 
 (() => {
   'use strict';
 
-  /* ---- Config ------------------------------------------ */
-  const CONF_THRESH = 0.30;
-  const IOU_THRESH  = 0.45;
-  const INPUT_SIZE  = 640;
-  const MODEL_PATH  = 'models/yolov8n.onnx';
-  const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
-
-  /* ---- COCO class labels (80) -------------------------- */
-  const CLASSES = [
-    'person','bicycle','car','motorcycle','airplane','bus','train','truck',
-    'boat','traffic light','fire hydrant','stop sign','parking meter','bench',
-    'bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe',
-    'backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard',
-    'sports ball','kite','baseball bat','baseball glove','skateboard','surfboard',
-    'tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl',
-    'banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza',
-    'donut','cake','chair','couch','potted plant','bed','dining table','toilet',
-    'tv','laptop','mouse','remote','keyboard','cell phone','microwave','oven',
-    'toaster','sink','refrigerator','book','clock','vase','scissors',
-    'teddy bear','hair drier','toothbrush',
-  ];
+  const INPUT_SIZE = 640;
 
   /* ---- DOM refs ---------------------------------------- */
   const $ = (id) => document.getElementById(id);
@@ -47,21 +29,21 @@
   const statusText = $('model-status-text');
 
   /* ---- State ------------------------------------------- */
-  let session          = null;
-  let sessionPromise   = null;
   let rafId            = null;
   let running          = false;
   let currentObjectURL = null;
+  let workerReady      = false;
+  let inferring        = false;  // one frame in-flight at a time
 
-  // Reuse offscreen canvas every frame to avoid GC pressure
+  // Reused across frames — avoids repeated allocations
   const offscreen  = document.createElement('canvas');
   offscreen.width  = INPUT_SIZE;
   offscreen.height = INPUT_SIZE;
   const offCtx     = offscreen.getContext('2d', { willReadFrequently: true });
 
   const fpsWindow      = [];
-  const FPS_WINDOW_SIZE = 30;
-  let lastFrameTime    = 0;
+  const FPS_WINDOW_SIZE = 20;
+  let lastResultTime   = 0;
 
   /* ---- Colors ------------------------------------------ */
   const PALETTE = [
@@ -81,43 +63,52 @@
     return PALETTE[Math.abs(h) % PALETTE.length];
   }
 
-  /* ---- Model loading ----------------------------------- */
-  function bootModel() {
-    if (sessionPromise) return sessionPromise;
-    sessionPromise = (async () => {
-      try {
-        // Point ORT to its WASM workers on CDN.
-        // numThreads=1: GitHub Pages does not send SharedArrayBuffer headers
-        // required for multi-threaded WASM.
-        ort.env.wasm.wasmPaths  = ORT_CDN;
-        ort.env.wasm.numThreads = 1;
+  /* ---- Web Worker -------------------------------------- */
+  const worker = new Worker('worker.js');
 
-        session = await ort.InferenceSession.create(MODEL_PATH, {
-          executionProviders:    ['webgl', 'wasm'],
-          graphOptimizationLevel: 'all',
-        });
-        statusDot.classList.add('ready');
-        statusText.textContent = 'Bereit · YOLOv8n';
-      } catch (err) {
-        console.error('ONNX session error:', err);
-        statusText.textContent = 'Fehler beim Laden';
-        sessionPromise = null;
+  worker.onmessage = ({ data }) => {
+    if (data.type === 'ready') {
+      workerReady = true;
+      statusDot.classList.add('ready');
+      statusText.textContent = 'Bereit · YOLOv8n';
+      loader.hidden = true;
+    }
+
+    if (data.type === 'result') {
+      inferring = false;
+      if (!running) return; // discard stale result after reset
+      const now = performance.now();
+      const dt  = now - lastResultTime;
+      lastResultTime = now;
+      if (dt > 0 && dt < 5000) {
+        fpsWindow.push(1000 / dt);
+        if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
       }
-    })();
-    return sessionPromise;
-  }
+      const fps = fpsWindow.length
+        ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
+      hudFps.textContent = fps.toFixed(1);
+      drawOverlay(data.detections);
+    }
 
-  /* ---- Pre-processing: letterbox → CHW float32 tensor -- */
+    if (data.type === 'error') {
+      statusText.textContent = 'Fehler beim Laden';
+      console.error('Worker:', data.message);
+    }
+  };
+
+  worker.onerror = (e) => {
+    statusText.textContent = 'Worker-Fehler';
+    console.error('Worker error:', e);
+  };
+
+  /* ---- Pre-processing: letterbox → CHW float32 --------- */
   function preprocess(videoEl) {
-    const vw    = videoEl.videoWidth;
-    const vh    = videoEl.videoHeight;
+    const vw    = videoEl.videoWidth,  vh = videoEl.videoHeight;
     const scale = Math.min(INPUT_SIZE / vw, INPUT_SIZE / vh);
-    const newW  = Math.round(vw * scale);
-    const newH  = Math.round(vh * scale);
+    const newW  = Math.round(vw * scale), newH = Math.round(vh * scale);
     const padX  = Math.floor((INPUT_SIZE - newW) / 2);
     const padY  = Math.floor((INPUT_SIZE - newH) / 2);
 
-    // Gray padding preserves the letterbox look expected by YOLOv8
     offCtx.fillStyle = '#808080';
     offCtx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
     offCtx.drawImage(videoEl, padX, padY, newW, newH);
@@ -126,81 +117,11 @@
     const float32  = new Float32Array(3 * INPUT_SIZE * INPUT_SIZE);
     const area     = INPUT_SIZE * INPUT_SIZE;
     for (let i = 0; i < area; i++) {
-      float32[i]          = data[i * 4]     / 255; // R plane
-      float32[i + area]   = data[i * 4 + 1] / 255; // G plane
-      float32[i + 2*area] = data[i * 4 + 2] / 255; // B plane
+      float32[i]          = data[i * 4]     / 255; // R
+      float32[i + area]   = data[i * 4 + 1] / 255; // G
+      float32[i + 2*area] = data[i * 4 + 2] / 255; // B
     }
-    return {
-      tensor: new ort.Tensor('float32', float32, [1, 3, INPUT_SIZE, INPUT_SIZE]),
-      scale, padX, padY,
-    };
-  }
-
-  /* ---- Post-processing: decode YOLOv8 output ----------- */
-  // YOLOv8 output shape: [1, 84, 8400]
-  // Rows 0-3: cx, cy, w, h (in 640×640 pixel space)
-  // Rows 4-83: confidence score per COCO class
-  function postprocess(raw, scale, padX, padY, origW, origH) {
-    const N = 8400;
-    const boxes = [], scores = [], classIds = [];
-
-    for (let i = 0; i < N; i++) {
-      // Find the class with the highest score
-      let maxScore = 0, classId = 0;
-      for (let c = 0; c < 80; c++) {
-        const s = raw[(4 + c) * N + i];
-        if (s > maxScore) { maxScore = s; classId = c; }
-      }
-      if (maxScore < CONF_THRESH) continue;
-
-      const cx = raw[0 * N + i];
-      const cy = raw[1 * N + i];
-      const bw = raw[2 * N + i];
-      const bh = raw[3 * N + i];
-
-      // Undo letterbox: subtract padding, then divide by scale factor
-      const x1 = Math.max(0,     ((cx - bw / 2) - padX) / scale);
-      const y1 = Math.max(0,     ((cy - bh / 2) - padY) / scale);
-      const x2 = Math.min(origW, ((cx + bw / 2) - padX) / scale);
-      const y2 = Math.min(origH, ((cy + bh / 2) - padY) / scale);
-
-      if (x2 <= x1 || y2 <= y1) continue;
-
-      boxes.push([x1, y1, x2, y2]);
-      scores.push(maxScore);
-      classIds.push(classId);
-    }
-
-    return nms(boxes, scores, IOU_THRESH).map((i) => ({
-      class: CLASSES[classIds[i]],
-      score: scores[i],
-      bbox:  [boxes[i][0], boxes[i][1], boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1]],
-    }));
-  }
-
-  /* ---- Non-Maximum Suppression ------------------------- */
-  function nms(boxes, scores, iouThr) {
-    const order      = scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
-    const suppressed = new Uint8Array(boxes.length);
-    const kept       = [];
-    for (const i of order) {
-      if (suppressed[i]) continue;
-      kept.push(i);
-      for (const j of order) {
-        if (j === i || suppressed[j]) continue;
-        if (iou(boxes[i], boxes[j]) > iouThr) suppressed[j] = 1;
-      }
-    }
-    return kept;
-  }
-
-  function iou(a, b) {
-    const x1    = Math.max(a[0], b[0]), y1 = Math.max(a[1], b[1]);
-    const x2    = Math.min(a[2], b[2]), y2 = Math.min(a[3], b[3]);
-    const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
-    const aArea = (a[2] - a[0]) * (a[3] - a[1]);
-    const bArea = (b[2] - b[0]) * (b[3] - b[1]);
-    return inter / (aArea + bArea - inter + 1e-6);
+    return { float32, scale, padX, padY };
   }
 
   /* ---- Source handling --------------------------------- */
@@ -220,10 +141,12 @@
 
   function cleanupSource() {
     stopLoop();
+    inferring = false;
     if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
     video.srcObject = null;
     video.removeAttribute('src');
     video.load();
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
 
   async function prepareVideo() {
@@ -236,6 +159,7 @@
     overlay.width    = video.videoWidth;
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
+    lastResultTime   = 0;
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -243,23 +167,20 @@
 
     try { await video.play(); } catch (_) {}
 
-    if (!session) {
+    if (!workerReady) {
       loader.hidden          = false;
       loaderText.textContent = 'YOLOv8n wird geladen … (12 MB)';
-      await bootModel();
-      loader.hidden = true;
     }
 
     startLoop();
     updateTime();
   }
 
-  /* ---- Detection loop ---------------------------------- */
+  /* ---- Detection loop (RAF — no awaiting) -------------- */
   function startLoop() {
     if (running) return;
-    running       = true;
-    lastFrameTime = performance.now();
-    rafId         = requestAnimationFrame(tick);
+    running = true;
+    rafId   = requestAnimationFrame(tick);
   }
 
   function stopLoop() {
@@ -268,40 +189,19 @@
     rafId = null;
   }
 
-  async function tick() {
+  // tick() is synchronous — all heavy work is in the worker.
+  // We only dispatch a new frame when the previous inference is done.
+  function tick() {
     if (!running) return;
-
-    if (video.readyState >= 2 && !video.paused && !video.ended && session) {
-      const { tensor, scale, padX, padY } = preprocess(video);
-      let detections = [];
-      try {
-        const feeds   = { [session.inputNames[0]]: tensor };
-        const results = await session.run(feeds);
-        const out     = results[session.outputNames[0]];
-        detections    = postprocess(out.data, scale, padX, padY, video.videoWidth, video.videoHeight);
-        // Free GPU/WASM memory held by output tensors
-        for (const t of Object.values(results)) t.dispose?.();
-      } catch (e) {
-        console.warn('Inference error:', e);
-      } finally {
-        tensor.dispose?.();
-      }
-
-      const now = performance.now();
-      const dt  = now - lastFrameTime;
-      lastFrameTime = now;
-      if (dt > 0 && dt < 1000) {
-        fpsWindow.push(1000 / dt);
-        if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
-      }
-      const fps = fpsWindow.length
-        ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length
-        : 0;
-      hudFps.textContent = fps.toFixed(1);
-
-      drawOverlay(detections);
+    if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
+      inferring = true;
+      const { float32, scale, padX, padY } = preprocess(video);
+      worker.postMessage(
+        { type: 'infer', float32, scale, padX, padY,
+          origW: video.videoWidth, origH: video.videoHeight },
+        [float32.buffer], // zero-copy transfer — no 5 MB memcpy per frame
+      );
     }
-
     rafId = requestAnimationFrame(tick);
   }
 
@@ -339,7 +239,6 @@
   fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) loadFile(e.target.files[0]);
   });
-
   ['dragenter', 'dragover'].forEach((ev) =>
     dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('dragging'); })
   );
@@ -361,9 +260,7 @@
   video.addEventListener('timeupdate', updateTime);
   function updateTime() {
     if (!isFinite(video.duration) || !video.duration) {
-      timeLabel.textContent = '--:-- / --:--';
-      seek.disabled = true;
-      return;
+      timeLabel.textContent = '--:-- / --:--'; seek.disabled = true; return;
     }
     seek.disabled         = false;
     seek.value            = (video.currentTime / video.duration) * 100;
@@ -378,13 +275,8 @@
 
   resetBtn.addEventListener('click', () => {
     cleanupSource();
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
     dropzone.hidden = false;
     hud.hidden      = true;
     controls.hidden = true;
   });
-
-  /* ---- Init -------------------------------------------- */
-  loader.hidden = true;
-  bootModel();
 })();

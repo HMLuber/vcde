@@ -5,6 +5,7 @@ project:
     - "*.qmd"
   resources:
     - "app.js"
+    - "worker.js"
     - "models/"
 
 website:

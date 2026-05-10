@@ -10,7 +10,6 @@ format:
           <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     include-after-body:
       - text: |
-          <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
           <script src="app.js"></script>
 ---
 
