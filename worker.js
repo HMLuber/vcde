@@ -31,15 +31,25 @@ let session = null;
 async function loadModel() {
   try {
     ort.env.wasm.wasmPaths  = ORT_CDN;
-    // GitHub Pages does not send the SharedArrayBuffer COOP/COEP headers
-    // required for multi-threaded WASM — force single-threaded mode.
-    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.numThreads = 1; // GitHub Pages blocks SharedArrayBuffer
 
-    session = await ort.InferenceSession.create('models/yolov8n.onnx', {
-      executionProviders:     ['wasm'],
-      graphOptimizationLevel: 'all',
-    });
-    self.postMessage({ type: 'ready' });
+    // Try WebGL first (GPU, ~5-10× faster than WASM).
+    // In a Worker, ORT uses OffscreenCanvas for WebGL — non-blocking.
+    // Falls back op-by-op to WASM for unsupported ops.
+    let provider = 'WASM';
+    try {
+      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+        executionProviders:     ['webgl'],
+        graphOptimizationLevel: 'all',
+      });
+      provider = 'WebGL';
+    } catch (_) {
+      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+        executionProviders:     ['wasm'],
+        graphOptimizationLevel: 'all',
+      });
+    }
+    self.postMessage({ type: 'ready', provider });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }

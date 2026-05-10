@@ -70,7 +70,7 @@
     if (data.type === 'ready') {
       workerReady = true;
       statusDot.classList.add('ready');
-      statusText.textContent = 'Bereit · YOLOv8n';
+      statusText.textContent = `Bereit · YOLOv8n · ${data.provider}`;
       loader.hidden = true;
     }
 
