@@ -1,3 +1,7 @@
+# YOLOv8 download artefacts (model export byproducts)
+*.pt
+/yolov8n.onnx
+
 # Quarto build artifacts
 /.quarto/
 /_site/

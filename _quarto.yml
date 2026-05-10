@@ -5,6 +5,7 @@ project:
     - "*.qmd"
   resources:
     - "app.js"
+    - "models/"
 
 website:
   title: "Echtzeit-Objekterkennung"
