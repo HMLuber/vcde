@@ -63,7 +63,7 @@
       try {
         await tf.setBackend('webgl');
         await tf.ready();
-        model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+        model = await cocoSsd.load({ base: 'mobilenet_v2' });
         statusDot.classList.add('ready');
         statusText.textContent = 'Bereit';
       } catch (err) {
@@ -162,7 +162,7 @@
         : 0;
       hudFps.textContent = fps.toFixed(1);
 
-      drawOverlay(predictions.filter((p) => p.score >= 0.5));
+      drawOverlay(predictions.filter((p) => p.score >= 0.3));
     }
 
     rafId = requestAnimationFrame(tick);
