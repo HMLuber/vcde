@@ -149,7 +149,6 @@
     video.srcObject = null;
     video.removeAttribute('src');
     video.load();
-    video.style.visibility = '';
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
 
@@ -164,8 +163,6 @@
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
     lastResultTime   = 0;
-    // Canvas will draw the video every RAF — hide the element to avoid double-render
-    video.style.visibility = 'hidden';
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -196,7 +193,7 @@
   }
 
   // tick() runs at display refresh rate (~60 fps).
-  // Each RAF: draw live video + last known boxes for a smooth, non-frozen display.
+  // Each RAF: redraw boxes from last inference over the live video element.
   // Inference is kicked off whenever the previous result is back (no queue).
   function tick() {
     if (!running) return;
@@ -204,8 +201,7 @@
     if (video.readyState >= 2) {
       const w = overlay.width, h = overlay.height;
       ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(video, 0, 0, w, h);   // live frame — always up-to-date
-      drawBoxes(lastDetections, w, h);     // boxes from most recent inference
+      drawBoxes(lastDetections, w, h); // transparent overlay — video element shows beneath
     }
 
     if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
