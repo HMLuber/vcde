@@ -329,10 +329,14 @@
       prev.peak = Math.max(prev.peak, e.conf);
       classStats.set(cls, prev);
     }
-    // Decay classes not seen this frame
+    // Decay classes not seen this frame; remove after 5 s of absence (~300 frames)
     for (const [cls, prev] of classStats.entries()) {
       if (!frameCounts.has(cls)) {
         prev.count = 0;
+        prev.absentFrames = (prev.absentFrames || 0) + 1;
+        if (prev.absentFrames > 300) classStats.delete(cls);
+      } else {
+        prev.absentFrames = 0;
       }
     }
 
