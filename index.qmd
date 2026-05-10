@@ -1,13 +1,13 @@
 ---
-pagetitle: "Echtzeit-Objekterkennung in Videostreams · Visual Computing"
-description-meta: "Browser-basierte Echtzeit-Objekterkennung in Videostreams mit TensorFlow.js. Visual-Computing-Projekt, Hochschule München."
+pagetitle: "Echtzeit-Objekterkennung · Visual Computing"
+description-meta: "Browser-basierte Echtzeit-Objekterkennung mit TensorFlow.js. Visual-Computing-Projekt, Hochschule München."
 format:
   html:
     include-in-header:
       - text: |
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     include-after-body:
       - text: |
           <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
@@ -16,205 +16,61 @@ format:
 ---
 
 ```{=html}
-<!-- Decorative grid backdrop -->
-<div class="grid-bg" aria-hidden="true"></div>
-
 <header class="site-header">
   <div class="brand">
-    <span class="brand-mark">HM<span class="brand-mark-dot">·</span></span>
-    <span class="brand-meta">Visual Computing · Vertiefungsthema 1</span>
+    <span class="brand-mark">HM·</span>
+    <span class="brand-meta">Visual Computing · Objekterkennung</span>
   </div>
-  <nav class="status-bar" aria-label="System status">
+  <div class="status-bar">
     <span class="status-dot" id="model-status-dot"></span>
-    <span class="status-text" id="model-status-text">Modell wird initialisiert …</span>
-  </nav>
+    <span id="model-status-text">Modell wird geladen …</span>
+  </div>
 </header>
 
-<div class="page-main">
-  <section class="hero">
-    <p class="eyebrow">Thema 01 / Object Detection</p>
-    <h1 class="title">
-      Echtzeit-Objekterkennung
-      <em>in Videostreams.</em>
-    </h1>
-    <p class="lede">
-      Im Gegensatz zur reinen Bildklassifizierung muss bei der Objekterkennung zusätzlich
-      bestimmt werden, <strong>wo</strong> sich ein Objekt befindet (Localization) und
-      <strong>was</strong> es ist (Classification) — und das bei einer Verarbeitungs­geschwindigkeit
-      von mindestens <strong>24 bis 30 Bildern pro Sekunde.</strong>
-    </p>
-    <ul class="tech-pills" aria-label="Verwendete Technologien">
-      <li>TensorFlow.js</li>
-      <li>COCO-SSD</li>
-      <li>WebGL Backend</li>
-      <li>HTML5 Canvas</li>
-    </ul>
-  </section>
+<main class="page-main">
+  <div class="stage">
+    <div class="stage-frame">
+      <video id="video" playsinline muted loop crossorigin="anonymous"></video>
+      <canvas id="overlay"></canvas>
 
-  <section class="lab" aria-label="Detection Lab">
-    <!-- Left column: stage -->
-    <div class="stage" id="stage">
-      <div class="stage-frame">
-        <video id="video" playsinline muted loop crossorigin="anonymous"></video>
-        <canvas id="overlay"></canvas>
-
-        <!-- Empty state -->
-        <div class="dropzone" id="dropzone">
-          <div class="dropzone-inner">
-            <svg viewBox="0 0 64 64" class="dropzone-icon" aria-hidden="true">
-              <rect x="6" y="14" width="42" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-              <path d="M48 24 L58 18 L58 40 L48 34 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-              <circle cx="18" cy="24" r="2.5" fill="currentColor"/>
-            </svg>
-            <p class="dropzone-title">Video hierher ziehen</p>
-            <p class="dropzone-sub">oder eine Quelle auswählen</p>
-
-            <div class="dropzone-actions">
-              <label class="btn btn-primary">
-                <input type="file" id="file-input" accept="video/*" hidden />
-                Video hochladen
-              </label>
-              <button class="btn btn-ghost" id="webcam-btn">Webcam verwenden</button>
-              <button class="btn btn-ghost" id="sample-btn">Demo-Video laden</button>
-            </div>
-            <p class="dropzone-hint">unterstützt: mp4, webm, mov · läuft komplett lokal im Browser</p>
-          </div>
-        </div>
-
-        <!-- Live HUD: FPS overlay -->
-        <div class="hud" id="hud" hidden>
-          <div class="hud-row">
-            <span class="hud-label">FPS</span>
-            <span class="hud-value" id="hud-fps">--</span>
-          </div>
-          <div class="hud-row">
-            <span class="hud-label">INFER</span>
-            <span class="hud-value" id="hud-infer">-- ms</span>
-          </div>
-          <div class="hud-row">
-            <span class="hud-label">OBJ</span>
-            <span class="hud-value" id="hud-objects">0</span>
-          </div>
-        </div>
-
-        <!-- Loader -->
-        <div class="loader" id="loader" hidden>
-          <div class="loader-ring"></div>
-          <p class="loader-text" id="loader-text">Modell wird geladen …</p>
+      <div class="dropzone" id="dropzone">
+        <div class="drop-inner">
+          <svg viewBox="0 0 64 64" class="drop-icon" aria-hidden="true">
+            <rect x="6" y="14" width="42" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <path d="M48 24 L58 18 L58 40 L48 34 Z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <circle cx="18" cy="24" r="3" fill="currentColor"/>
+          </svg>
+          <p class="drop-title">Video hier ablegen</p>
+          <label class="btn-upload">
+            <input type="file" id="file-input" accept="video/*" hidden />
+            Datei auswählen
+          </label>
+          <p class="drop-hint">mp4 · webm · mov · läuft lokal im Browser</p>
         </div>
       </div>
 
-      <!-- Playback controls -->
-      <div class="controls" id="controls" hidden>
-        <button class="ctrl-btn" id="play-btn" aria-label="Play/Pause">
-          <svg viewBox="0 0 24 24" id="play-icon" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          <svg viewBox="0 0 24 24" id="pause-icon" hidden aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/></svg>
-        </button>
-        <input type="range" id="seek" min="0" max="100" value="0" step="0.1" />
-        <span class="time" id="time">00:00 / 00:00</span>
-        <button class="ctrl-btn" id="reset-btn" title="Neue Quelle wählen" aria-label="Reset">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
-        </button>
+      <div class="hud" id="hud" hidden>
+        <span class="hud-label">FPS</span>
+        <span id="hud-fps">--</span>
+      </div>
+
+      <div class="loader" id="loader" hidden>
+        <div class="loader-ring"></div>
+        <p id="loader-text">Modell wird geladen …</p>
       </div>
     </div>
 
-    <!-- Right column: instrumentation panel -->
-    <aside class="panel" aria-label="Telemetrie">
-      <div class="panel-block">
-        <h2 class="panel-title">Performance</h2>
-        <div class="metric metric-large">
-          <span class="metric-label">FPS · gleitender Mittelwert</span>
-          <div class="metric-row">
-            <span class="metric-value" id="fps-value">0<small>.0</small></span>
-            <span class="metric-target" id="fps-target">Ziel: 24–30</span>
-          </div>
-          <div class="meter" aria-hidden="true">
-            <div class="meter-zone meter-low"></div>
-            <div class="meter-zone meter-target"></div>
-            <div class="meter-zone meter-high"></div>
-            <div class="meter-needle" id="fps-needle"></div>
-          </div>
-          <div class="meter-scale" aria-hidden="true">
-            <span>0</span><span>15</span><span>24</span><span>30</span><span>60+</span>
-          </div>
-        </div>
-
-        <div class="metric-grid">
-          <div class="metric-cell">
-            <span class="metric-label">Inferenzzeit</span>
-            <span class="metric-value-sm" id="infer-value">-- ms</span>
-          </div>
-          <div class="metric-cell">
-            <span class="metric-label">Auflösung</span>
-            <span class="metric-value-sm" id="res-value">-- × --</span>
-          </div>
-          <div class="metric-cell">
-            <span class="metric-label">Backend</span>
-            <span class="metric-value-sm" id="backend-value">--</span>
-          </div>
-          <div class="metric-cell">
-            <span class="metric-label">Frames gesamt</span>
-            <span class="metric-value-sm" id="frames-value">0</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-block">
-        <div class="panel-title-row">
-          <h2 class="panel-title">Erkannte Klassen</h2>
-          <span class="panel-counter" id="class-counter">0</span>
-        </div>
-        <ul class="class-list" id="class-list">
-          <li class="class-empty">Noch keine Objekte erkannt.</li>
-        </ul>
-      </div>
-
-      <div class="panel-block">
-        <h2 class="panel-title">Schwellenwert</h2>
-        <label class="threshold">
-          <span class="threshold-label">
-            Mindest­konfidenz
-            <strong id="threshold-display">0.50</strong>
-          </span>
-          <input type="range" id="threshold" min="0.1" max="0.9" step="0.05" value="0.5" />
-        </label>
-        <p class="panel-hint">
-          Höherer Wert → weniger, aber sicherere Detektionen.
-        </p>
-      </div>
-    </aside>
-  </section>
-
-  <section class="explainer">
-    <div class="explainer-col">
-      <h3>Wie funktioniert es?</h3>
-      <p>
-        Jedes Frame des Videos wird in <em>Echtzeit</em> an ein vortrainiertes
-        Convolutional Neural Network (COCO-SSD) übergeben. Das Modell liefert für jedes
-        erkannte Objekt eine Bounding Box, die Klasse und einen Konfidenzwert.
-        Die Bounding Boxes werden anschließend pixelgenau über das Video gezeichnet —
-        alles direkt im Browser, ohne Server.
-      </p>
+    <div class="controls" id="controls" hidden>
+      <button class="ctrl-btn" id="play-btn" aria-label="Play/Pause">
+        <svg viewBox="0 0 24 24" id="play-icon" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" id="pause-icon" hidden aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/></svg>
+      </button>
+      <input type="range" id="seek" min="0" max="100" value="0" step="0.1" />
+      <span class="time" id="time">00:00 / 00:00</span>
+      <button class="ctrl-btn" id="reset-btn" aria-label="Neues Video">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
+      </button>
     </div>
-    <div class="explainer-col">
-      <h3>Warum 24–30 FPS?</h3>
-      <p>
-        Das menschliche Auge nimmt Bewegung ab ca. 24 Bildern pro Sekunde als flüssig wahr.
-        Erst bei dieser Rate spricht man von <em>echter</em> Echtzeit-Verarbeitung —
-        alles darunter wirkt ruckelig und ist für Anwendungen wie Verkehrs­analyse oder
-        Überwachung nicht praxistauglich.
-      </p>
-    </div>
-  </section>
-</div>
-
-<footer class="site-footer">
-  <div class="footer-row">
-    <span class="footer-mark">HM<span class="brand-mark-dot">·</span></span>
-    <span>Visual Computing (DE) · Vertiefungsthema 1</span>
   </div>
-  <div class="footer-row footer-row-end">
-    <span>Modell: <code>COCO-SSD</code> · 80 Klassen · läuft via TensorFlow.js / WebGL</span>
-  </div>
-</footer>
+</main>
 ```
