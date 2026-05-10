@@ -1,1040 +1,220 @@
-﻿---
-title: "Objekterkennung"
+---
+pagetitle: "Echtzeit-Objekterkennung in Videostreams · Visual Computing"
+description-meta: "Browser-basierte Echtzeit-Objekterkennung in Videostreams mit TensorFlow.js. Visual-Computing-Projekt, Hochschule München."
 format:
   html:
-    self-contained: false
-    page-layout: full
     include-in-header:
-      text: |
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/ort.all.min.js"></script>
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+    include-after-body:
+      - text: |
+          <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+          <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+          <script src="app.js"></script>
 ---
 
 ```{=html}
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<!-- Decorative grid backdrop -->
+<div class="grid-bg" aria-hidden="true"></div>
 
-  :root {
-    --bg:      #ffffff;
-    --surface: #f3f4f6;
-    --border:  #d1d5db;
-    --accent:  #2563eb;
-    --accent2: #e8175d;
-    --text:    #0a0a0a;
-    --muted:   #6b7280;
-    --radius:  4px;
-    --mono:    'Space Mono', monospace;
-    --sans:    'DM Sans', sans-serif;
-  }
+<header class="site-header">
+  <div class="brand">
+    <span class="brand-mark">HM<span class="brand-mark-dot">·</span></span>
+    <span class="brand-meta">Visual Computing · Vertiefungsthema 1</span>
+  </div>
+  <nav class="status-bar" aria-label="System status">
+    <span class="status-dot" id="model-status-dot"></span>
+    <span class="status-text" id="model-status-text">Modell wird initialisiert …</span>
+  </nav>
+</header>
 
-  body, .page-layout-full {
-    background: var(--bg) !important;
-    color: var(--text) !important;
-    font-family: var(--sans) !important;
-  }
-
-  .quarto-title-block, h1.title { display: none !important; }
-
-  #yolo-app {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-
-  .app-header {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    margin-bottom: 48px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 24px;
-    flex-wrap: wrap;
-  }
-  .app-header h1 {
-    font-family: var(--mono);
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--text);
-  }
-  .app-header h1 span { color: var(--accent); }
-  .badge {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    background: var(--border);
-    color: var(--muted);
-    padding: 3px 8px;
-    border-radius: var(--radius);
-  }
-
-  .upload-zone {
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 28px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s, background 0.2s;
-    cursor: pointer;
-    position: relative;
-  }
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(37,99,235,0.04);
-  }
-  .upload-zone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-  }
-  .upload-icon {
-    width: 44px; height: 44px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 1.3rem;
-  }
-  .upload-text { flex: 1; min-width: 0; }
-  .upload-text strong {
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.82rem;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .upload-text span { font-size: 0.78rem; color: var(--muted); }
-  .file-name {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--accent);
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  #runButton {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    padding: 13px 28px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    width: 100%;
-    margin-bottom: 20px;
-  }
-  #runButton:disabled { opacity: 0.22; cursor: not-allowed; }
-  #runButton:not(:disabled):hover  { opacity: 0.82; }
-  #runButton:not(:disabled):active { transform: scale(0.985); }
-
-  .status-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-  }
-  .status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-    transition: background 0.3s;
-  }
-  .status-dot.ready   { background: var(--accent);  box-shadow: 0 0 6px var(--accent); }
-  .status-dot.running { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); animation: pulse 1s infinite; }
-  .status-dot.error   { background: #ff4444; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
-  #statusText { flex: 1; }
-  #detCount   { color: var(--accent); font-weight: 700; }
-
-  .viewer {
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    min-height: 220px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .viewer-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-family: var(--mono);
-    padding: 60px;
-    text-align: center;
-  }
-  .viewer-placeholder .big-icon { font-size: 2.4rem; opacity: 0.25; }
-
-  #videoEl {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    opacity: 0;
-    pointer-events: none;
-  }
-  #overlayCanvas {
-    display: none;
-    max-width: 100%;
-    max-height: 70vh;
-    width: auto;
-    height: auto;
-  }
-
-  #debugEl {
-    margin-top: 10px;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--accent2);
-    white-space: pre-wrap;
-    min-height: 1em;
-    line-height: 1.5;
-  }
-
-  .info-strip {
-    display: flex;
-    gap: 24px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-  }
-  .info-item { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
-  .info-item span { color: var(--text); }
-
-  .edu-section {
-    margin-bottom: 52px;
-    padding-bottom: 44px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-label {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 8px;
-  }
-  .section-heading {
-    font-family: var(--mono);
-    font-size: clamp(0.95rem, 2vw, 1.25rem);
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 18px;
-    letter-spacing: -0.02em;
-  }
-  .edu-text {
-    font-size: 0.88rem;
-    line-height: 1.8;
-    color: #4b5563;
-    max-width: 740px;
-    margin-bottom: 12px;
-  }
-  .edu-text strong { color: var(--text); }
-  .timeline {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    margin-bottom: 28px;
-  }
-  .timeline li {
-    display: flex;
-    gap: 16px;
-    font-size: 0.83rem;
-    color: #4b5563;
-    line-height: 1.55;
-  }
-  .tl-year {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--accent);
-    white-space: nowrap;
-    min-width: 90px;
-    padding-top: 1px;
-  }
-  .tl-text strong { color: var(--text); }
-  .terms-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 28px;
-    font-size: 0.83rem;
-  }
-  .terms-table th {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
-  .terms-table td {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    color: #4b5563;
-    vertical-align: top;
-    line-height: 1.5;
-  }
-  .terms-table td:first-child {
-    font-family: var(--mono);
-    font-size: 0.74rem;
-    color: var(--accent);
-    white-space: nowrap;
-    padding-right: 20px;
-  }
-  .usecase-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-  .usecase-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-  }
-  .usecase-card strong {
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--accent);
-    margin-bottom: 6px;
-  }
-  .usecase-card p { font-size: 0.78rem; color: #6b7280; line-height: 1.55; margin: 0; }
-  .steps-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 28px;
-  }
-  .steps-list li {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-    font-size: 0.83rem;
-    color: #4b5563;
-    line-height: 1.55;
-  }
-  .step-num {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: #fff;
-    background: var(--accent);
-    min-width: 20px;
-    height: 20px;
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-  .steps-list li strong { color: var(--text); }
-
-  .controls-row {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .slider-label {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .slider-label span { color: var(--accent); font-weight: 700; }
-  input[type="range"] { accent-color: var(--accent); width: 100px; }
-</style>
-
-<div id="yolo-app">
-
-  <header class="app-header">
-    <h1>YOLO<span>v5</span> — Objekterkennung</h1>
-    <div class="badge" id="epBadge">YOLOv5n · ONNX · lädt…</div>
-  </header>
-
-  <!-- Einführung -->
-  <section class="edu-section">
-    <div class="section-label">Einführung</div>
-    <h2 class="section-heading">Was ist Echtzeit-Objekterkennung?</h2>
-    <p class="edu-text">
-      Echtzeit-Objekterkennung ist die <strong>automatische Identifikation und Lokalisierung von Objekten in Bildern oder Videoströmen</strong> mit minimaler Verzögerung. Im Gegensatz zu klassischen Bildanalyseverfahren ermöglicht sie die <strong>gleichzeitige Erkennung mehrerer Objekte</strong> und deren Klassifizierung in wenigen Millisekunden.
+<div class="page-main">
+  <section class="hero">
+    <p class="eyebrow">Thema 01 / Object Detection</p>
+    <h1 class="title">
+      Echtzeit-Objekterkennung
+      <em>in Videostreams.</em>
+    </h1>
+    <p class="lede">
+      Im Gegensatz zur reinen Bildklassifizierung muss bei der Objekterkennung zusätzlich
+      bestimmt werden, <strong>wo</strong> sich ein Objekt befindet (Localization) und
+      <strong>was</strong> es ist (Classification) — und das bei einer Verarbeitungs­geschwindigkeit
+      von mindestens <strong>24 bis 30 Bildern pro Sekunde.</strong>
     </p>
-    <p class="edu-text">
-      Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und präzise Bounding Boxes um Objekte zu zeichnen – Grundlage für autonomes Fahren, Videoüberwachung, medizinische Bilddiagnose und industrielle Qualitätsprüfung.
-    </p>
-  </section>
-
-  <!-- Grundlagen -->
-  <section class="edu-section">
-    <div class="section-label">Grundlagen</div>
-
-    <h2 class="section-heading">Geschichte der Objekterkennung</h2>
-    <ul class="timeline">
-      <li>
-        <span class="tl-year">1960er–1990er</span>
-        <span class="tl-text">Klassische Methoden wie <strong>Edge Detection</strong> und <strong>Feature Matching</strong> (z.B. Haar Cascades) dominieren.</span>
-      </li>
-      <li>
-        <span class="tl-year">2012</span>
-        <span class="tl-text"><strong>AlexNet</strong> gewinnt den ImageNet-Wettbewerb mit Deep Learning und zeigt die Überlegenheit von CNNs.</span>
-      </li>
-      <li>
-        <span class="tl-year">2015–2016</span>
-        <span class="tl-text"><strong>Faster R-CNN</strong> und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit.</span>
-      </li>
-      <li>
-        <span class="tl-year">2016 – heute</span>
-        <span class="tl-text"><strong>YOLO</strong> (You Only Look Once) revolutioniert das Feld durch Echtzeit-Erkennung auf normaler Hardware. Weitere Varianten wie SSD und andere moderne Architekturen folgen.</span>
-      </li>
+    <ul class="tech-pills" aria-label="Verwendete Technologien">
+      <li>TensorFlow.js</li>
+      <li>COCO-SSD</li>
+      <li>WebGL Backend</li>
+      <li>HTML5 Canvas</li>
     </ul>
-
-    <h2 class="section-heading">Begriffserklärungen</h2>
-    <table class="terms-table">
-      <thead><tr><th>Begriff</th><th>Erklärung</th></tr></thead>
-      <tbody>
-        <tr><td>CNN</td><td>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder (Convolutional Neural Network)</td></tr>
-        <tr><td>Bounding Box</td><td>Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe)</td></tr>
-        <tr><td>Confidence Score</td><td>Wahrscheinlichkeit (0–1), ob ein erkanntes Objekt echt ist</td></tr>
-      </tbody>
-    </table>
-
-    <h2 class="section-heading">Typische Anwendungsfälle</h2>
-    <div class="usecase-grid">
-      <div class="usecase-card"><strong>Autonomes Fahren</strong><p>Erkennung von Fußgängern, Fahrzeugen und Verkehrszeichen in Echtzeit.</p></div>
-      <div class="usecase-card"><strong>Videoüberwachung</strong><p>Personen- und Fahrzeugerkennung, Sicherheitsanwendungen.</p></div>
-      <div class="usecase-card"><strong>Sportanalyse</strong><p>Tracking von Spielern, Bällen und Bewegungsanalyse.</p></div>
-      <div class="usecase-card"><strong>Medizin</strong><p>Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern.</p></div>
-      <div class="usecase-card"><strong>Industrielle Inspektion</strong><p>Qualitätskontrolle und Defekterkennung an Produktionslinien.</p></div>
-    </div>
   </section>
 
-  <!-- Motivation -->
-  <section class="edu-section">
-    <div class="section-label">Motivation</div>
+  <section class="lab" aria-label="Detection Lab">
+    <!-- Left column: stage -->
+    <div class="stage" id="stage">
+      <div class="stage-frame">
+        <video id="video" playsinline muted loop crossorigin="anonymous"></video>
+        <canvas id="overlay"></canvas>
 
-    <h2 class="section-heading">Warum Echtzeit-Objekterkennung heute essentiell ist</h2>
-    <p class="edu-text">
-      Die Fähigkeit, <strong>Objekte augenblicklich und präzise zu erkennen</strong>, ist in einer zunehmend vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig für moderne Anforderungen.
-    </p>
+        <!-- Empty state -->
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-inner">
+            <svg viewBox="0 0 64 64" class="dropzone-icon" aria-hidden="true">
+              <rect x="6" y="14" width="42" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M48 24 L58 18 L58 40 L48 34 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="18" cy="24" r="2.5" fill="currentColor"/>
+            </svg>
+            <p class="dropzone-title">Video hierher ziehen</p>
+            <p class="dropzone-sub">oder eine Quelle auswählen</p>
 
-    <h2 class="section-heading">Wie YOLO grob funktioniert</h2>
-    <ol class="steps-list">
-      <li><span class="step-num">1</span><span><strong>Input:</strong> Ein Bild beliebiger Größe wird auf ein festes Format normalisiert.</span></li>
-      <li><span class="step-num">2</span><span><strong>Backbone-Netzwerk:</strong> Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten.</span></li>
-      <li><span class="step-num">3</span><span><strong>Gitter-Struktur:</strong> Das Bild wird in Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig.</span></li>
-      <li><span class="step-num">4</span><span><strong>Vorhersage:</strong> Für jede Zelle werden Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt.</span></li>
-      <li><span class="step-num">5</span><span><strong>Output:</strong> Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung.</span></li>
-      <li><span class="step-num">6</span><span><strong>Post-Processing:</strong> NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen.</span></li>
-    </ol>
+            <div class="dropzone-actions">
+              <label class="btn btn-primary">
+                <input type="file" id="file-input" accept="video/*" hidden />
+                Video hochladen
+              </label>
+              <button class="btn btn-ghost" id="webcam-btn">Webcam verwenden</button>
+              <button class="btn btn-ghost" id="sample-btn">Demo-Video laden</button>
+            </div>
+            <p class="dropzone-hint">unterstützt: mp4, webm, mov · läuft komplett lokal im Browser</p>
+          </div>
+        </div>
 
-    <h2 class="section-heading">Rolle von OpenCV</h2>
-    <p class="edu-text">
-      <strong>OpenCV</strong> (Open Source Computer Vision) übernimmt die Bildvorverarbeitung: Skalierung und Normalisierung für das Netzwerk, Farbkonvertierung (RGB ↔ BGR) sowie das Zeichnen von Bounding Boxes und Labels auf das Ausgabebild.
-    </p>
+        <!-- Live HUD: FPS overlay -->
+        <div class="hud" id="hud" hidden>
+          <div class="hud-row">
+            <span class="hud-label">FPS</span>
+            <span class="hud-value" id="hud-fps">--</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">INFER</span>
+            <span class="hud-value" id="hud-infer">-- ms</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">OBJ</span>
+            <span class="hud-value" id="hud-objects">0</span>
+          </div>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader" hidden>
+          <div class="loader-ring"></div>
+          <p class="loader-text" id="loader-text">Modell wird geladen …</p>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="controls" id="controls" hidden>
+        <button class="ctrl-btn" id="play-btn" aria-label="Play/Pause">
+          <svg viewBox="0 0 24 24" id="play-icon" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <svg viewBox="0 0 24 24" id="pause-icon" hidden aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/></svg>
+        </button>
+        <input type="range" id="seek" min="0" max="100" value="0" step="0.1" />
+        <span class="time" id="time">00:00 / 00:00</span>
+        <button class="ctrl-btn" id="reset-btn" title="Neue Quelle wählen" aria-label="Reset">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right column: instrumentation panel -->
+    <aside class="panel" aria-label="Telemetrie">
+      <div class="panel-block">
+        <h2 class="panel-title">Performance</h2>
+        <div class="metric metric-large">
+          <span class="metric-label">FPS · gleitender Mittelwert</span>
+          <div class="metric-row">
+            <span class="metric-value" id="fps-value">0<small>.0</small></span>
+            <span class="metric-target" id="fps-target">Ziel: 24–30</span>
+          </div>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-zone meter-low"></div>
+            <div class="meter-zone meter-target"></div>
+            <div class="meter-zone meter-high"></div>
+            <div class="meter-needle" id="fps-needle"></div>
+          </div>
+          <div class="meter-scale" aria-hidden="true">
+            <span>0</span><span>15</span><span>24</span><span>30</span><span>60+</span>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-cell">
+            <span class="metric-label">Inferenzzeit</span>
+            <span class="metric-value-sm" id="infer-value">-- ms</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-label">Auflösung</span>
+            <span class="metric-value-sm" id="res-value">-- × --</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-label">Backend</span>
+            <span class="metric-value-sm" id="backend-value">--</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-label">Frames gesamt</span>
+            <span class="metric-value-sm" id="frames-value">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-title-row">
+          <h2 class="panel-title">Erkannte Klassen</h2>
+          <span class="panel-counter" id="class-counter">0</span>
+        </div>
+        <ul class="class-list" id="class-list">
+          <li class="class-empty">Noch keine Objekte erkannt.</li>
+        </ul>
+      </div>
+
+      <div class="panel-block">
+        <h2 class="panel-title">Schwellenwert</h2>
+        <label class="threshold">
+          <span class="threshold-label">
+            Mindest­konfidenz
+            <strong id="threshold-display">0.50</strong>
+          </span>
+          <input type="range" id="threshold" min="0.1" max="0.9" step="0.05" value="0.5" />
+        </label>
+        <p class="panel-hint">
+          Höherer Wert → weniger, aber sicherere Detektionen.
+        </p>
+      </div>
+    </aside>
   </section>
 
-  <!-- Live-Demo -->
-  <section style="margin-bottom: 28px;">
-    <div class="section-label">Live-Demo</div>
-    <h2 class="section-heading">Video-Upload mit Echtzeit-Erkennung</h2>
+  <section class="explainer">
+    <div class="explainer-col">
+      <h3>Wie funktioniert es?</h3>
+      <p>
+        Jedes Frame des Videos wird in <em>Echtzeit</em> an ein vortrainiertes
+        Convolutional Neural Network (COCO-SSD) übergeben. Das Modell liefert für jedes
+        erkannte Objekt eine Bounding Box, die Klasse und einen Konfidenzwert.
+        Die Bounding Boxes werden anschließend pixelgenau über das Video gezeichnet —
+        alles direkt im Browser, ohne Server.
+      </p>
+    </div>
+    <div class="explainer-col">
+      <h3>Warum 24–30 FPS?</h3>
+      <p>
+        Das menschliche Auge nimmt Bewegung ab ca. 24 Bildern pro Sekunde als flüssig wahr.
+        Erst bei dieser Rate spricht man von <em>echter</em> Echtzeit-Verarbeitung —
+        alles darunter wirkt ruckelig und ist für Anwendungen wie Verkehrs­analyse oder
+        Überwachung nicht praxistauglich.
+      </p>
+    </div>
   </section>
-
-  <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="video/*" />
-    <div class="upload-icon">📂</div>
-    <div class="upload-text">
-      <strong>Video auswählen oder ablegen</strong>
-      <span>MP4 · WebM · MOV — alles läuft lokal im Browser</span>
-    </div>
-    <div class="file-name" id="fileNameEl">—</div>
-  </div>
-
-  <button id="runButton" disabled>⏳ &nbsp;Modell wird geladen…</button>
-
-  <div class="controls-row">
-    <label class="slider-label">
-      Konfidenz: <span id="confVal">25%</span>
-      <input type="range" id="confSlider" min="5" max="90" value="25" step="5">
-    </label>
-    <label class="slider-label">
-      NMS: <span id="nmsVal">45%</span>
-      <input type="range" id="nmsSlider" min="10" max="90" value="45" step="5">
-    </label>
-  </div>
-
-  <div class="status-bar">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusText">Initialisiere…</span>
-    <span id="detCount"></span>
-  </div>
-
-  <div class="viewer" id="viewer">
-    <div class="viewer-placeholder" id="placeholder">
-      <div class="big-icon">🎯</div>
-      <div>Noch keine Datei geladen</div>
-    </div>
-    <video id="videoEl" muted playsinline></video>
-    <canvas id="overlayCanvas"></canvas>
-  </div>
-
-  <div id="debugEl"></div>
-
-  <div class="info-strip">
-    <div class="info-item">Modell: <span>YOLOv5n</span></div>
-    <div class="info-item">Eingabe: <span>640 × 640</span></div>
-    <div class="info-item">Konfidenz: <span>≥ 25 %</span></div>
-    <div class="info-item">Backend: <span id="epInfo">—</span></div>
-    <div class="info-item">Klassen: <span>80 (COCO)</span></div>
-    <div class="info-item">FPS: <span id="fpsEl">—</span></div>
-  </div>
-
 </div>
 
-<script>
-'use strict';
-
-// ─── ORT laden (Fallback falls Header-Script noch nicht fertig) ───────────────
-async function ensureOrt() {
-  if (typeof ort !== 'undefined') return;
-  await new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src    = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/ort.all.min.js';
-    s.onload = () => (typeof ort !== 'undefined' ? resolve() : reject(new Error('ort nach Load nicht definiert')));
-    s.onerror = () => reject(new Error('Netzwerkfehler: ONNX Runtime konnte nicht geladen werden'));
-    document.head.appendChild(s);
-  });
-}
-
-// ─── App ──────────────────────────────────────────────────────────────────────
-async function initializeApp() {
-  await ensureOrt().catch(err => {
-    document.getElementById('debugEl').textContent = '❌ ' + err.message;
-    throw err;
-  });
-
-  // ORT-Konfiguration
-  // WASM-Fallback läuft im Worker (proxy = true, default) → kein Main-Thread-Blocking.
-  // WebGPU-JSEP läuft immer auf dem Main-Thread, unabhängig vom proxy-Setting.
-  ort.env.wasm.wasmPaths  = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/';
-  ort.env.wasm.numThreads = 1;
-  ort.env.wasm.simd       = true;
-
-  // ── Konstanten ───────────────────────────────────────────────────────────────
-  const MODEL_PATH      = 'models/yolov5n.onnx';
-  const INPUT_SIZE      = 640;
-  const MIN_OBJECTNESS  = 0.20;
-  const MIN_CLASS_SCORE = 0.20;
-
-  let CONF_THRESHOLD = 0.25;
-  let NMS_THRESHOLD  = 0.45;
-
-  const CLASS_NAMES = [
-    'person','bicycle','car','motorbike','aeroplane','bus','train','truck','boat',
-    'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat',
-    'dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack',
-    'umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball',
-    'kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket',
-    'bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
-    'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake',
-    'chair','sofa','pottedplant','bed','diningtable','toilet','tvmonitor','laptop',
-    'mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink',
-    'refrigerator','book','clock','vase','scissors','teddy bear','hair drier',
-    'toothbrush'
-  ];
-
-  // ── DOM ──────────────────────────────────────────────────────────────────────
-  const fileInput     = document.getElementById('fileInput');
-  const runButton     = document.getElementById('runButton');
-  const videoEl       = document.getElementById('videoEl');
-  const overlayCanvas = document.getElementById('overlayCanvas');
-  const placeholder   = document.getElementById('placeholder');
-  const statusDot     = document.getElementById('statusDot');
-  const statusText    = document.getElementById('statusText');
-  const detCount      = document.getElementById('detCount');
-  const fileNameEl    = document.getElementById('fileNameEl');
-  const debugEl       = document.getElementById('debugEl');
-  const epInfo        = document.getElementById('epInfo');
-  const fpsEl         = document.getElementById('fpsEl');
-  const epBadge       = document.getElementById('epBadge');
-  const confSlider    = document.getElementById('confSlider');
-  const confVal       = document.getElementById('confVal');
-  const nmsSlider     = document.getElementById('nmsSlider');
-  const nmsVal        = document.getElementById('nmsVal');
-  const overlayCtx    = overlayCanvas.getContext('2d');
-
-  // ── Applikations-Zustand ─────────────────────────────────────────────────────
-  let session          = null;
-  let inputName        = null;
-  let outputName       = null;
-  let ortReady         = false;
-  let activeBackend    = 'wasm';
-  let inputDtype       = 'float32';   // wird beim Warmup auf 'float16' korrigiert
-  let currentObjectURL = null;
-  let isPlaying        = false;
-
-  // Render-Loop: läuft bei Video-FPS, unabhängig von Inferenz-Geschwindigkeit
-  let renderHandle = null;
-  const useRVFC    = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
-
-  // Inferenz-Loop: feuert so schnell wie möglich, blockiert Render nicht
-  let inferBusy  = false;
-  let latestDets = [];   // zuletzt berechnete Bounding Boxes, vom Render-Loop genutzt
-
-  // FPS-Zähler für die Videoanzeige
-  let fpsLastTs  = 0;
-  let fpsIdx     = 0;
-  let fpsFilled  = 0;
-  const fpsBuf   = new Float32Array(30);
-
-  // ── Offscreen-Canvas ─────────────────────────────────────────────────────────
-  // snapCanvas: Standbild des aktuellen Frames für die Inferenz
-  const snapCanvas = document.createElement('canvas');
-  const snapCtx    = snapCanvas.getContext('2d', { willReadFrequently: true });
-
-  // prepCanvas: 640×640 Letterbox-Eingabe für das Netz
-  const prepCanvas = document.createElement('canvas');
-  prepCanvas.width  = INPUT_SIZE;
-  prepCanvas.height = INPUT_SIZE;
-  const prepCtx     = prepCanvas.getContext('2d', { willReadFrequently: true });
-
-  // Pre-allokierte Buffer: keine GC-Drücke pro Frame
-  const _area     = INPUT_SIZE * INPUT_SIZE;
-  const _floatBuf = new Float32Array(_area * 3);
-
-  // Float16-Puffer + Konvertierung (Float16Array ab Chrome 116, sonst manuell)
-  const _f16Buf = typeof Float16Array !== 'undefined'
-    ? new Float16Array(_area * 3)
-    : new Uint16Array(_area * 3);
-
-  // Gemeinsamer Konvertierungs-View — kein Heap-Alloc pro Frame
-  const _cvtBuf = new ArrayBuffer(4);
-  const _cvtF32 = new Float32Array(_cvtBuf);
-  const _cvtU32 = new Uint32Array(_cvtBuf);
-
-  function copyToFloat16() {
-    if (typeof Float16Array !== 'undefined') {
-      _f16Buf.set(_floatBuf);
-    } else {
-      // Manuell: IEEE 754 float32 → float16 (normal range 0–1 ist verlustfrei darstellbar)
-      for (let i = 0; i < _floatBuf.length; i++) {
-        _cvtF32[0] = _floatBuf[i];
-        const u = _cvtU32[0];
-        const s = (u >>> 31) << 15;
-        const e = ((u >>> 23) & 0xff) - 127 + 15;
-        const m = (u & 0x7fffff) >>> 13;
-        _f16Buf[i] = e <= 0 ? s : e >= 31 ? s | 0x7c00 : s | (e << 10) | m;
-      }
-    }
-  }
-
-  // ── UI-Helfer ────────────────────────────────────────────────────────────────
-  const setStatus = (msg, mode = 'idle') => {
-    statusText.textContent = msg;
-    statusDot.className    = 'status-dot' + (mode !== 'idle' ? ' ' + mode : '');
-  };
-  const setDebug = (msg) => { debugEl.textContent = msg || ''; };
-
-  function trackFps(now) {
-    if (fpsLastTs > 0) {
-      fpsBuf[fpsIdx] = 1000 / (now - fpsLastTs);
-      fpsIdx    = (fpsIdx + 1) % fpsBuf.length;
-      fpsFilled = Math.min(fpsFilled + 1, fpsBuf.length);
-      let sum = 0;
-      for (let i = 0; i < fpsFilled; i++) sum += fpsBuf[i];
-      fpsEl.textContent = (sum / fpsFilled).toFixed(1);
-    }
-    fpsLastTs = now;
-  }
-
-  // ── Modell laden (WebGPU → WASM-Fallback) ────────────────────────────────────
-  async function loadModel() {
-    setStatus('Modell wird geladen…', 'running');
-
-    // WebGPU prüfen: echter Adapter-Request, kein reiner navigator.gpu-Check
-    let providers = ['wasm'];
-    try {
-      if (navigator.gpu) {
-        const adapter = await navigator.gpu.requestAdapter();
-        if (adapter) providers = ['webgpu', 'wasm'];
-      }
-    } catch (_) {}
-
-    // Sauberer 404-Check bevor ORT einen kryptischen Fehler wirft
-    try {
-      const r = await fetch(MODEL_PATH, { method: 'HEAD' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    } catch (err) {
-      setStatus('Modell nicht gefunden.', 'error');
-      setDebug(
-        `❌ Kann '${MODEL_PATH}' nicht öffnen (${err.message}).\n\n` +
-        `  • yolov5n.onnx → Ordner models/ neben der HTML ablegen\n` +
-        `  • Quelle: github.com/ultralytics/yolov5/releases\n` +
-        `  • Muss via http(s):// serviert werden, nicht file://`
-      );
-      return;
-    }
-
-    // Session erzeugen — bei WebGPU-Fehler automatisch auf WASM zurückfallen
-    const tryCreate = (eps) => ort.InferenceSession.create(MODEL_PATH, {
-      executionProviders: eps,
-      graphOptimizationLevel: 'all',
-    });
-
-    try {
-      session = await tryCreate(providers);
-    } catch (_) {
-      if (providers[0] === 'webgpu') {
-        try   { session = await tryCreate(['wasm']); providers = ['wasm']; }
-        catch (err2) { setStatus('Session-Fehler.', 'error'); setDebug('ORT: ' + err2.message); return; }
-      } else {
-        setStatus('Session-Fehler.', 'error'); return;
-      }
-    }
-
-    inputName     = session.inputNames[0];
-    outputName    = session.outputNames[0];
-    activeBackend = providers[0];
-    epInfo.textContent  = activeBackend.toUpperCase();
-    epBadge.textContent = `YOLOv5n · ONNX · ${activeBackend.toUpperCase()}`;
-
-    // Warmup + Input-Dtype erkennen: zuerst float32 versuchen,
-    // bei "expected float16"-Fehler automatisch auf float16 umschalten.
-    try {
-      const w32 = new ort.Tensor('float32', new Float32Array(_area * 3), [1, 3, INPUT_SIZE, INPUT_SIZE]);
-      await session.run({ [inputName]: w32 });
-    } catch (err) {
-      if (err.message?.includes('float16')) {
-        inputDtype = 'float16';
-        try {
-          const w16 = new ort.Tensor('float16', new (_f16Buf.constructor)(_area * 3), [1, 3, INPUT_SIZE, INPUT_SIZE]);
-          await session.run({ [inputName]: w16 });
-        } catch (_) {}
-      }
-    }
-
-    ortReady = true;
-    updateReadyState();
-  }
-
-  function updateReadyState() {
-    if (!ortReady) return;
-    const hasFile = !!fileInput.files?.length;
-    runButton.disabled    = !hasFile;
-    runButton.textContent = '▶  Erkennung starten';
-    setStatus(hasFile ? 'Bereit.' : 'Modell geladen — Video auswählen.', 'ready');
-  }
-
-  // ── Preprocessing: Letterbox + RGB-CHW ───────────────────────────────────────
-  function preprocess(source, srcW, srcH) {
-    const scale = Math.min(INPUT_SIZE / srcW, INPUT_SIZE / srcH);
-    const rW    = Math.round(srcW * scale);
-    const rH    = Math.round(srcH * scale);
-    const padL  = Math.floor((INPUT_SIZE - rW) / 2);
-    const padT  = Math.floor((INPUT_SIZE - rH) / 2);
-
-    prepCtx.fillStyle = 'rgb(114,114,114)';
-    prepCtx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
-    prepCtx.drawImage(source, 0, 0, srcW, srcH, padL, padT, rW, rH);
-
-    const px = prepCtx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE).data;
-    for (let i = 0; i < _area; i++) {
-      _floatBuf[i]             = px[i * 4]     / 255;
-      _floatBuf[_area + i]     = px[i * 4 + 1] / 255;
-      _floatBuf[2 * _area + i] = px[i * 4 + 2] / 255;
-    }
-    return { scale, padL, padT };
-  }
-
-  // ── NMS ──────────────────────────────────────────────────────────────────────
-  function nms(boxes, scores, thresh) {
-    const order = scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
-    const keep  = [];
-    while (order.length) {
-      const i = order.shift();
-      keep.push(i);
-      const [ax, ay, aw, ah] = boxes[i];
-      for (let j = order.length - 1; j >= 0; j--) {
-        const [bx, by, bw, bh] = boxes[order[j]];
-        const iw = Math.max(0, Math.min(ax + aw, bx + bw) - Math.max(ax, bx));
-        const ih = Math.max(0, Math.min(ay + ah, by + bh) - Math.max(ay, by));
-        const ua = aw * ah + bw * bh - iw * ih;
-        if (ua > 0 && iw * ih / ua > thresh) order.splice(j, 1);
-      }
-    }
-    return keep;
-  }
-
-  // ── Inferenz-Loop: asynchron, blockiert Render-Loop nicht ────────────────────
-  // Feuert kontinuierlich, aber nie parallel (inferBusy-Flag).
-  // Aktualisiert latestDets; der Render-Loop liest diese unabhängig.
-  async function inferLoop(vw, vh) {
-    if (!isPlaying || inferBusy) return;
-    inferBusy = true;
-    try {
-      // snapCanvas wird vom Render-Loop befüllt — kein zweiter drawImage nötig
-      const { scale, padL, padT } = preprocess(snapCanvas, vw, vh);
-      let tensor;
-      if (inputDtype === 'float16') {
-        copyToFloat16();
-        tensor = new ort.Tensor('float16', _f16Buf, [1, 3, INPUT_SIZE, INPUT_SIZE]);
-      } else {
-        tensor = new ort.Tensor('float32', _floatBuf, [1, 3, INPUT_SIZE, INPUT_SIZE]);
-      }
-      const out     = (await session.run({ [inputName]: tensor }))[outputName].data;
-      const N       = out.length / 85;
-
-      const boxes = [], scores = [], classes = [];
-      for (let i = 0; i < N; i++) {
-        const b   = i * 85;
-        const obj = out[b + 4];
-        if (obj < MIN_OBJECTNESS) continue;
-
-        let cid = 0, cs = 0;
-        for (let c = 0; c < 80; c++) {
-          const s = out[b + 5 + c];
-          if (s > cs) { cs = s; cid = c; }
-        }
-        if (cs < MIN_CLASS_SCORE) continue;
-
-        const conf = obj * cs;
-        if (conf < CONF_THRESHOLD) continue;
-
-        // Standard YOLOv5 ONNX: xywh in Pixeln des 640×640-Inputs
-        const cx = out[b], cy = out[b + 1], bw = out[b + 2], bh = out[b + 3];
-        let x = (cx - bw / 2 - padL) / scale;
-        let y = (cy - bh / 2 - padT) / scale;
-        let w = bw / scale, h = bh / scale;
-
-        if (x < 0) { w += x; x = 0; }
-        if (y < 0) { h += y; y = 0; }
-        if (x + w > vw) w = vw - x;
-        if (y + h > vh) h = vh - y;
-        if (w <= 1 || h <= 1) continue;
-
-        boxes.push([x, y, w, h]); scores.push(conf); classes.push(cid);
-      }
-
-      const keep = nms(boxes, scores, NMS_THRESHOLD);
-      latestDets = keep.map(i => ({ box: boxes[i], conf: scores[i], cid: classes[i] }));
-      detCount.textContent = latestDets.length ? `${latestDets.length} Obj.` : '';
-    } catch (err) {
-      setDebug('Inferenz-Fehler: ' + err.message);
-    } finally {
-      inferBusy = false;
-      // Sofort nächste Inferenz — kein künstlicher Delay.
-      // session.run() ist immer async (Worker/GPU), gibt dem Browser genug Luft.
-      if (isPlaying) inferLoop(vw, vh);
-    }
-  }
-
-  // ── Render-Loop: läuft bei Video-FPS, entkoppelt von Inferenz ────────────────
-  // requestVideoFrameCallback (Chromium/Safari) feuert exakt bei jedem Video-Frame.
-  // Fallback: requestAnimationFrame (60 Hz Display-Takt).
-  function startRenderLoop(vw, vh) {
-    function onFrame(now) {
-      if (!isPlaying) return;
-      trackFps(now);
-      // Frame snapshotten — selbe Quelle für Anzeige und Inferenz
-      snapCtx.drawImage(videoEl, 0, 0, vw, vh);
-      overlayCtx.drawImage(snapCanvas, 0, 0, vw, vh);
-      drawDetections(overlayCtx, latestDets);
-      // Nächsten Frame anfordern
-      renderHandle = useRVFC
-        ? videoEl.requestVideoFrameCallback(onFrame)
-        : requestAnimationFrame(onFrame);
-    }
-    renderHandle = useRVFC
-      ? videoEl.requestVideoFrameCallback(onFrame)
-      : requestAnimationFrame(onFrame);
-  }
-
-  function stopRenderLoop() {
-    if (renderHandle === null) return;
-    if (useRVFC) videoEl.cancelVideoFrameCallback(renderHandle);
-    else         cancelAnimationFrame(renderHandle);
-    renderHandle = null;
-  }
-
-  // ── Zeichnen ─────────────────────────────────────────────────────────────────
-  function drawDetections(ctx, dets) {
-    if (!dets.length) return;
-    ctx.font         = 'bold 18px "Space Mono", monospace';
-    ctx.textBaseline = 'alphabetic';
-
-    for (const { cid, conf, box } of dets) {
-      const [x, y, w, h] = box;
-      const label = `${CLASS_NAMES[cid] ?? '?'} ${(conf * 100).toFixed(0)}%`;
-
-      // Bounding Box
-      ctx.lineWidth   = 2;
-      ctx.strokeStyle = '#e8ff47';
-      ctx.strokeRect(x, y, w, h);
-
-      // Eck-Akzente
-      const cs = Math.min(14, w * 0.18, h * 0.18);
-      ctx.lineWidth   = 3;
-      ctx.strokeStyle = '#ff2d78';
-      for (const [ox, oy, dx, dy] of [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]]) {
-        ctx.beginPath();
-        ctx.moveTo(ox + dx * cs, oy); ctx.lineTo(ox, oy); ctx.lineTo(ox, oy + dy * cs);
-        ctx.stroke();
-      }
-
-      // Label — bleibt immer innerhalb des Canvas
-      const padX = 6, padY = 4, th = 22;
-      const tw   = ctx.measureText(label).width + padX * 2;
-      const lx   = Math.min(x, ctx.canvas.width  - tw);
-      const ly   = y - th >= 0 ? y - th : y + h + th <= ctx.canvas.height ? y + h : y;
-      ctx.fillStyle = '#e8ff47';
-      ctx.fillRect(lx, ly, tw, th);
-      ctx.fillStyle = '#000';
-      ctx.fillText(label, lx + padX, ly + th - padY - 1);
-    }
-  }
-
-  // ── Video starten ─────────────────────────────────────────────────────────────
-  function startVideo(file) {
-    stopAll();
-    overlayCanvas.style.display = 'block';
-    placeholder.style.display   = 'none';
-
-    currentObjectURL = URL.createObjectURL(file);
-    videoEl.src      = currentObjectURL;
-    videoEl.load();
-
-    videoEl.onloadedmetadata = async () => {
-      const vw = videoEl.videoWidth;
-      const vh = videoEl.videoHeight;
-      overlayCanvas.width  = vw; overlayCanvas.height = vh;
-      snapCanvas.width     = vw; snapCanvas.height    = vh;
-
-      try { await videoEl.play(); }
-      catch (err) {
-        setStatus('Video konnte nicht abgespielt werden.', 'error');
-        setDebug('Play-Fehler: ' + err.message);
-        return;
-      }
-
-      isPlaying  = true;
-      latestDets = [];
-      fpsLastTs  = 0; fpsIdx = 0; fpsFilled = 0;
-      setStatus('Video läuft — Erkennung aktiv.', 'running');
-
-      // Beide Loops unabhängig starten
-      startRenderLoop(vw, vh);
-      inferLoop(vw, vh);
-    };
-
-    videoEl.onended = () => { stopAll(); setStatus('Video beendet.', 'ready'); };
-    videoEl.onerror = () => {
-      setStatus('Video konnte nicht geladen werden.', 'error');
-      setDebug('Format eventuell nicht vom Browser unterstützt.');
-    };
-  }
-
-  function stopAll() {
-    isPlaying = false;
-    stopRenderLoop();
-    latestDets = [];
-
-    if (currentObjectURL) {
-      videoEl.pause();
-      URL.revokeObjectURL(currentObjectURL);
-      currentObjectURL = null;
-      videoEl.removeAttribute('src');
-      videoEl.load();
-    }
-
-    overlayCanvas.style.display = 'none';
-    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    placeholder.style.display = 'flex';
-    detCount.textContent = '';
-    fpsEl.textContent    = '—';
-  }
-
-  // ── Events ───────────────────────────────────────────────────────────────────
-  fileInput.addEventListener('change', () => {
-    stopAll(); setDebug('');
-    const file = fileInput.files?.[0];
-    fileNameEl.textContent = file ? file.name : '—';
-    if (ortReady) {
-      runButton.disabled = !file;
-      setStatus(file ? 'Bereit.' : 'Video auswählen.', 'ready');
-    }
-  });
-
-  runButton.addEventListener('click', () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-    setDebug(''); startVideo(file);
-  });
-
-  const zone = document.getElementById('uploadZone');
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) {
-      fileInput.files = e.dataTransfer.files;
-      fileInput.dispatchEvent(new Event('change'));
-    }
-  });
-
-  confSlider.addEventListener('input', () => {
-    CONF_THRESHOLD = confSlider.value / 100;
-    confVal.textContent = confSlider.value + '%';
-  });
-  nmsSlider.addEventListener('input', () => {
-    NMS_THRESHOLD = nmsSlider.value / 100;
-    nmsVal.textContent = nmsSlider.value + '%';
-  });
-
-  window.addEventListener('error',              e => setDebug('Fehler: '   + (e.error?.message  || e.message)));
-  window.addEventListener('unhandledrejection', e => setDebug('Promise: '  + (e.reason?.message || e.reason)));
-
-  // ── Start ────────────────────────────────────────────────────────────────────
-  loadModel();
-}
-
-initializeApp().catch(err => {
-  document.getElementById('debugEl').textContent = '❌ ' + err.message;
-});
-</script>
+<footer class="site-footer">
+  <div class="footer-row">
+    <span class="footer-mark">HM<span class="brand-mark-dot">·</span></span>
+    <span>Visual Computing (DE) · Vertiefungsthema 1</span>
+  </div>
+  <div class="footer-row footer-row-end">
+    <span>Modell: <code>COCO-SSD</code> · 80 Klassen · läuft via TensorFlow.js / WebGL</span>
+  </div>
+</footer>
 ```

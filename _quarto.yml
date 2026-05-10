@@ -1,8 +1,24 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
   resources:
-    - models/yolov5n.onnx
+    - "app.js"
 
 website:
-  title: Browserbasierte YOLO-Objekterkennung
+  title: "Echtzeit-Objekterkennung"
+  description: "Visual Computing · Vertiefungsthema 1 · Hochschule München"
+  favicon: ""
+  open-graph: true
+
+format:
+  html:
+    theme: none
+    minimal: true
+    page-layout: custom
+    css: style.css
+    toc: false
+    anchor-sections: false
+    smooth-scroll: true
+    link-external-newwindow: true
