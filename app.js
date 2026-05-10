@@ -162,7 +162,18 @@
         : 0;
       hudFps.textContent = fps.toFixed(1);
 
-      drawOverlay(predictions.filter((p) => p.score >= 0.3));
+      const frameArea = overlay.width * overlay.height;
+      // Large vehicles (bus/truck) can legitimately fill ~40% of frame;
+      // cars should never need more than ~12%. This suppresses the
+      // "merged blob" false positive common in dense-traffic scenes.
+      const maxAreaRatio = { bus: 0.40, truck: 0.40 };
+      const filtered = predictions.filter((p) => {
+        if (p.score < 0.3) return false;
+        const [, , bw, bh] = p.bbox;
+        const limit = maxAreaRatio[p.class] ?? 0.12;
+        return (bw * bh) / frameArea <= limit;
+      });
+      drawOverlay(filtered);
     }
 
     rafId = requestAnimationFrame(tick);
