@@ -1,0 +1,13 @@
+# Quarto build artifacts
+/.quarto/
+/_site/
+/_freeze/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
