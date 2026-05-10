@@ -34,16 +34,13 @@
   let currentObjectURL = null;
   let workerReady      = false;
   let inferring        = false;  // one frame in-flight at a time
+  let lastDetections   = [];     // most recent inference result, redrawn every RAF
 
   // Reused across frames — avoids repeated allocations
   const offscreen  = document.createElement('canvas');
   offscreen.width  = INPUT_SIZE;
   offscreen.height = INPUT_SIZE;
   const offCtx     = offscreen.getContext('2d', { willReadFrequently: true });
-
-  // Holds the video frame that was sent to the worker — drawn in drawOverlay for sync
-  const frameBuffer = document.createElement('canvas');
-  const fbCtx       = frameBuffer.getContext('2d');
 
   const fpsWindow      = [];
   const FPS_WINDOW_SIZE = 20;
@@ -92,7 +89,7 @@
       const fps = fpsWindow.length
         ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
       hudFps.textContent = fps.toFixed(1);
-      drawOverlay(data.detections);
+      lastDetections = data.detections; // tick() renders these on the next RAF
     }
 
     if (data.type === 'error') {
@@ -146,7 +143,8 @@
 
   function cleanupSource() {
     stopLoop();
-    inferring = false;
+    inferring      = false;
+    lastDetections = [];
     if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
     video.srcObject = null;
     video.removeAttribute('src');
@@ -166,7 +164,8 @@
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
     lastResultTime   = 0;
-    video.style.visibility = 'hidden'; // canvas renders synchronized frames instead
+    // Canvas will draw the video every RAF — hide the element to avoid double-render
+    video.style.visibility = 'hidden';
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -196,32 +195,34 @@
     rafId = null;
   }
 
-  // tick() is synchronous — all heavy work is in the worker.
-  // We only dispatch a new frame when the previous inference is done.
+  // tick() runs at display refresh rate (~60 fps).
+  // Each RAF: draw live video + last known boxes for a smooth, non-frozen display.
+  // Inference is kicked off whenever the previous result is back (no queue).
   function tick() {
     if (!running) return;
+
+    if (video.readyState >= 2) {
+      const w = overlay.width, h = overlay.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(video, 0, 0, w, h);   // live frame — always up-to-date
+      drawBoxes(lastDetections, w, h);     // boxes from most recent inference
+    }
+
     if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
       inferring = true;
-      // Snapshot the exact frame sent to the worker so drawOverlay can stay in sync
-      if (frameBuffer.width !== overlay.width || frameBuffer.height !== overlay.height) {
-        frameBuffer.width = overlay.width; frameBuffer.height = overlay.height;
-      }
-      fbCtx.drawImage(video, 0, 0, overlay.width, overlay.height);
       const { float32, scale, padX, padY } = preprocess(video);
       worker.postMessage(
         { type: 'infer', float32, scale, padX, padY,
           origW: video.videoWidth, origH: video.videoHeight },
-        [float32.buffer], // zero-copy transfer — no 5 MB memcpy per frame
+        [float32.buffer], // zero-copy transfer
       );
     }
     rafId = requestAnimationFrame(tick);
   }
 
   /* ---- Drawing ----------------------------------------- */
-  function drawOverlay(detections) {
-    const w = overlay.width, h = overlay.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(frameBuffer, 0, 0); // draw the frame that was actually analyzed
+  function drawBoxes(detections, w, h) {
+    if (!detections.length) return;
 
     const lineW    = Math.max(2, Math.round(Math.min(w, h) / 360));
     const fontSize = Math.max(12, Math.round(Math.min(w, h) / 40));
