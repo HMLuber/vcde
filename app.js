@@ -33,8 +33,7 @@
   let running          = false;
   let currentObjectURL = null;
   let workerReady      = false;
-  let inferring        = false;  // one frame in-flight at a time
-  let lastDetections   = [];     // most recent inference result, redrawn every RAF
+  let inferring        = false;
 
   // Reused across frames — avoids repeated allocations
   const offscreen  = document.createElement('canvas');
@@ -42,9 +41,9 @@
   offscreen.height = INPUT_SIZE;
   const offCtx     = offscreen.getContext('2d', { willReadFrequently: true });
 
-  const fpsWindow      = [];
+  const fpsWindow       = [];
   const FPS_WINDOW_SIZE = 20;
-  let lastResultTime   = 0;
+  let lastResultTime    = 0;
 
   /* ---- Colors ------------------------------------------ */
   const PALETTE = [
@@ -77,10 +76,9 @@
 
     if (data.type === 'result') {
       inferring = false;
-      if (!running) return; // discard stale result after reset
+      if (!running) return;
       const now = performance.now();
       const dt  = now - lastResultTime;
-      // lastResultTime===0 means first frame → skip to avoid (now - 0) as delta
       if (lastResultTime > 0 && dt > 0 && dt < 5000) {
         fpsWindow.push(1000 / dt);
         if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
@@ -89,7 +87,7 @@
       const fps = fpsWindow.length
         ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
       hudFps.textContent = fps.toFixed(1);
-      lastDetections = data.detections; // tick() renders these on the next RAF
+      drawOverlay(data.detections);
     }
 
     if (data.type === 'error') {
@@ -143,8 +141,7 @@
 
   function cleanupSource() {
     stopLoop();
-    inferring      = false;
-    lastDetections = [];
+    inferring = false;
     if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
     video.srcObject = null;
     video.removeAttribute('src');
@@ -192,33 +189,24 @@
     rafId = null;
   }
 
-  // tick() runs at display refresh rate (~60 fps).
-  // Each RAF: redraw boxes from last inference over the live video element.
-  // Inference is kicked off whenever the previous result is back (no queue).
   function tick() {
     if (!running) return;
-
-    if (video.readyState >= 2) {
-      const w = overlay.width, h = overlay.height;
-      ctx.clearRect(0, 0, w, h);
-      drawBoxes(lastDetections, w, h); // transparent overlay — video element shows beneath
-    }
-
     if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
       inferring = true;
       const { float32, scale, padX, padY } = preprocess(video);
       worker.postMessage(
         { type: 'infer', float32, scale, padX, padY,
           origW: video.videoWidth, origH: video.videoHeight },
-        [float32.buffer], // zero-copy transfer
+        [float32.buffer],
       );
     }
     rafId = requestAnimationFrame(tick);
   }
 
   /* ---- Drawing ----------------------------------------- */
-  function drawBoxes(detections, w, h) {
-    if (!detections.length) return;
+  function drawOverlay(detections) {
+    const w = overlay.width, h = overlay.height;
+    ctx.clearRect(0, 0, w, h);
 
     const lineW    = Math.max(2, Math.round(Math.min(w, h) / 360));
     const fontSize = Math.max(12, Math.round(Math.min(w, h) / 40));
