@@ -5,7 +5,10 @@ importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.
 
 const CONF_THRESH = 0.30;
 const IOU_THRESH  = 0.45;
-const N_DET       = 8400;  // number of YOLOv8 anchor predictions at 640×640
+const INPUT_SIZE  = 320;
+// N_DET = (S/8)² + (S/16)² + (S/32)²  for input size S
+// 320px → 40²+20²+10² = 1600+400+100 = 2100
+const N_DET       = 2100;
 const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
 
 const CLASSES = [
@@ -106,7 +109,7 @@ self.onmessage = async (e) => {
   if (e.data.type !== 'infer' || !session) return;
 
   const { float32, scale, padX, padY, origW, origH } = e.data;
-  const tensor = new ort.Tensor('float32', float32, [1, 3, 640, 640]);
+  const tensor = new ort.Tensor('float32', float32, [1, 3, INPUT_SIZE, INPUT_SIZE]);
   let detections = [];
   try {
     const results = await session.run({ [session.inputNames[0]]: tensor });

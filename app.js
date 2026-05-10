@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const INPUT_SIZE = 640;
+  const INPUT_SIZE = 320;
 
   /* ---- DOM refs ---------------------------------------- */
   const $ = (id) => document.getElementById(id);
@@ -169,7 +169,7 @@
 
     if (!workerReady) {
       loader.hidden          = false;
-      loaderText.textContent = 'YOLOv8n wird geladen … (12 MB)';
+      loaderText.textContent = 'YOLOv8n wird geladen … (320 px · ~12 MB)';
     }
 
     startLoop();
