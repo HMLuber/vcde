@@ -79,11 +79,12 @@
       if (!running) return; // discard stale result after reset
       const now = performance.now();
       const dt  = now - lastResultTime;
-      lastResultTime = now;
-      if (dt > 0 && dt < 5000) {
+      // lastResultTime===0 means first frame → skip to avoid (now - 0) as delta
+      if (lastResultTime > 0 && dt > 0 && dt < 5000) {
         fpsWindow.push(1000 / dt);
         if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
       }
+      lastResultTime = now;
       const fps = fpsWindow.length
         ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
       hudFps.textContent = fps.toFixed(1);
