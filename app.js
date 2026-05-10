@@ -41,6 +41,10 @@
   offscreen.height = INPUT_SIZE;
   const offCtx     = offscreen.getContext('2d', { willReadFrequently: true });
 
+  // Holds the video frame that was sent to the worker — drawn in drawOverlay for sync
+  const frameBuffer = document.createElement('canvas');
+  const fbCtx       = frameBuffer.getContext('2d');
+
   const fpsWindow      = [];
   const FPS_WINDOW_SIZE = 20;
   let lastResultTime   = 0;
@@ -147,6 +151,7 @@
     video.srcObject = null;
     video.removeAttribute('src');
     video.load();
+    video.style.visibility = '';
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
 
@@ -161,6 +166,7 @@
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
     lastResultTime   = 0;
+    video.style.visibility = 'hidden'; // canvas renders synchronized frames instead
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -196,6 +202,11 @@
     if (!running) return;
     if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
       inferring = true;
+      // Snapshot the exact frame sent to the worker so drawOverlay can stay in sync
+      if (frameBuffer.width !== overlay.width || frameBuffer.height !== overlay.height) {
+        frameBuffer.width = overlay.width; frameBuffer.height = overlay.height;
+      }
+      fbCtx.drawImage(video, 0, 0, overlay.width, overlay.height);
       const { float32, scale, padX, padY } = preprocess(video);
       worker.postMessage(
         { type: 'infer', float32, scale, padX, padY,
@@ -210,6 +221,7 @@
   function drawOverlay(detections) {
     const w = overlay.width, h = overlay.height;
     ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(frameBuffer, 0, 0); // draw the frame that was actually analyzed
 
     const lineW    = Math.max(2, Math.round(Math.min(w, h) / 360));
     const fontSize = Math.max(12, Math.round(Math.min(w, h) / 40));
