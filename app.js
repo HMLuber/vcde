@@ -193,12 +193,17 @@
     if (!running) return;
     if (video.readyState >= 2 && !video.paused && !video.ended && workerReady && !inferring) {
       inferring = true;
-      const { float32, scale, padX, padY } = preprocess(video);
-      worker.postMessage(
-        { type: 'infer', float32, scale, padX, padY,
-          origW: video.videoWidth, origH: video.videoHeight },
-        [float32.buffer],
-      );
+      try {
+        const { float32, scale, padX, padY } = preprocess(video);
+        worker.postMessage(
+          { type: 'infer', float32, scale, padX, padY,
+            origW: video.videoWidth, origH: video.videoHeight },
+          [float32.buffer],
+        );
+      } catch (err) {
+        inferring = false;
+        console.error('preprocess failed:', err);
+      }
     }
     rafId = requestAnimationFrame(tick);
   }
