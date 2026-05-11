@@ -32,11 +32,24 @@ async function loadModel() {
   try {
     ort.env.wasm.wasmPaths  = ORT_CDN;
     ort.env.wasm.numThreads = 1; // GitHub Pages blocks SharedArrayBuffer
-    session = await ort.InferenceSession.create('models/yolov8n.onnx', {
-      executionProviders:     ['wasm'],
-      graphOptimizationLevel: 'all',
-    });
-    self.postMessage({ type: 'ready', provider: 'WASM' });
+
+    // WebGPU: full GPU path, supports all YOLOv8 ops (incl. resize-nearest).
+    // WebGL is intentionally skipped — it lacks resize-nearest support in ORT.
+    // Falls back to WASM if WebGPU is unavailable (Firefox, older browsers).
+    let provider = 'WASM';
+    try {
+      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+        executionProviders:     ['webgpu'],
+        graphOptimizationLevel: 'all',
+      });
+      provider = 'WebGPU';
+    } catch (_) {
+      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+        executionProviders:     ['wasm'],
+        graphOptimizationLevel: 'all',
+      });
+    }
+    self.postMessage({ type: 'ready', provider });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }
