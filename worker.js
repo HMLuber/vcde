@@ -5,7 +5,7 @@ importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.
 
 const CONF_THRESH = 0.30;
 const IOU_THRESH  = 0.45;
-const INPUT_SIZE  = 320;
+const INPUT_SIZE  = 160; // 160px → ~25 FPS on WebGPU; use 320 for higher accuracy
 const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
 
 const CLASSES = [
