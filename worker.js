@@ -5,8 +5,11 @@ importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.
 
 const CONF_THRESH = 0.30;
 const IOU_THRESH  = 0.45;
-const INPUT_SIZE  = 160; // 160px → ~25 FPS on WebGPU; use 320 for higher accuracy
 const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
+
+// INPUT_SIZE is set dynamically in warmup() to match whatever the model was
+// exported with — no manual sync needed when swapping models.
+let INPUT_SIZE = 160;
 
 const CLASSES = [
   'person','bicycle','car','motorcycle','airplane','bus','train','truck',
@@ -59,21 +62,46 @@ async function loadModel() {
       });
     }
 
-    // Warmup: run 3 dummy inferences to force WebGPU shader compilation
-    // before the first real frame arrives, so live FPS is stable from the start.
-    const dummy = new ort.Tensor('float32',
-      new Float32Array(3 * INPUT_SIZE * INPUT_SIZE),
-      [1, 3, INPUT_SIZE, INPUT_SIZE]);
-    for (let i = 0; i < 3; i++) {
-      const r = await session.run({ [session.inputNames[0]]: dummy });
-      for (const t of Object.values(r)) t.dispose?.();
-    }
-    dummy.dispose?.();
+    // Warmup: auto-detects the model's actual input size, then runs 3 dummy
+    // inferences to pre-compile all WebGPU shaders before the first real frame.
+    INPUT_SIZE = await warmup(session);
 
-    self.postMessage({ type: 'ready', provider, gpuError });
+    self.postMessage({ type: 'ready', provider, gpuError, inputSize: INPUT_SIZE });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }
+}
+
+/* Runs dummy inferences to pre-compile GPU shaders.
+   On the first attempt uses the current INPUT_SIZE; if the model rejects it
+   (wrong export resolution), parses the expected size from the ORT error and
+   retries once — so swapping models never requires a manual code edit.       */
+async function warmup(sess) {
+  let sz = INPUT_SIZE;
+  for (let attempt = 0; attempt <= 1; attempt++) {
+    const dummy = new ort.Tensor('float32', new Float32Array(3 * sz * sz), [1, 3, sz, sz]);
+    try {
+      for (let i = 0; i < 3; i++) {
+        const r = await sess.run({ [sess.inputNames[0]]: dummy });
+        for (const t of Object.values(r)) t.dispose?.();
+      }
+      dummy.dispose?.();
+      return sz; // success — this is the correct size
+    } catch (e) {
+      dummy.dispose?.();
+      if (attempt === 0) {
+        // Parse "Expected: 320" from the ORT dimension-mismatch error
+        const m = String(e).match(/Expected:\s*(\d+)/);
+        if (m) {
+          sz = parseInt(m[1]);
+          console.warn(`[worker] INPUT_SIZE auto-corrected: ${INPUT_SIZE} → ${sz}`);
+          continue;
+        }
+      }
+      throw e; // unrecoverable
+    }
+  }
+  return sz;
 }
 
 /* ---- Post-processing: decode YOLOv8 output tensor ----------

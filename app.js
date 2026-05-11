@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const INPUT_SIZE = 160; // must match worker.js
+  let INPUT_SIZE = 160; // updated from worker 'ready' to match the loaded model
 
   /* ---- DOM refs ---------------------------------------- */
   const $ = (id) => document.getElementById(id);
@@ -68,6 +68,9 @@
 
   worker.onmessage = ({ data }) => {
     if (data.type === 'ready') {
+      // Sync INPUT_SIZE and offscreen canvas to whatever size the model actually uses
+      INPUT_SIZE = data.inputSize;
+      offscreen.width = offscreen.height = INPUT_SIZE;
       workerReady = true;
       statusDot.classList.add('ready');
       statusText.textContent = `Bereit · YOLOv8n · ${data.provider}`;
