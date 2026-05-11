@@ -35,13 +35,20 @@ async function loadModel() {
     // WebGL is intentionally skipped — it lacks resize-nearest support in ORT.
     // Falls back to WASM if WebGPU is unavailable (Firefox, older browsers).
     let provider = 'WASM';
-    try {
-      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
-        executionProviders:     ['webgpu'],
-        graphOptimizationLevel: 'all',
-      });
-      provider = 'WebGPU';
-    } catch (_) {
+    const gpuAvailable = typeof navigator !== 'undefined' && !!navigator.gpu;
+    console.log('[worker] navigator.gpu available:', gpuAvailable);
+    if (gpuAvailable) {
+      try {
+        session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+          executionProviders:     ['webgpu'],
+          graphOptimizationLevel: 'all',
+        });
+        provider = 'WebGPU';
+      } catch (e) {
+        console.warn('[worker] WebGPU session creation failed, falling back to WASM:', e);
+      }
+    }
+    if (!session) {
       session = await ort.InferenceSession.create('models/yolov8n.onnx', {
         executionProviders:     ['wasm'],
         graphOptimizationLevel: 'all',
