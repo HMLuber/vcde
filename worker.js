@@ -6,9 +6,7 @@ importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.
 const CONF_THRESH = 0.30;
 const IOU_THRESH  = 0.45;
 const INPUT_SIZE  = 320;
-// N_DET = (S/8)² + (S/16)² + (S/32)²  for input size S
-// 320px → 40²+20²+10² = 1600+400+100 = 2100
-const N_DET       = 2100;
+// N_DET is read dynamically from the output tensor dims (see postprocess)
 const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
 
 const CLASSES = [
@@ -55,22 +53,35 @@ async function loadModel() {
   }
 }
 
-/* ---- Post-processing: decode raw [1, 84, 2100] output ----- */
-function postprocess(raw, scale, padX, padY, origW, origH) {
+/* ---- Post-processing: decode YOLOv8 output tensor ----------
+   Handles both layouts that ultralytics may export:
+     [1, 84, N]  — rows = attributes, cols = anchors
+     [1, N, 84]  — rows = anchors,    cols = attributes (transposed)
+   N_DET is read from the actual tensor dims, not hardcoded.       */
+function postprocess(out, scale, padX, padY, origW, origH) {
+  const [, d1, d2] = out.dims;
+  const raw = out.data;
+
+  // If d1 === 84 → standard layout [1, 84, N]; otherwise transposed [1, N, 84]
+  const transposed = (d1 !== 84);
+  const nDet       = transposed ? d1 : d2;
+
+  const get = transposed
+    ? (row, col) => raw[col * 84      + row]   // [N, 84]: index by anchor first
+    : (row, col) => raw[row * nDet    + col];  // [84, N]: index by attribute first
+
   const boxes = [], scores = [], classIds = [];
 
-  for (let i = 0; i < N_DET; i++) {
+  for (let i = 0; i < nDet; i++) {
     let maxScore = 0, classId = 0;
     for (let c = 0; c < 80; c++) {
-      const s = raw[(4 + c) * N_DET + i];
+      const s = get(4 + c, i);
       if (s > maxScore) { maxScore = s; classId = c; }
     }
     if (maxScore < CONF_THRESH) continue;
 
-    const cx = raw[0 * N_DET + i];
-    const cy = raw[1 * N_DET + i];
-    const bw = raw[2 * N_DET + i];
-    const bh = raw[3 * N_DET + i];
+    const cx = get(0, i), cy = get(1, i);
+    const bw = get(2, i), bh = get(3, i);
 
     // Undo letterbox: subtract padding, divide by scale
     const x1 = Math.max(0,     ((cx - bw / 2) - padX) / scale);
@@ -124,7 +135,12 @@ self.onmessage = async (e) => {
   try {
     const results = await session.run({ [session.inputNames[0]]: tensor });
     const out     = results[session.outputNames[0]];
-    detections    = postprocess(out.data, scale, padX, padY, origW, origH);
+    if (!self._dimsLogged) {
+      const fmt = out.dims[1] === 84 ? '[1,84,N]' : '[1,N,84]';
+      console.log(`[worker] output dims: ${out.dims} — layout: ${fmt}, nDet: ${out.dims[1] === 84 ? out.dims[2] : out.dims[1]}`);
+      self._dimsLogged = true;
+    }
+    detections    = postprocess(out, scale, padX, padY, origW, origH);
     for (const t of Object.values(results)) t.dispose?.();
   } catch (err) {
     console.error('inference error:', err);
