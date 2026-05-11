@@ -59,6 +59,17 @@ async function loadModel() {
       });
     }
 
+    // Warmup: run 3 dummy inferences to force WebGPU shader compilation
+    // before the first real frame arrives, so live FPS is stable from the start.
+    const dummy = new ort.Tensor('float32',
+      new Float32Array(3 * INPUT_SIZE * INPUT_SIZE),
+      [1, 3, INPUT_SIZE, INPUT_SIZE]);
+    for (let i = 0; i < 3; i++) {
+      const r = await session.run({ [session.inputNames[0]]: dummy });
+      for (const t of Object.values(r)) t.dispose?.();
+    }
+    dummy.dispose?.();
+
     self.postMessage({ type: 'ready', provider, gpuError });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
