@@ -28,7 +28,7 @@ format:
 <main class="page-main">
   <div class="stage">
     <div class="stage-frame">
-      <video id="video" playsinline muted loop crossorigin="anonymous"></video>
+      <video id="video" playsinline muted loop></video>
       <canvas id="overlay"></canvas>
 
       <div class="dropzone" id="dropzone">
