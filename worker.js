@@ -1,13 +1,12 @@
 /* YOLOv8n inference worker — runs in a separate thread so the UI never blocks */
 'use strict';
 
-importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js');
+importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js');
 
 const CONF_THRESH = 0.30;
 const IOU_THRESH  = 0.45;
 const INPUT_SIZE  = 320;
-// N_DET is read dynamically from the output tensor dims (see postprocess)
-const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
+const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
 
 const CLASSES = [
   'person','bicycle','car','motorcycle','airplane','bus','train','truck',
@@ -35,26 +34,32 @@ async function loadModel() {
     // WebGL is intentionally skipped — it lacks resize-nearest support in ORT.
     // Falls back to WASM if WebGPU is unavailable (Firefox, older browsers).
     let provider = 'WASM';
-    const gpuAvailable = typeof navigator !== 'undefined' && !!navigator.gpu;
-    console.log('[worker] navigator.gpu available:', gpuAvailable);
-    if (gpuAvailable) {
+    let gpuError = null;
+
+    if (typeof navigator !== 'undefined' && navigator.gpu) {
       try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) throw new Error('No WebGPU adapter found');
         session = await ort.InferenceSession.create('models/yolov8n.onnx', {
           executionProviders:     ['webgpu'],
           graphOptimizationLevel: 'all',
         });
         provider = 'WebGPU';
       } catch (e) {
-        console.warn('[worker] WebGPU session creation failed, falling back to WASM:', e);
+        gpuError = String(e);
       }
+    } else {
+      gpuError = 'navigator.gpu not available';
     }
+
     if (!session) {
       session = await ort.InferenceSession.create('models/yolov8n.onnx', {
         executionProviders:     ['wasm'],
         graphOptimizationLevel: 'all',
       });
     }
-    self.postMessage({ type: 'ready', provider });
+
+    self.postMessage({ type: 'ready', provider, gpuError });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }
@@ -74,8 +79,8 @@ function postprocess(out, scale, padX, padY, origW, origH) {
   const nDet       = transposed ? d1 : d2;
 
   const get = transposed
-    ? (row, col) => raw[col * 84      + row]   // [N, 84]: index by anchor first
-    : (row, col) => raw[row * nDet    + col];  // [84, N]: index by attribute first
+    ? (row, col) => raw[col * 84   + row]   // [N, 84]: anchor-major
+    : (row, col) => raw[row * nDet + col];  // [84, N]: attribute-major
 
   const boxes = [], scores = [], classIds = [];
 
@@ -142,11 +147,6 @@ self.onmessage = async (e) => {
   try {
     const results = await session.run({ [session.inputNames[0]]: tensor });
     const out     = results[session.outputNames[0]];
-    if (!self._dimsLogged) {
-      const fmt = out.dims[1] === 84 ? '[1,84,N]' : '[1,N,84]';
-      console.log(`[worker] output dims: ${out.dims} — layout: ${fmt}, nDet: ${out.dims[1] === 84 ? out.dims[2] : out.dims[1]}`);
-      self._dimsLogged = true;
-    }
     detections    = postprocess(out, scale, padX, padY, origW, origH);
     for (const t of Object.values(results)) t.dispose?.();
   } catch (err) {
