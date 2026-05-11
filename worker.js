@@ -32,30 +32,17 @@ async function loadModel() {
   try {
     ort.env.wasm.wasmPaths  = ORT_CDN;
     ort.env.wasm.numThreads = 1; // GitHub Pages blocks SharedArrayBuffer
-
-    // Try WebGL first (GPU, ~5-10× faster than WASM).
-    // In a Worker, ORT uses OffscreenCanvas for WebGL — non-blocking.
-    // Falls back op-by-op to WASM for unsupported ops.
-    let provider = 'WASM';
-    try {
-      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
-        executionProviders:     ['webgl'],
-        graphOptimizationLevel: 'all',
-      });
-      provider = 'WebGL';
-    } catch (_) {
-      session = await ort.InferenceSession.create('models/yolov8n.onnx', {
-        executionProviders:     ['wasm'],
-        graphOptimizationLevel: 'all',
-      });
-    }
-    self.postMessage({ type: 'ready', provider });
+    session = await ort.InferenceSession.create('models/yolov8n.onnx', {
+      executionProviders:     ['wasm'],
+      graphOptimizationLevel: 'all',
+    });
+    self.postMessage({ type: 'ready', provider: 'WASM' });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }
 }
 
-/* ---- Post-processing: decode raw [1, 84, 8400] output ----- */
+/* ---- Post-processing: decode raw [1, 84, 2100] output ----- */
 function postprocess(raw, scale, padX, padY, origW, origH) {
   const boxes = [], scores = [], classIds = [];
 
@@ -126,9 +113,12 @@ self.onmessage = async (e) => {
     const out     = results[session.outputNames[0]];
     detections    = postprocess(out.data, scale, padX, padY, origW, origH);
     for (const t of Object.values(results)) t.dispose?.();
+  } catch (err) {
+    console.error('inference error:', err);
   } finally {
     tensor.dispose?.();
   }
+  // Always reply so app.js resets inferring=false, even on error
   self.postMessage({ type: 'result', detections });
 };
 
