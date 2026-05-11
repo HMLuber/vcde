@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const INPUT_SIZE = 320;
+  const INPUT_SIZE = 160; // must match worker.js
 
   /* ---- DOM refs ---------------------------------------- */
   const $ = (id) => document.getElementById(id);
