@@ -72,6 +72,7 @@
       statusDot.classList.add('ready');
       statusText.textContent = `Bereit · YOLOv8n · ${data.provider}`;
       loader.hidden = true;
+      if (data.gpuError) console.warn('WebGPU nicht verfügbar:', data.gpuError);
     }
 
     if (data.type === 'result') {
