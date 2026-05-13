@@ -6,7 +6,6 @@ project:
   resources:
     - "app.js"
     - "worker.js"
-    - "coi-serviceworker.js"
     - "models/"
 
 website:
