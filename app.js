@@ -73,7 +73,10 @@
       offscreen.width = offscreen.height = INPUT_SIZE;
       workerReady = true;
       statusDot.classList.add('ready');
-      statusText.textContent = `Bereit · YOLOv8n · ${data.provider}`;
+      const providerLabel = data.provider === 'WASM' && data.numThreads > 1
+        ? `WASM · ${data.numThreads} Threads`
+        : data.provider;
+      statusText.textContent = `Bereit · YOLOv8n · ${providerLabel}`;
       loader.hidden = true;
       if (data.gpuError) console.warn('WebGPU nicht verfügbar:', data.gpuError);
     }
