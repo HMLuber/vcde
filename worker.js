@@ -41,13 +41,24 @@ async function loadModel() {
 
     if (typeof navigator !== 'undefined' && navigator.gpu) {
       try {
-        const adapter = await navigator.gpu.requestAdapter();
+        // Request the high-performance adapter — on dual-GPU laptops this selects
+        // the discrete GPU (e.g. NVIDIA) instead of the default integrated GPU.
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
         if (!adapter) throw new Error('No WebGPU adapter found');
+
+        // Pre-create the device and hand it to ORT so it runs on the same adapter.
+        const gpuDevice = await adapter.requestDevice();
+        ort.env.webgpu       = ort.env.webgpu ?? {};
+        ort.env.webgpu.device = gpuDevice;
+
         session = await ort.InferenceSession.create('models/yolov8n.onnx', {
           executionProviders:     ['webgpu'],
           graphOptimizationLevel: 'all',
         });
-        provider = 'WebGPU';
+
+        // Show which GPU was actually selected (e.g. "WebGPU · NVIDIA GeForce GTX 1650 Ti")
+        const info = adapter.info ?? null;
+        provider = info?.description ? `WebGPU · ${info.description}` : 'WebGPU';
       } catch (e) {
         gpuError = String(e);
       }
