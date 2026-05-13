@@ -31,7 +31,12 @@ let session = null;
 async function loadModel() {
   try {
     ort.env.wasm.wasmPaths  = ORT_CDN;
-    ort.env.wasm.numThreads = 1; // GitHub Pages blocks SharedArrayBuffer
+    // Use all available cores when SharedArrayBuffer is unlocked by coi-serviceworker.
+    // Falls back to 1 thread on browsers/hosts without cross-origin isolation.
+    const numThreads = (typeof SharedArrayBuffer !== 'undefined')
+      ? Math.min(4, navigator.hardwareConcurrency || 2)
+      : 1;
+    ort.env.wasm.numThreads = numThreads;
 
     // WebGPU: full GPU path, supports all YOLOv8 ops (incl. resize-nearest).
     // WebGL is intentionally skipped — it lacks resize-nearest support in ORT.
@@ -66,7 +71,7 @@ async function loadModel() {
     // inferences to pre-compile all WebGPU shaders before the first real frame.
     INPUT_SIZE = await warmup(session);
 
-    self.postMessage({ type: 'ready', provider, gpuError, inputSize: INPUT_SIZE });
+    self.postMessage({ type: 'ready', provider, gpuError, inputSize: INPUT_SIZE, numThreads });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });
   }
