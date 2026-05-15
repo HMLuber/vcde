@@ -93,6 +93,15 @@
       if (!running) return;
       const now = performance.now();
       lastResultTime = now;
+      // FPS = how often one tracked object receives a genuine new detection
+      if (data.detections.length > 0 && infCurTime > 0) {
+        const dt = now - infCurTime;
+        if (dt > 0 && dt < 5000) {
+          fpsWindow.push(1000 / dt);
+          if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
+          hudFps.textContent = (fpsWindow.reduce((a, b) => a + b) / fpsWindow.length).toFixed(1);
+        }
+      }
       // Update inference history, start entry snap from current visual position
       infPrev     = infCur;
       infPrevTime = infCurTime;
@@ -174,7 +183,6 @@
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
     lastResultTime   = 0;
-    lastDrawTime     = 0;
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -232,14 +240,6 @@
       const t = Math.min(1, (now2 - lerpStart) / 80);
       lerpCurrent = t >= 1 ? target : lerpBoxes(lerpFrom, target, t);
       drawOverlay(lerpCurrent);
-      // FPS measured on actual drawn frames, not on inference results
-      const drawDt = now2 - lastDrawTime;
-      if (lastDrawTime > 0 && drawDt > 0 && drawDt < 200) {
-        fpsWindow.push(1000 / drawDt);
-        if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
-        hudFps.textContent = (fpsWindow.reduce((a, b) => a + b) / fpsWindow.length).toFixed(1);
-      }
-      lastDrawTime = now2;
     }
     rafId = requestAnimationFrame(tick);
   }
