@@ -45,6 +45,13 @@
   const FPS_WINDOW_SIZE = 20;
   let lastResultTime    = 0;
 
+  // Smooth box interpolation — boxes glide at 60 fps between inference results
+  let lerpFrom     = [];  // visual positions when last result arrived
+  let lerpTo       = [];  // latest inference result
+  let lerpStart    = 0;
+  let lerpDuration = 120; // ms between results, updated dynamically
+  let lerpCurrent  = [];  // last drawn positions (used as next lerpFrom)
+
   /* ---- Colors ------------------------------------------ */
   const PALETTE = [
     '#3b82f6','#eab308','#22c55e','#ec4899','#06b6d4',
@@ -86,12 +93,16 @@
       if (lastResultTime > 0 && dt > 0 && dt < 5000) {
         fpsWindow.push(1000 / dt);
         if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
+        lerpDuration = dt; // keep lerp speed in sync with actual inference rate
       }
       lastResultTime = now;
       const fps = fpsWindow.length
         ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
       hudFps.textContent = fps.toFixed(1);
-      drawOverlay(data.detections);
+      // Start a new lerp from wherever boxes are right now → new result
+      lerpFrom  = lerpCurrent;
+      lerpTo    = data.detections;
+      lerpStart = now;
     }
 
     if (data.type === 'error') {
@@ -146,6 +157,8 @@
   function cleanupSource() {
     stopLoop();
     inferring = false;
+    lerpFrom = lerpTo = lerpCurrent = [];
+    lerpStart = 0;
     if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
     video.srcObject = null;
     video.removeAttribute('src');
@@ -209,7 +222,39 @@
         console.error('preprocess failed:', err);
       }
     }
+    // Draw at 60 fps with smoothly interpolated box positions
+    if (lerpTo.length > 0 || lerpFrom.length > 0) {
+      const t = lerpDuration > 0
+        ? Math.min(1, (performance.now() - lerpStart) / lerpDuration)
+        : 1;
+      lerpCurrent = lerpBoxes(lerpFrom, lerpTo, t);
+      drawOverlay(lerpCurrent);
+    }
     rafId = requestAnimationFrame(tick);
+  }
+
+  /* ---- Box interpolation ------------------------------- */
+  function lerpBoxes(from, to, t) {
+    if (from.length === 0 || t >= 1) return to;
+    const used = new Uint8Array(from.length);
+    return to.map((det) => {
+      const [x, y, w, h] = det.bbox;
+      const cx = x + w / 2, cy = y + h / 2;
+      let best = -1, bestDist = Infinity;
+      for (let i = 0; i < from.length; i++) {
+        if (used[i] || from[i].class !== det.class) continue;
+        const [fx, fy, fw, fh] = from[i].bbox;
+        const d = (cx - (fx + fw / 2)) ** 2 + (cy - (fy + fh / 2)) ** 2;
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      if (best < 0) return det;
+      used[best] = 1;
+      const [fx, fy, fw, fh] = from[best].bbox;
+      return {
+        class: det.class, score: det.score,
+        bbox: [fx + (x - fx) * t, fy + (y - fy) * t, fw + (w - fw) * t, fh + (h - fh) * t],
+      };
+    });
   }
 
   /* ---- Drawing ----------------------------------------- */
