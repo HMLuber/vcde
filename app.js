@@ -45,12 +45,14 @@
   const FPS_WINDOW_SIZE = 20;
   let lastResultTime    = 0;
 
-  // Smooth box interpolation — boxes glide at 60 fps between inference results
-  let lerpFrom     = [];  // visual positions when last result arrived
-  let lerpTo       = [];  // latest inference result
-  let lerpStart    = 0;
-  let lerpDuration = 120; // ms between results, updated dynamically
-  let lerpCurrent  = [];  // last drawn positions (used as next lerpFrom)
+  // Smooth box rendering — extrapolates forward to compensate for inference latency
+  let lerpFrom    = [];  // visual positions when last result arrived (for entry snap)
+  let lerpStart   = 0;
+  let lerpCurrent = [];  // last drawn positions
+  let infPrev     = [];  // inference result N-1 (used to compute velocity)
+  let infCur      = [];  // inference result N (latest)
+  let infPrevTime = 0;
+  let infCurTime  = 0;
 
   /* ---- Colors ------------------------------------------ */
   const PALETTE = [
@@ -93,16 +95,18 @@
       if (lastResultTime > 0 && dt > 0 && dt < 5000) {
         fpsWindow.push(1000 / dt);
         if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
-        lerpDuration = dt; // keep lerp speed in sync with actual inference rate
       }
       lastResultTime = now;
       const fps = fpsWindow.length
         ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
       hudFps.textContent = fps.toFixed(1);
-      // Start a new lerp from wherever boxes are right now → new result
-      lerpFrom  = lerpCurrent;
-      lerpTo    = data.detections;
-      lerpStart = now;
+      // Update inference history, start entry snap from current visual position
+      infPrev     = infCur;
+      infPrevTime = infCurTime;
+      infCur      = data.detections;
+      infCurTime  = now;
+      lerpFrom    = lerpCurrent;
+      lerpStart   = now;
     }
 
     if (data.type === 'error') {
@@ -157,8 +161,8 @@
   function cleanupSource() {
     stopLoop();
     inferring = false;
-    lerpFrom = lerpTo = lerpCurrent = [];
-    lerpStart = 0;
+    lerpFrom = []; lerpCurrent = []; infPrev = []; infCur = [];
+    lerpStart = infPrevTime = infCurTime = 0;
     if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
     video.srcObject = null;
     video.removeAttribute('src');
@@ -222,18 +226,47 @@
         console.error('preprocess failed:', err);
       }
     }
-    // Draw at 60 fps with smoothly interpolated box positions
-    if (lerpTo.length > 0 || lerpFrom.length > 0) {
-      const t = lerpDuration > 0
-        ? Math.min(1, (performance.now() - lerpStart) / lerpDuration)
-        : 1;
-      lerpCurrent = lerpBoxes(lerpFrom, lerpTo, t);
+    // Draw at 60 fps — extrapolate boxes forward to compensate for inference latency
+    if (infCur.length > 0 || lerpFrom.length > 0) {
+      const now2    = performance.now();
+      const elapsed = now2 - infCurTime;
+      const infDt   = infPrevTime > 0 ? Math.max(50, infCurTime - infPrevTime) : 120;
+      // Project boxes forward by (elapsed + one inference interval) to cancel pipeline delay
+      const ahead  = Math.min(elapsed + infDt, infDt * 2);
+      const target = projectBoxes(infPrev, infCur, ahead, infDt);
+      // 80 ms snap from old visual position to new extrapolated target (hides result jumps)
+      const t = Math.min(1, (now2 - lerpStart) / 80);
+      lerpCurrent = t >= 1 ? target : lerpBoxes(lerpFrom, target, t);
       drawOverlay(lerpCurrent);
     }
     rafId = requestAnimationFrame(tick);
   }
 
-  /* ---- Box interpolation ------------------------------- */
+  /* ---- Box interpolation / extrapolation --------------- */
+  // Linear extrapolation: project cur boxes forward by `elapsed` ms using cur-prev velocity.
+  function projectBoxes(prev, cur, elapsed, dt) {
+    if (prev.length === 0 || dt <= 0 || elapsed <= 0) return cur;
+    const used = new Uint8Array(prev.length);
+    return cur.map((det) => {
+      const [x, y, w, h] = det.bbox;
+      const cx = x + w / 2, cy = y + h / 2;
+      let best = -1, bestDist = Infinity;
+      for (let i = 0; i < prev.length; i++) {
+        if (used[i] || prev[i].class !== det.class) continue;
+        const [fx, fy, fw, fh] = prev[i].bbox;
+        const d = (cx - (fx + fw / 2)) ** 2 + (cy - (fy + fh / 2)) ** 2;
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      if (best < 0) return det;
+      used[best] = 1;
+      const [px, py] = prev[best].bbox;
+      const vx = (x - px) / dt;  // px / ms
+      const vy = (y - py) / dt;
+      return { class: det.class, score: det.score,
+               bbox: [x + vx * elapsed, y + vy * elapsed, w, h] };
+    });
+  }
+
   function lerpBoxes(from, to, t) {
     if (from.length === 0 || t >= 1) return to;
     const used = new Uint8Array(from.length);
