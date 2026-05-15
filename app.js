@@ -44,6 +44,7 @@
   const fpsWindow       = [];
   const FPS_WINDOW_SIZE = 20;
   let lastResultTime    = 0;
+  let lastDrawTime      = 0;
 
   // Smooth box rendering — extrapolates forward to compensate for inference latency
   let lerpFrom    = [];  // visual positions when last result arrived (for entry snap)
@@ -91,15 +92,7 @@
       inferring = false;
       if (!running) return;
       const now = performance.now();
-      const dt  = now - lastResultTime;
-      if (lastResultTime > 0 && dt > 0 && dt < 5000) {
-        fpsWindow.push(1000 / dt);
-        if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
-      }
       lastResultTime = now;
-      const fps = fpsWindow.length
-        ? fpsWindow.reduce((a, b) => a + b) / fpsWindow.length : 0;
-      hudFps.textContent = fps.toFixed(1);
       // Update inference history, start entry snap from current visual position
       infPrev     = infCur;
       infPrevTime = infCurTime;
@@ -181,6 +174,7 @@
     overlay.height   = video.videoHeight;
     fpsWindow.length = 0;
     lastResultTime   = 0;
+    lastDrawTime     = 0;
 
     dropzone.hidden = true;
     hud.hidden      = false;
@@ -238,6 +232,14 @@
       const t = Math.min(1, (now2 - lerpStart) / 80);
       lerpCurrent = t >= 1 ? target : lerpBoxes(lerpFrom, target, t);
       drawOverlay(lerpCurrent);
+      // FPS measured on actual drawn frames, not on inference results
+      const drawDt = now2 - lastDrawTime;
+      if (lastDrawTime > 0 && drawDt > 0 && drawDt < 200) {
+        fpsWindow.push(1000 / drawDt);
+        if (fpsWindow.length > FPS_WINDOW_SIZE) fpsWindow.shift();
+        hudFps.textContent = (fpsWindow.reduce((a, b) => a + b) / fpsWindow.length).toFixed(1);
+      }
+      lastDrawTime = now2;
     }
     rafId = requestAnimationFrame(tick);
   }
