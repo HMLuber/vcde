@@ -2,13 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Browser-basierte Echtzeit-Objekterkennung mit TensorFlow.js. Visual-Computing-Projekt, Hochschule München.">
 
-<title>Echtzeit-Objekterkennung · Visual Computing – Echtzeit-Objekterkennung</title>
+<title>YOLO Objekterkennung</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -24,88 +23,1119 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-.display.math{display: block; text-align: center; margin: 0.5rem auto;}
 </style>
 
 
-<style>html{ scroll-behavior: smooth; }</style>
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-b9c91b1e117c879de662b9ae260051b4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&amp;family=Syne:wght@400;700;800&amp;display=swap" rel="stylesheet">
 
 
-<link rel="stylesheet" href="style.css">
-<meta property="og:title" content="Echtzeit-Objekterkennung · Visual Computing">
-<meta property="og:site_name" content="Echtzeit-Objekterkennung">
 </head>
 
-<body>
+<body class="quarto-light">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content column-page" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">YOLO Objekterkennung</h1>
+</div>
 
 
 
+<div class="quarto-title-meta column-page">
 
-
-<header class="site-header">
-  <div class="brand">
-    <span class="brand-mark">HM·</span>
-    <span class="brand-meta">Visual Computing · Objekterkennung</span>
+    
+  
+    
   </div>
-  <div class="status-bar">
-    <span class="status-dot" id="model-status-dot"></span>
-    <span id="model-status-text">Modell wird geladen …</span>
-  </div>
+  
+
+
 </header>
 
-<main class="page-main"><header id="title-block-header" class="quarto-title-block"></header>
-  <div class="stage">
-    <div class="stage-frame">
-      <video id="video" playsinline="" muted="" loop=""></video>
-      <canvas id="overlay"></canvas>
 
-      <div class="dropzone" id="dropzone">
-        <div class="drop-inner">
-          <svg viewbox="0 0 64 64" class="drop-icon" aria-hidden="true">
-            <rect x="6" y="14" width="42" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"></rect>
-            <path d="M48 24 L58 18 L58 40 L48 34 Z" fill="none" stroke="currentColor" stroke-width="2.5"></path>
-            <circle cx="18" cy="24" r="3" fill="currentColor"></circle>
-          </svg>
-          <p class="drop-title">Video hier ablegen</p>
-          <label class="btn-upload">
-            <input type="file" id="file-input" accept="video/*" hidden="">
-            Datei auswählen
-          </label>
-          <p class="drop-hint">mp4 · webm · mov · läuft lokal im Browser</p>
-        </div>
-      </div>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <div class="hud" id="hud" hidden="">
-        <span class="hud-label">FPS</span>
-        <span id="hud-fps">--</span>
-      </div>
+  :root {
+    --bg:         #080b10;
+    --bg2:        #0e1219;
+    --bg3:        #141a24;
+    --border:     #1e2a3a;
+    --border2:    #2a3a50;
+    --accent:     #00e5ff;
+    --accent2:    #7c3aed;
+    --accent3:    #10b981;
+    --warn:       #f59e0b;
+    --danger:     #ef4444;
+    --text:       #e2eaf4;
+    --text2:      #8099b4;
+    --text3:      #4a637a;
+    --font-mono:  'JetBrains Mono', monospace;
+    --font-sans:  'Syne', sans-serif;
+    --radius:     6px;
+    --radius2:    12px;
+  }
 
-      <div class="loader" id="loader" hidden="">
-        <div class="loader-ring"></div>
-        <p id="loader-text">Modell wird geladen …</p>
-      </div>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Layout ── */
+  #yolo-app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #header-left h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(120deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  #header-left p {
+    font-size: 0.72rem;
+    color: var(--text3);
+    margin-top: 5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  #status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    white-space: nowrap;
+    transition: all 0.3s;
+  }
+
+  .badge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    animation: none;
+  }
+
+  .badge.loading .dot { background: var(--warn); animation: pulse 1s infinite; }
+  .badge.ready   .dot { background: var(--accent3); }
+  .badge.error   .dot { background: var(--danger); }
+  .badge.running .dot { background: var(--accent); animation: pulse 0.8s infinite; }
+
+  #fps-badge  { color: var(--accent);  border-color: rgba(0,229,255,0.2); }
+  #det-badge  { color: var(--accent3); border-color: rgba(16,185,129,0.2); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  /* ── Drop Zone ── */
+  #upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius2);
+    background: var(--bg2);
+    padding: 52px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s;
+    position: relative;
+  }
+
+  #upload-zone:hover,
+  #upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.04);
+  }
+
+  #upload-zone.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  #upload-zone .icon {
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+
+  #upload-zone .zone-title {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  #upload-zone .zone-hint {
+    font-size: 0.72rem;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+
+  #file-input { display: none; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .btn:hover   { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.06); }
+  .btn:active  { transform: scale(0.97); }
+  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn.primary:hover { background: #33eaff; border-color: #33eaff; color: var(--bg); }
+  .btn.stop    { border-color: var(--danger); color: var(--danger); }
+  .btn.stop:hover { background: rgba(239,68,68,0.08); }
+  .btn:disabled { opacity: 0.35; pointer-events: none; }
+
+  /* ── Canvas Area ── */
+  #canvas-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius2);
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+    display: none;
+  }
+
+  #display-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+
+  /* FPS overlay on canvas */
+  #canvas-overlay {
+    position: absolute;
+    top: 12px; left: 12px;
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .overlay-badge {
+    background: rgba(8,11,16,0.82);
+    border: 1px solid var(--border2);
+    backdrop-filter: blur(8px);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+  }
+
+  /* ── Controls ── */
+  #controls {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 16px 20px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+  }
+
+  #controls .sep {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slider-group label {
+    font-size: 0.72rem;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .slider-group span {
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 36px;
+    display: inline-block;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 130px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border2);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* ── Detections Panel ── */
+  #detections-panel {
+    display: none;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 16px 20px;
+  }
+
+  #detections-panel h3 {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  #det-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .det-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .det-tag .det-count {
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+  }
+
+  /* ── Progress Bar ── */
+  #model-progress-wrap {
+    display: none;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  #model-progress {
+    width: 100%;
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  #model-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), #a78bfa);
+    border-radius: 2px;
+    transition: width 0.3s;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* ── Error box ── */
+  #error-box {
+    display: none;
+    padding: 16px 20px;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius2);
+    font-size: 0.78rem;
+    color: #fca5a5;
+    line-height: 1.6;
+  }
+
+  #error-box strong { color: var(--danger); display: block; margin-bottom: 4px; }
+
+  /* ── Footer note ── */
+  #footer-note {
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.8;
+    letter-spacing: 0.04em;
+  }
+
+  video { display: none; }
+</style>
+
+<!-- ════════════════════════════════════════════
+     APP MARKUP
+════════════════════════════════════════════ -->
+<div id="yolo-app">
+
+  <!-- Header -->
+  <div id="header">
+    <div id="header-left">
+      <h1>YOLO Objekterkennung</h1>
+      <p>YOLOv8n · ONNX Runtime Web · 30 FPS</p>
     </div>
-
-    <div class="controls" id="controls" hidden="">
-      <button class="ctrl-btn" id="play-btn" aria-label="Play/Pause">
-        <svg viewbox="0 0 24 24" id="play-icon" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
-        <svg viewbox="0 0 24 24" id="pause-icon" hidden="" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"></path></svg>
-      </button>
-      <input type="range" id="seek" min="0" max="100" value="0" step="0.1">
-      <span class="time" id="time">00:00 / 00:00</span>
-      <button class="ctrl-btn" id="reset-btn" aria-label="Neues Video">
-        <svg viewbox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"></path></svg>
-      </button>
+    <div id="status-row">
+      <span id="model-badge" class="badge loading">
+        <span class="dot"></span>Modell lädt…
+      </span>
+      <span id="fps-badge" class="badge">FPS: --</span>
+      <span id="det-badge" class="badge">0 Objekte</span>
     </div>
   </div>
-</main>
+
+  <!-- Model loading progress -->
+  <div id="model-progress-wrap">
+    <div id="model-progress"><div id="model-progress-bar"></div></div>
+  </div>
+
+  <!-- Error box -->
+  <div id="error-box">
+    <strong>❌ Fehler beim Laden des Modells</strong>
+    <span id="error-msg"></span>
+    <br><br>
+    Stelle sicher, dass <code>yolov8n.onnx</code> im selben Verzeichnis liegt wie diese Seite
+    und dass der Server die Datei korrekt ausliefert (kein CORS-Fehler).
+  </div>
+
+  <!-- Upload zone -->
+  <div id="upload-zone" class="disabled">
+    <div class="icon">📁</div>
+    <div class="zone-title">Video hochladen</div>
+    <div class="zone-hint">MP4 · WebM · MOV · AVI — oder hierher ziehen</div>
+    <input type="file" id="file-input" accept="video/*">
+    <button class="btn primary" id="upload-btn">Video auswählen</button>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-wrap">
+    <canvas id="display-canvas"></canvas>
+    <div id="canvas-overlay">
+      <span class="overlay-badge" id="fps-overlay">FPS: --</span>
+      <span class="overlay-badge" id="inf-overlay" style="color:#a78bfa">INF: --ms</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button id="play-btn" class="btn">▶ Play</button>
+    <button id="restart-btn" class="btn">↺ Neustart</button>
+    <div class="sep"></div>
+    <div class="slider-group">
+      <label>Konfidenz: <span id="conf-val">25%</span></label>
+      <input type="range" id="conf-slider" min="5" max="95" value="25">
+    </div>
+    <div class="sep"></div>
+    <button id="new-video-btn" class="btn stop">✕ Neues Video</button>
+  </div>
+
+  <!-- Detections panel -->
+  <div id="detections-panel">
+    <h3 class="anchored">Erkannte Objekte</h3>
+    <div id="det-grid"></div>
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-note">
+    Verarbeitung läuft vollständig im Browser · Kein Upload zu Servern · COCO 80 Klassen
+  </div>
+
+</div>
+
+<video id="video-el" playsinline="" muted=""></video>
+
+<!-- ════════════════════════════════════════════
+     APPLICATION LOGIC
+════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  // ── Config ──────────────────────────────────
+  const MODEL_PATH       = './yolov8n.onnx';
+  const MODEL_SIZE       = 640;
+  const TARGET_FPS       = 30;
+  const IOU_THRESHOLD    = 0.45;
+  let   CONF_THRESHOLD   = 0.25;
+
+  // ── COCO Classes ────────────────────────────
+  const CLASSES = [
+    'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat',
+    'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat',
+    'dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack',
+    'umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball',
+    'kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket',
+    'bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
+    'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair',
+    'couch','potted plant','bed','dining table','toilet','tv','laptop','mouse',
+    'remote','keyboard','cell phone','microwave','oven','toaster','sink',
+    'refrigerator','book','clock','vase','scissors','teddy bear','hair drier',
+    'toothbrush'
+  ];
+
+  // ── Color palette (golden-angle HSL) ────────
+  const _colorCache = {};
+  function classColor(id) {
+    if (!_colorCache[id]) {
+      const h = (id * 137.508) % 360;
+      _colorCache[id] = { stroke: `hsl(${h},75%,58%)`, fill: `hsla(${h},75%,58%,0.15)` };
+    }
+    return _colorCache[id];
+  }
+
+  // ── DOM refs ────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const uploadZone   = $('upload-zone');
+  const fileInput    = $('file-input');
+  const uploadBtn    = $('upload-btn');
+  const canvasWrap   = $('canvas-wrap');
+  const canvas       = $('display-canvas');
+  const ctx          = canvas.getContext('2d');
+  const videoEl      = $('video-el');
+  const controls     = $('controls');
+  const playBtn      = $('play-btn');
+  const restartBtn   = $('restart-btn');
+  const newVideoBtn  = $('new-video-btn');
+  const confSlider   = $('conf-slider');
+  const confVal      = $('conf-val');
+  const detPanel     = $('detections-panel');
+  const detGrid      = $('det-grid');
+  const modelBadge   = $('model-badge');
+  const fpsBadge     = $('fps-badge');
+  const detBadge     = $('det-badge');
+  const fpsOverlay   = $('fps-overlay');
+  const infOverlay   = $('inf-overlay');
+  const progressWrap = $('model-progress-wrap');
+  const progressBar  = $('model-progress-bar');
+  const errorBox     = $('error-box');
+  const errorMsg     = $('error-msg');
+
+  // ── State ───────────────────────────────────
+  let session          = null;
+  let inputName        = 'images';
+  let isRunning        = false;
+  let isInferencing    = false;
+  let latestDets       = [];
+  let animId           = null;
+  let lastDisplayTime  = 0;
+  let lastInfTime      = 0;
+  let fpsFrameCount    = 0;
+  let fpsWindowStart   = 0;
+  let displayFPS       = 0;
+  let infMs            = 0;
+
+  // offscreen canvas for preprocessing
+  const offCanvas   = document.createElement('canvas');
+  offCanvas.width   = MODEL_SIZE;
+  offCanvas.height  = MODEL_SIZE;
+  const offCtx      = offCanvas.getContext('2d');
+
+  // ── Status helpers ──────────────────────────
+  function setModelBadge(state, text) {
+    modelBadge.className = `badge ${state}`;
+    modelBadge.innerHTML = `<span class="dot"></span>${text}`;
+  }
+
+  function showError(msg) {
+    errorBox.style.display = 'block';
+    errorMsg.textContent   = msg;
+    progressWrap.style.display = 'none';
+    setModelBadge('error', 'Fehler');
+  }
+
+  // ── Model Loading ────────────────────────────
+  async function loadModel() {
+    try {
+      progressWrap.style.display = 'block';
+      animateProgress();
+
+      // Point WASM assets to CDN
+      ort.env.wasm.wasmPaths =
+        'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
+      ort.env.wasm.numThreads = navigator.hardwareConcurrency
+        ? Math.min(navigator.hardwareConcurrency, 4)
+        : 2;
+
+      session = await ort.InferenceSession.create(MODEL_PATH, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all',
+      });
+
+      // Detect actual input tensor name
+      if (session.inputNames && session.inputNames.length > 0) {
+        inputName = session.inputNames[0];
+      }
+
+      progressBar.style.width = '100%';
+      setTimeout(() => { progressWrap.style.display = 'none'; }, 400);
+
+      setModelBadge('ready', 'Modell bereit');
+      uploadZone.classList.remove('disabled');
+
+    } catch (err) {
+      showError(err.message || String(err));
+    }
+  }
+
+  function animateProgress() {
+    let w = 0;
+    const iv = setInterval(() => {
+      w = Math.min(w + Math.random() * 8, 88);
+      progressBar.style.width = w + '%';
+      if (!session && document.getElementById('model-progress-wrap').style.display === 'none') {
+        clearInterval(iv);
+      }
+    }, 200);
+  }
+
+  // ── Preprocessing ────────────────────────────
+  function preprocessFrame() {
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
+    const scale = Math.min(MODEL_SIZE / vw, MODEL_SIZE / vh);
+    const sw    = Math.round(vw * scale);
+    const sh    = Math.round(vh * scale);
+    const dx    = Math.round((MODEL_SIZE - sw) / 2);
+    const dy    = Math.round((MODEL_SIZE - sh) / 2);
+
+    offCtx.fillStyle = '#000';
+    offCtx.fillRect(0, 0, MODEL_SIZE, MODEL_SIZE);
+    offCtx.drawImage(videoEl, dx, dy, sw, sh);
+
+    const imgData = offCtx.getImageData(0, 0, MODEL_SIZE, MODEL_SIZE);
+    const pixels  = imgData.data;
+    const stride  = MODEL_SIZE * MODEL_SIZE;
+    const tensor  = new Float32Array(3 * stride);
+
+    for (let i = 0; i < stride; i++) {
+      tensor[i]            = pixels[i * 4]     / 255; // R
+      tensor[stride + i]   = pixels[i * 4 + 1] / 255; // G
+      tensor[stride*2 + i] = pixels[i * 4 + 2] / 255; // B
+    }
+
+    return { tensor, dx, dy, scale, vw, vh };
+  }
+
+  // ── IoU ──────────────────────────────────────
+  function iou(a, b) {
+    const x1 = Math.max(a[0], b[0]), y1 = Math.max(a[1], b[1]);
+    const x2 = Math.min(a[2], b[2]), y2 = Math.min(a[3], b[3]);
+    const inter = Math.max(0, x2-x1) * Math.max(0, y2-y1);
+    const aA = (a[2]-a[0]) * (a[3]-a[1]);
+    const bA = (b[2]-b[0]) * (b[3]-b[1]);
+    return inter / (aA + bA - inter + 1e-7);
+  }
+
+  // ── NMS ──────────────────────────────────────
+  function nms(dets) {
+    dets.sort((a, b) => b.score - a.score);
+    const keep = [];
+    const used = new Uint8Array(dets.length);
+    for (let i = 0; i < dets.length; i++) {
+      if (used[i]) continue;
+      keep.push(dets[i]);
+      for (let j = i+1; j < dets.length; j++) {
+        if (!used[j] && iou(dets[i].box, dets[j].box) > IOU_THRESHOLD) {
+          used[j] = 1;
+        }
+      }
+    }
+    return keep;
+  }
+
+  // ── Post-processing ──────────────────────────
+  function postprocess(data, dims, vw, vh, dx, dy, scale) {
+    // Support [1, 84, 8400] and [1, 8400, 84]
+    const d1 = dims[1], d2 = dims[2];
+    const transposed = (d1 > d2); // [1,8400,84] → transposed
+    const numAnchors = transposed ? d1 : d2;
+    const numCh      = transposed ? d2 : d1; // should be 84
+    const numClasses = numCh - 4;
+
+    const dets = [];
+
+    for (let a = 0; a < numAnchors; a++) {
+      let maxScore = CONF_THRESHOLD;
+      let maxClass = -1;
+
+      for (let c = 0; c < numClasses; c++) {
+        const idx   = transposed ? (a * numCh + 4 + c) : ((4 + c) * numAnchors + a);
+        const score = data[idx];
+        if (score > maxScore) { maxScore = score; maxClass = c; }
+      }
+
+      if (maxClass < 0) continue;
+
+      const cx_i = transposed ? (a * numCh + 0) : (0 * numAnchors + a);
+      const cy_i = transposed ? (a * numCh + 1) : (1 * numAnchors + a);
+      const w_i  = transposed ? (a * numCh + 2) : (2 * numAnchors + a);
+      const h_i  = transposed ? (a * numCh + 3) : (3 * numAnchors + a);
+
+      const cx = data[cx_i], cy = data[cy_i], w = data[w_i], h = data[h_i];
+
+      // Remove letterbox padding and scale back to video dimensions
+      const x1 = (cx - w/2 - dx) / scale;
+      const y1 = (cy - h/2 - dy) / scale;
+      const x2 = (cx + w/2 - dx) / scale;
+      const y2 = (cy + h/2 - dy) / scale;
+
+      const bx1 = Math.max(0, x1), by1 = Math.max(0, y1);
+      const bx2 = Math.min(vw,  x2), by2 = Math.min(vh,  y2);
+      if (bx2 <= bx1 || by2 <= by1) continue;
+
+      dets.push({ box: [bx1, by1, bx2, by2], score: maxScore, cls: maxClass });
+    }
+
+    return nms(dets);
+  }
+
+  // ── Draw ─────────────────────────────────────
+  function drawDets(dets, vw, vh) {
+    const scaleX = canvas.width  / vw;
+    const scaleY = canvas.height / vh;
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 13px JetBrains Mono, monospace';
+
+    for (const d of dets) {
+      const [x1, y1, x2, y2] = d.box;
+      const { stroke, fill } = classColor(d.cls);
+      const bx = x1*scaleX, by = y1*scaleY, bw = (x2-x1)*scaleX, bh = (y2-y1)*scaleY;
+
+      // Filled rect (semi-transparent)
+      ctx.fillStyle = fill;
+      ctx.fillRect(bx, by, bw, bh);
+
+      // Border
+      ctx.strokeStyle = stroke;
+      ctx.strokeRect(bx, by, bw, bh);
+
+      // Label
+      const label   = `${CLASSES[d.cls]}  ${(d.score*100).toFixed(0)}%`;
+      const tw      = ctx.measureText(label).width + 10;
+      const lh      = 20;
+      const lx      = bx;
+      const ly      = by > lh ? by - lh : by + bh;
+
+      ctx.fillStyle = stroke;
+      ctx.beginPath();
+      ctx.roundRect(lx, ly, tw, lh, 3);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.fillText(label, lx + 5, ly + 14);
+    }
+  }
+
+  // ── Detections side panel ────────────────────
+  function updateDetPanel(dets) {
+    if (dets.length === 0) {
+      detGrid.innerHTML = '<span style="color:var(--text3);font-size:0.72rem">Keine Objekte erkannt</span>';
+      detBadge.textContent = '0 Objekte';
+      return;
+    }
+
+    const counts = {};
+    for (const d of dets) {
+      const name = CLASSES[d.cls];
+      counts[name] = (counts[name] || { count: 0, cls: d.cls, score: 0 });
+      counts[name].count++;
+      counts[name].score = Math.max(counts[name].score, d.score);
+    }
+
+    detBadge.textContent = `${dets.length} Objekt${dets.length !== 1 ? 'e' : ''}`;
+
+    detGrid.innerHTML = '';
+    for (const [name, info] of Object.entries(counts)) {
+      const { stroke } = classColor(info.cls);
+      const tag = document.createElement('span');
+      tag.className = 'det-tag';
+      tag.style.borderColor = stroke;
+      tag.style.color = stroke;
+      tag.innerHTML =
+        `${name} <span class="det-count">${info.count}</span>`;
+      detGrid.appendChild(tag);
+    }
+  }
+
+  // ── Inference ────────────────────────────────
+  async function runInference() {
+    if (!session || isInferencing || videoEl.readyState < 2 || videoEl.paused) return;
+    isInferencing = true;
+    const t0 = performance.now();
+
+    try {
+      const { tensor, dx, dy, scale, vw, vh } = preprocessFrame();
+      const feed = {};
+      feed[inputName] = new ort.Tensor('float32', tensor, [1, 3, MODEL_SIZE, MODEL_SIZE]);
+
+      const results = await session.run(feed);
+      const outKey  = Object.keys(results)[0];
+      const out     = results[outKey];
+
+      latestDets = postprocess(out.data, out.dims, vw, vh, dx, dy, scale);
+      infMs       = Math.round(performance.now() - t0);
+    } catch (e) {
+      console.error('Inference error:', e);
+    } finally {
+      isInferencing = false;
+    }
+  }
+
+  // ── Display loop (~30 FPS) ───────────────────
+  function displayLoop(ts) {
+    if (!isRunning) return;
+    animId = requestAnimationFrame(displayLoop);
+
+    const frameInterval = 1000 / TARGET_FPS;
+    if (ts - lastDisplayTime < frameInterval) return;
+    lastDisplayTime = ts;
+
+    // Draw video frame
+    if (videoEl.readyState >= 2) {
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      drawDets(latestDets, videoEl.videoWidth, videoEl.videoHeight);
+    }
+
+    // FPS
+    fpsFrameCount++;
+    if (ts - fpsWindowStart >= 1000) {
+      displayFPS = Math.round(fpsFrameCount * 1000 / (ts - fpsWindowStart));
+      fpsFrameCount = 0;
+      fpsWindowStart = ts;
+      const fpsStr = `FPS: ${displayFPS}`;
+      fpsBadge.textContent    = fpsStr;
+      fpsOverlay.textContent  = fpsStr;
+      infOverlay.textContent  = `INF: ${infMs}ms`;
+      updateDetPanel(latestDets);
+    }
+
+    // Trigger async inference (won't block)
+    runInference();
+  }
+
+  // ── Start / Stop ─────────────────────────────
+  function startProcessing() {
+    if (!session) return;
+    isRunning = true;
+    latestDets = [];
+    fpsWindowStart = performance.now();
+    fpsFrameCount  = 0;
+    lastDisplayTime = 0;
+
+    videoEl.play();
+    playBtn.textContent = '⏸ Pause';
+    setModelBadge('running', 'Läuft');
+    detPanel.style.display = 'block';
+    animId = requestAnimationFrame(displayLoop);
+  }
+
+  function pauseProcessing() {
+    videoEl.pause();
+    isRunning = false;
+    cancelAnimationFrame(animId);
+    playBtn.textContent = '▶ Play';
+    setModelBadge('ready', 'Pausiert');
+  }
+
+  function togglePlay() {
+    if (videoEl.paused || !isRunning) {
+      startProcessing();
+    } else {
+      pauseProcessing();
+    }
+  }
+
+  function resetVideo() {
+    videoEl.pause();
+    videoEl.currentTime = 0;
+    isRunning = false;
+    cancelAnimationFrame(animId);
+    playBtn.textContent = '▶ Play';
+    setModelBadge('ready', 'Modell bereit');
+    startProcessing();
+  }
+
+  function loadVideo(file) {
+    const url = URL.createObjectURL(file);
+    videoEl.src = url;
+
+    videoEl.onloadedmetadata = () => {
+      const vw = videoEl.videoWidth;
+      const vh = videoEl.videoHeight;
+
+      // Scale canvas to video aspect, max width = container
+      const maxW = canvasWrap.clientWidth || 900;
+      const ratio = Math.min(maxW / vw, 1);
+      canvas.width  = Math.round(vw * ratio);
+      canvas.height = Math.round(vh * ratio);
+
+      uploadZone.style.display   = 'none';
+      canvasWrap.style.display   = 'block';
+      controls.style.display     = 'flex';
+
+      startProcessing();
+    };
+  }
+
+  function returnToUpload() {
+    pauseProcessing();
+    videoEl.src         = '';
+    latestDets          = [];
+    uploadZone.style.display = '';
+    canvasWrap.style.display = 'none';
+    controls.style.display   = 'none';
+    detPanel.style.display   = 'none';
+    setModelBadge('ready', 'Modell bereit');
+    detBadge.textContent     = '0 Objekte';
+    fpsBadge.textContent     = 'FPS: --';
+  }
+
+  // ── Event listeners ──────────────────────────
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('click', (e) => {
+    if (e.target !== uploadBtn) fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) loadVideo(f);
+  });
+
+  // Drag & Drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) loadVideo(f);
+  });
+
+  playBtn.addEventListener('click', togglePlay);
+  restartBtn.addEventListener('click', resetVideo);
+  newVideoBtn.addEventListener('click', returnToUpload);
+
+  confSlider.addEventListener('input', () => {
+    CONF_THRESHOLD = confSlider.value / 100;
+    confVal.textContent = confSlider.value + '%';
+  });
+
+  videoEl.addEventListener('ended', () => {
+    isRunning = false;
+    cancelAnimationFrame(animId);
+    playBtn.textContent = '▶ Play';
+    setModelBadge('ready', 'Video beendet');
+  });
+
+  // ── Boot ────────────────────────────────────
+  loadModel();
+
+})();
+</script>
 
 
+
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
         var filterRegex = new RegExp("https:\/\/HMLuber\.github\.io\/vcde\/");
@@ -122,19 +1152,322 @@ ul.task-list li input[type="checkbox"] {
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
-            // target, if specified
-            link.setAttribute("target", "_blank");
-            if (link.getAttribute("rel") === null) {
-              link.setAttribute("rel", "noopener");
-            }
         }
       }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
   });
   </script>
-<script src="app.js"></script>
+</div> <!-- /content -->
 
 
 
 
-<script src="site_libs/quarto-html/zenscroll-min.js"></script>
 </body></html>

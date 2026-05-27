@@ -2,8 +2,8 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Echtzeit-Objekterkennung",
+    "title": "YOLO Objekterkennung",
     "section": "",
-    "text": "Video hier ablegen\n          \n            \n            Datei auswählen\n          \n          mp4 · webm · mov · läuft lokal im Browser\n        \n      \n\n      \n        FPS\n        --\n      \n\n      \n        \n        Modell wird geladen …\n      \n    \n\n    \n      \n        \n        \n      \n      \n      00:00 / 00:00"
+    "text": "YOLO Objekterkennung\n      YOLOv8n · ONNX Runtime Web · 30 FPS\n    \n    \n      \n        Modell lädt…\n      \n      FPS: --\n      0 Objekte\n    \n  \n\n  \n  \n    \n  \n\n  \n  \n    ❌ Fehler beim Laden des Modells\n    \n    \n    Stelle sicher, dass yolov8n.onnx im selben Verzeichnis liegt wie diese Seite\n    und dass der Server die Datei korrekt ausliefert (kein CORS-Fehler).\n  \n\n  \n  \n    📁\n    Video hochladen\n    MP4 · WebM · MOV · AVI — oder hierher ziehen\n    \n    Video auswählen\n  \n\n  \n  \n    \n    \n      FPS: --\n      INF: --ms\n    \n  \n\n  \n  \n    ▶ Play\n    ↺ Neustart\n    \n    \n      Konfidenz: 25%\n      \n    \n    \n    ✕ Neues Video\n  \n\n  \n  \n    Erkannte Objekte\n    \n  \n\n  \n  \n    Verarbeitung läuft vollständig im Browser · Kein Upload zu Servern · COCO 80 Klassen"
   }
 ]
