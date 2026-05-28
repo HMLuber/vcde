@@ -306,12 +306,12 @@ function drawLoop() {
       ctx.lineWidth   = 3;
       ctx.strokeRect(x, y, w, h);
       const lbl = `${d.class} ${Math.round(d.score * 100)}%`;
-      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.font = 'bold 20px system-ui, sans-serif';
       const tw = ctx.measureText(lbl).width;
       ctx.fillStyle = c;
-      ctx.fillRect(x, y - 20, tw + 8, 20);
+      ctx.fillRect(x, y - 26, tw + 10, 26);
       ctx.fillStyle = '#fff';
-      ctx.fillText(lbl, x + 4, y - 5);
+      ctx.fillText(lbl, x + 5, y - 6);
     }
   }
   requestAnimationFrame(drawLoop);
