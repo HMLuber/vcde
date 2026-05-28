@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "PowerShell(git -C \"c:\\\\Users\\\\marki\\\\visual_computing\\\\git\\\\vcde\" add app.js index.qmd style.css)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

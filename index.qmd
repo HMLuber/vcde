@@ -11,7 +11,6 @@ format:
       text: |
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-jupyter: python3
 bibliography: references.bib
 ---
 
@@ -211,7 +210,15 @@ urllib.request.urlretrieve(
 analysiere_video("sample.mp4", "output.mp4")
 ```
 
-Das Ausgabevideo (`output.mp4`) entsteht nach dem lokalen Ausführen des obigen Blocks und zeigt die erkannten Fahrzeuge mit Bounding Boxes und Confidence-Werten.
+Das Ausgabevideo entsteht nach dem lokalen Ausführen des obigen Blocks und zeigt die erkannten Objekte mit Bounding Boxes und Confidence-Werten.
+Als Beispiel dient hier ein vorverarbeitetes Demo-Video von Ultralytics — dasselbe YOLOv8-Modell wurde auf eine Warteschlangen-Szene angewendet und erkennt dabei Personen in Echtzeit:
+
+```{=html}
+<video controls muted playsinline loop
+       style="width:100%;border-radius:8px;margin:0.75rem 0;">
+  <source src="videos/queue-management.mp4" type="video/mp4">
+</video>
+```
 
 <!-- ============================================================ -->
 
