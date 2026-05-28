@@ -3,7 +3,8 @@ project:
   output-dir: docs
 
 website:
-  title: "YOLO Objekterkennung"
+  title: "Echtzeit-Objekterkennung mit YOLO"
 
 resources:
-  - yolov8n.onnx
+  - models/
+  - worker.js

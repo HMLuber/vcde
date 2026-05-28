@@ -109,7 +109,7 @@ async function warmup(sess) {
      [1, 84, N]  — rows = attributes, cols = anchors
      [1, N, 84]  — rows = anchors,    cols = attributes (transposed)
    N_DET is read from the actual tensor dims, not hardcoded.       */
-function postprocess(out, scale, padX, padY, origW, origH) {
+function postprocess(out, scale, padX, padY, origW, origH, confThresh = CONF_THRESH) {
   const [, d1, d2] = out.dims;
   const raw = out.data;
 
@@ -129,7 +129,7 @@ function postprocess(out, scale, padX, padY, origW, origH) {
       const s = get(4 + c, i);
       if (s > maxScore) { maxScore = s; classId = c; }
     }
-    if (maxScore < CONF_THRESH) continue;
+    if (maxScore < confThresh) continue;
 
     const cx = get(0, i), cy = get(1, i);
     const bw = get(2, i), bh = get(3, i);
@@ -180,13 +180,13 @@ function iou(a, b) {
 self.onmessage = async (e) => {
   if (e.data.type !== 'infer' || !session) return;
 
-  const { float32, scale, padX, padY, origW, origH } = e.data;
+  const { float32, scale, padX, padY, origW, origH, confThresh } = e.data;
   const tensor = new ort.Tensor('float32', float32, [1, 3, INPUT_SIZE, INPUT_SIZE]);
   let detections = [];
   try {
     const results = await session.run({ [session.inputNames[0]]: tensor });
     const out     = results[session.outputNames[0]];
-    detections    = postprocess(out, scale, padX, padY, origW, origH);
+    detections    = postprocess(out, scale, padX, padY, origW, origH, confThresh ?? CONF_THRESH);
     for (const t of Object.values(results)) t.dispose?.();
   } catch (err) {
     console.error('inference error:', err);

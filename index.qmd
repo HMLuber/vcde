@@ -1,970 +1,822 @@
 ---
-title: "YOLO Objekterkennung"
+title: "Echtzeit-Objekterkennung mit YOLO"
+subtitle: "**Vom Grid-Prinzip zur interaktiven Browser-Inference**"
+author: "Markus"
 format:
   html:
-    page-layout: full
-    toc: false
+    theme: flatly
+    toc: true
+    toc-depth: 3
     include-in-header:
       text: |
-        <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+jupyter: python3
+bibliography: references.bib
 ---
 
+<!-- ============================================================ -->
+
+## Zusammenfassung {#sec-zusammenfassung}
+
+Echtzeit-Objekterkennung ist im autonomen Fahren eine sicherheitskritische Aufgabe: Das Fahrzeug muss seine Umgebung schnell und zuverlässig erfassen, bevor es reagieren kann.
+Klassische zweistufige Detektoren wie R-CNN [@girshick2014] sind hierfür zu langsam.
+YOLO (*You Only Look Once*) löst das Problem durch einstufige Regression – alle Bounding Boxes, Klassenwahrscheinlichkeiten und Confidence-Werte entstehen in einem einzigen Netzwerkdurchlauf und werden als Tensor $S \times S \times (B \cdot 5 + C)$ kodiert.
+YOLOv8 macht dieses Prinzip mit wenigen Zeilen Python direkt reproduzierbar.
+Offene Herausforderungen bestehen bei verdeckten Objekten, kleinen Strukturen sowie ungünstigen Aufnahmebedingungen.
+
+<!-- ============================================================ -->
+
+## Aufbau {#sec-aufbau}
+
+[Abschnitt 1](#sec-einordnung) bettet Objekterkennung in die Visual-Computing-Pipeline ein und begründet den Bedarf an echtzeitfähigen Verfahren.
+[Abschnitt 2](#sec-theorie) erklärt das Gitter-Prinzip, die Netzarchitektur und die Versionsentwicklung von YOLO.
+[Abschnitt 3](#sec-implementierung) zeigt eine vollständig reproduzierbare Python-Implementierung mit YOLOv8 und OpenCV.
+[Abschnitt 4](#sec-demos) bietet drei interaktive Browser-Demos — Grid-Visualisierung, Datei-Upload und Webcam-Stream — die ohne lokale Installation direkt im Browser laufen.
+
+<!-- ============================================================ -->
+
+## 1. Einordnung {#sec-einordnung}
+
+Objekterkennung ist Teil der *Recognition*-Stufe in der klassischen Visual-Computing-Pipeline.
+Ihr Ergebnis ist für jedes erkannte Objekt eine **Bounding Box** (räumliche Position) sowie ein **Klassen-Label** (z.B. Auto, Person, Fahrrad).
+
+Im autonomen Fahren reicht es nicht, Objekte lediglich zu erkennen — entscheidend ist die **Verarbeitungsgeschwindigkeit**.
+Ein Fahrzeug bei 50 km/h legt pro Sekunde fast 14 Meter zurück; das System benötigt mindestens 24 Frames pro Sekunde (FPS), um rechtzeitig bremsen oder ausweichen zu können.
+
+Klassische zweistufige Detektoren (*Two-Stage-Detektoren*) wie R-CNN [@girshick2014] erzeugen zunächst hunderte von *Region Proposals* (mögliche Objektpositionen) und klassifizieren anschließend jeden Ausschnitt einzeln.
+Faster R-CNN [@ren2015] — die bislang schnellste Variante — erreicht damit nur 5–17 FPS, was für Fahrzeugtechnik unzureichend ist.
+
+YOLO (*You Only Look Once*) ist ein einstufiger Detektor (*One-Stage-Detektor*): Ein einziger Netzwerkdurchlauf genügt, um alle Objekte gleichzeitig zu lokalisieren und zu klassifizieren.
+Das erste veröffentlichte Modell [@redmon2016] erreichte damit 45–155 FPS und machte Echtzeit-Objekterkennung erstmals praktisch nutzbar.
+Zum Vergleich: SSD (*Single Shot Multibox Detector*) [@liu2016] ist ebenfalls einstufig und erreicht 22–59 FPS, erkauft sich Geschwindigkeit jedoch mit Schwächen bei sehr kleinen Objekten.
+
+<!-- ============================================================ -->
+
+## 2. YOLO: Theorie {#sec-theorie}
+
+### 2.1 Das Gitter-Prinzip {#sec-gitter}
+
+Die Kernidee von YOLO ist das **Grid-System**: Das Eingabebild wird in ein gleichmäßiges $S \times S$-Raster aufgeteilt.
+Jede Gitterzelle trägt die Verantwortung für alle Objekte, deren Mittelpunkt in sie fällt.
+Pro Zelle berechnet das Netz gleichzeitig:
+
+- **$B$ Bounding Boxes**, je beschrieben durch Mittelpunkt $(x, y)$ relativ zur Zelle, Abmessungen $(w, h)$ relativ zum Gesamtbild und einen Confidence-Score.
+- **Confidence-Score**: Kombiniert zwei Informationen in einem Wert — ob ein Objekt vorhanden ist, und wie gut die Box das Objekt umschließt:
+
+$$\text{Confidence} = \Pr(\text{Objekt}) \times \text{IoU}^{\text{truth}}_{\text{pred}}$$
+
+- **$C$ Klassenwahrscheinlichkeiten**, die mit dem Confidence-Score multipliziert werden, um einen klassenspezifischen Endwert zu erhalten.
+
+Alle Vorhersagen werden als kompakter Tensor der Dimension $S \times S \times (B \cdot 5 + C)$ kodiert.
+Auf dem PASCAL-VOC-Benchmark ($S = 7$, $B = 2$, $C = 20$) ergibt das einen $7 \times 7 \times 30$-Tensor [@redmon2016].
+
+### 2.2 Netzarchitektur {#sec-architektur}
+
+Das originale YOLO-Netz gliedert sich in zwei funktionale Abschnitte:
+
+**Feature-Extraktor**: 24 Convolutional Layer verarbeiten das $448 \times 448$ Pixel große Eingabebild schrittweise.
+Vier MaxPooling-Schichten sowie ein abschließender Stride-2-Layer halbieren die räumliche Auflösung sukzessive von $448 \times 448$ auf $7 \times 7$, während die Kanaltiefe auf 1024 wächst.
+Zwischengeschaltete $1 \times 1$-Convolutional-Layer reduzieren die Kanalzahl vorübergehend — eine recheneffiziente Technik, die Genauigkeit erhält und Laufzeit senkt.
+
+**Prediction Head**: Die extrahierten Feature-Maps ($7 \times 7 \times 1024$) werden flachgestreckt (*flattened*) und durch zwei vollverbundene Schichten geleitet: zunächst auf 4096 Neuronen, dann direkt auf den Ausgabe-Tensor $7 \times 7 \times 30$.
+Die Gittergröße $7 \times 7$ ergibt sich dabei natürlich aus der Netztiefe.
+
+### 2.3 Versionsgeschichte {#sec-versionen}
+
+Seit 2015 wird YOLO stetig weiterentwickelt. Jede Version adressiert konkrete Schwächen des Vorgängers:
+
+| Version | Jahr | Kernverbesserung |
+|---------|------|-----------------|
+| YOLOv1 | 2015 | Grid-basierte Regression in einem einzigen Durchlauf |
+| YOLOv2 | 2016 | Anchor Boxes; verbesserte Erkennung kleiner Objekte |
+| YOLOv3 | 2018 | Multi-Skalen-Erkennung auf drei Auflösungsstufen |
+| YOLOv5 | 2020 | PyTorch-Basis; vereinfachter Export auf Edge-Geräte |
+| **YOLOv8** | **2023** | **Anchor-free; Decoupled Head** [@jocher2023] |
+| YOLO11 | 2024 | Effizientere Backbone-Architektur; schnellere CPU-Inferenz |
+
+Für dieses Projekt wird **YOLOv8** eingesetzt [@jocher2023]: Die anchor-free Architektur lernt Boxpositionen direkt, ohne vordefinierte Anker.
+Ein *Decoupled Head* trennt Klassifizierung und Lokalisation in separate Zweige — das vereinfacht das Training und steigert die Genauigkeit.
+
+<!-- ============================================================ -->
+
+## 3. Implementierung {#sec-implementierung}
+
+Die Implementierung nutzt **YOLOv8** (über die Ultralytics-Bibliothek) und **OpenCV** in Python.
+Alle Schritte sind so dokumentiert, dass sie reproduzierbar sind.
+
+### 3.1 Entwicklungsumgebung
+
+Zur Isolation von Abhängigkeiten empfiehlt sich eine virtuelle Python-Umgebung:
+
+```bash
+# Virtuelle Umgebung anlegen
+python -m venv .venv
+
+# Aktivieren (macOS / Linux)
+source .venv/bin/activate
+
+# Aktivieren (Windows)
+# .venv\Scripts\activate
+
+# Abhängigkeiten installieren
+pip install ultralytics opencv-python
+```
+
+`ultralytics` bringt YOLOv8 inklusive PyTorch mit; `opencv-python` übernimmt Video- und Bildverarbeitung sowie Kameraanbindung.
+
+**Installation prüfen:**
+
+```{python}
+#| eval: false
+import ultralytics, cv2
+print(f"Ultralytics: {ultralytics.__version__}")
+print(f"OpenCV:      {cv2.__version__}")
+```
+
+### 3.2 Videoanalyse
+
+Ein Video ist eine Abfolge einzelner Frames. Jeder Frame durchläuft das YOLO-Modell; erkannte Objekte erhalten eine Bounding Box und ein Klassen-Label.
+
+**Modell laden:**
+
+```{python}
+#| eval: false
+from ultralytics import YOLO
+
+modell = YOLO("yolov8n.pt")   # n = Nano: ca. 6 MB, schnellste Variante
+```
+
+YOLOv8 ist in fünf Größen verfügbar — von `yolov8n` (Nano, schnell) bis `yolov8x` (Extra Large, genau). Die Wahl hängt vom Einsatzszenario ab.
+
+**Frame-für-Frame-Verarbeitung:**
+
+```{python}
+#| eval: false
+import cv2, random, time
+
+def klassen_farbe(cls_id: int) -> tuple:
+    """Deterministisch reproduzierbare Farbe je Klasse."""
+    random.seed(cls_id)
+    return tuple(random.randint(0, 255) for _ in range(3))
+
+def analysiere_video(pfad_ein: str, pfad_aus: str) -> None:
+    cap    = cv2.VideoCapture(pfad_ein)
+    fps    = cap.get(cv2.CAP_PROP_FPS)
+    breite = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    hoehe  = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out    = cv2.VideoWriter(pfad_aus, cv2.VideoWriter_fourcc(*"MP4V"), fps, (breite, hoehe))
+
+    frames, gesamt_ms = 0, 0.0
+
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+
+        t0 = time.perf_counter()
+        ergebnisse = modell(frame, verbose=False)
+        gesamt_ms += (time.perf_counter() - t0) * 1000
+        frames += 1
+
+        for res in ergebnisse:
+            for box in res.boxes:
+                if box.conf[0] < 0.4:
+                    continue
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cls   = int(box.cls[0])
+                label = f"{res.names[cls]}  {float(box.conf[0]):.2f}"
+                farbe = klassen_farbe(cls)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), farbe, 2)
+                cv2.putText(frame, label, (x1, max(y1 - 8, 20)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55, farbe, 2)
+        out.write(frame)
+
+    avg_ms = gesamt_ms / frames if frames else 0
+    print(f"Frames verarbeitet:   {frames}")
+    print(f"Ø Inferenzzeit:       {avg_ms:.1f} ms  →  {1000 / avg_ms:.1f} FPS")
+    cap.release()
+    out.release()
+```
+
+```{python}
+#| echo: false
+#| eval: false
+# Lokal ausführen, um das Demo-Video zu erzeugen.
+import urllib.request
+urllib.request.urlretrieve(
+    "https://media.geeksforgeeks.org/wp-content/uploads/20250910161721597148/sample.mp4",
+    "sample.mp4"
+)
+analysiere_video("sample.mp4", "output.mp4")
+```
+
+Das Ausgabevideo (`output.mp4`) entsteht nach dem lokalen Ausführen des obigen Blocks und zeigt die erkannten Fahrzeuge mit Bounding Boxes und Confidence-Werten.
+
+<!-- ============================================================ -->
+
+## 4. Browser-Demos {#sec-demos}
+
+Die folgenden Demos laufen direkt im Browser ohne lokale Installation.
+Basis ist das ONNX-Format des YOLOv8n-Modells (`models/yolov8n.onnx`), das über `onnxruntime-web` im Browser ausgeführt wird.[^onnx]
+
+[^onnx]: Das Modell kann mit folgendem Python-Snippet exportiert werden: `from ultralytics import YOLO; YOLO("yolov8n.pt").export(format="onnx", imgsz=640, opset=12)`.
+
+Die Inferenz nutzt **WebGPU-Beschleunigung** — sofern der Browser WebGPU unterstützt (Chrome, Edge).
+Ohne WebGPU fällt das System auf WASM (WebAssembly) zurück, was etwa 4–8 FPS liefert.
+Der aktive Execution-Provider wird nach dem Laden im Statusfeld jeder Demo angezeigt.
+
 ```{=html}
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js"></script>
 <style>
-  /* ── Reset & Base ── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg:         #080b10;
-    --bg2:        #0e1219;
-    --bg3:        #141a24;
-    --border:     #1e2a3a;
-    --border2:    #2a3a50;
-    --accent:     #00e5ff;
-    --accent2:    #7c3aed;
-    --accent3:    #10b981;
-    --warn:       #f59e0b;
-    --danger:     #ef4444;
-    --text:       #e2eaf4;
-    --text2:      #8099b4;
-    --text3:      #4a637a;
-    --font-mono:  'JetBrains Mono', monospace;
-    --font-sans:  'Syne', sans-serif;
-    --radius:     6px;
-    --radius2:    12px;
+  /* ── Demo-Karten ──────────────────────────────────────────── */
+  .vc-card {
+    background: #0f172a;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    color: #cbd5e1;
+    font-family: 'JetBrains Mono', monospace, sans-serif;
   }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── Layout ── */
-  #yolo-app {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 32px 20px 60px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  /* ── Header ── */
-  #header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #header-left h1 {
-    font-family: var(--font-sans);
-    font-size: clamp(1.5rem, 4vw, 2.4rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    background: linear-gradient(120deg, var(--accent), #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.1;
-  }
-
-  #header-left p {
-    font-size: 0.72rem;
-    color: var(--text3);
-    margin-top: 5px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  #status-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 100px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    border: 1px solid var(--border2);
-    background: var(--bg2);
-    white-space: nowrap;
-    transition: all 0.3s;
-  }
-
-  .badge .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text3);
-    animation: none;
-  }
-
-  .badge.loading .dot { background: var(--warn); animation: pulse 1s infinite; }
-  .badge.ready   .dot { background: var(--accent3); }
-  .badge.error   .dot { background: var(--danger); }
-  .badge.running .dot { background: var(--accent); animation: pulse 0.8s infinite; }
-
-  #fps-badge  { color: var(--accent);  border-color: rgba(0,229,255,0.2); }
-  #det-badge  { color: var(--accent3); border-color: rgba(16,185,129,0.2); }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(0.85); }
-  }
-
-  /* ── Drop Zone ── */
-  #upload-zone {
-    border: 2px dashed var(--border2);
-    border-radius: var(--radius2);
-    background: var(--bg2);
-    padding: 52px 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+  .vc-upload {
+    border: 2px dashed #334155;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
     cursor: pointer;
-    transition: border-color 0.25s, background 0.25s;
-    position: relative;
-  }
-
-  #upload-zone:hover,
-  #upload-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(0,229,255,0.04);
-  }
-
-  #upload-zone.disabled {
-    opacity: 0.45;
-    pointer-events: none;
-  }
-
-  #upload-zone .icon {
-    font-size: 2.8rem;
-    line-height: 1;
-  }
-
-  #upload-zone .zone-title {
-    font-family: var(--font-sans);
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  #upload-zone .zone-hint {
-    font-size: 0.72rem;
-    color: var(--text3);
-    letter-spacing: 0.06em;
-  }
-
-  #file-input { display: none; }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 22px;
-    border-radius: var(--radius);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    border: 1px solid var(--border2);
-    background: var(--bg3);
-    color: var(--text);
-    transition: all 0.2s;
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 1rem;
+    transition: border-color 0.15s, background 0.15s;
     user-select: none;
   }
-
-  .btn:hover   { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.06); }
-  .btn:active  { transform: scale(0.97); }
-  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-  .btn.primary:hover { background: #33eaff; border-color: #33eaff; color: var(--bg); }
-  .btn.stop    { border-color: var(--danger); color: var(--danger); }
-  .btn.stop:hover { background: rgba(239,68,68,0.08); }
-  .btn:disabled { opacity: 0.35; pointer-events: none; }
-
-  /* ── Canvas Area ── */
-  #canvas-wrap {
-    position: relative;
-    width: 100%;
-    border-radius: var(--radius2);
-    overflow: hidden;
-    background: #000;
-    border: 1px solid var(--border);
-    display: none;
+  .vc-upload:hover, .vc-upload.drag { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+  .vc-status {
+    font-size: 12px; color: #64748b; min-height: 1.2em;
+    margin: 0.4rem 0 0.6rem; font-family: monospace;
   }
-
-  #display-canvas {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    object-fit: contain;
+  .vc-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 0.55rem; flex-wrap: wrap;
   }
-
-  /* FPS overlay on canvas */
-  #canvas-overlay {
-    position: absolute;
-    top: 12px; left: 12px;
-    display: flex;
-    gap: 8px;
-    pointer-events: none;
+  .vc-row label { font-size: 13px; color: #94a3b8; white-space: nowrap; }
+  .vc-row input[type=range] { flex: 1; min-width: 80px; accent-color: #3b82f6; }
+  .vc-row span.val { font-size: 14px; font-weight: 600; color: #e2e8f0; min-width: 3ch; text-align: right; }
+  .vc-legend {
+    display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #64748b; margin-top: 0.5rem;
   }
-
-  .overlay-badge {
-    background: rgba(8,11,16,0.82);
-    border: 1px solid var(--border2);
-    backdrop-filter: blur(8px);
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--accent);
+  .vc-legend span { display: flex; align-items: center; gap: 5px; }
+  .vc-detlist {
+    margin-top: 0.75rem;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px;
   }
-
-  /* ── Controls ── */
-  #controls {
-    display: none;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding: 16px 20px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius2);
+  .vc-det {
+    background: #1e293b; border-radius: 6px; padding: 0.4rem 0.6rem;
+    border-left: 3px solid #3b82f6;
   }
-
-  #controls .sep {
-    flex: 1;
-    height: 1px;
-    background: var(--border);
+  .vc-det-name { font-weight: 600; color: #e2e8f0; font-size: 13px; }
+  .vc-det-info { color: #64748b; font-size: 11px; }
+  .vc-btn {
+    background: #1e3a5f; color: #93c5fd; border: 1px solid #2d5a8e; border-radius: 6px;
+    padding: 0.4rem 1rem; font-size: 13px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-weight: 600; transition: background 0.15s;
   }
-
-  .slider-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .slider-group label {
-    font-size: 0.72rem;
-    color: var(--text2);
-    white-space: nowrap;
-  }
-
-  .slider-group span {
-    color: var(--accent);
-    font-weight: 700;
-    min-width: 36px;
-    display: inline-block;
-  }
-
-  input[type="range"] {
-    -webkit-appearance: none;
-    width: 130px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border2);
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    border: 2px solid var(--bg);
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  /* ── Detections Panel ── */
-  #detections-panel {
-    display: none;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius2);
-    padding: 16px 20px;
-  }
-
-  #detections-panel h3 {
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin-bottom: 12px;
-  }
-
-  #det-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .det-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    border: 1px solid;
-    white-space: nowrap;
-  }
-
-  .det-tag .det-count {
-    background: rgba(255,255,255,0.12);
-    border-radius: 2px;
-    padding: 1px 5px;
-    font-size: 0.65rem;
-  }
-
-  /* ── Progress Bar ── */
-  #model-progress-wrap {
-    display: none;
-    width: 100%;
-    max-width: 320px;
-  }
-
-  #model-progress {
-    width: 100%;
-    height: 3px;
-    background: var(--border2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  #model-progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--accent), #a78bfa);
-    border-radius: 2px;
-    transition: width 0.3s;
-    animation: shimmer 1.5s infinite;
-  }
-
-  @keyframes shimmer {
-    0% { opacity: 1; }
-    50% { opacity: 0.6; }
-    100% { opacity: 1; }
-  }
-
-  /* ── Error box ── */
-  #error-box {
-    display: none;
-    padding: 16px 20px;
-    background: rgba(239,68,68,0.08);
-    border: 1px solid rgba(239,68,68,0.3);
-    border-radius: var(--radius2);
-    font-size: 0.78rem;
-    color: #fca5a5;
-    line-height: 1.6;
-  }
-
-  #error-box strong { color: var(--danger); display: block; margin-bottom: 4px; }
-
-  /* ── Footer note ── */
-  #footer-note {
-    font-size: 0.65rem;
-    color: var(--text3);
-    text-align: center;
-    line-height: 1.8;
-    letter-spacing: 0.04em;
-  }
-
-  video { display: none; }
+  .vc-btn:hover:not(:disabled) { background: #2d5a8e; }
+  .vc-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+  .vc-btn.red { background: #7f1d1d; color: #fca5a5; border-color: #b91c1c; }
+  .vc-btn.red:hover { background: #991b1b; }
+  .vc-vid-wrap { position: relative; width: 100%; display: none; }
+  .vc-vid-wrap video  { width: 100%; border-radius: 6px; display: block; }
+  .vc-vid-wrap canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 6px; }
 </style>
+<script>
+/* ── Gemeinsamer YOLO-Worker (einmalig pro Seitenaufruf) ──────── */
+if (!window.__yw) {
+  const yw = { w: null, ready: false, sz: 640, provider: 'WASM',
+               readyCbs: [], resultCb: null, busy: false };
+  window.__yw = yw;
+  yw.w = new Worker('worker.js');
+  yw.w.onmessage = ({ data }) => {
+    if (data.type === 'ready') {
+      yw.ready = true; yw.sz = data.inputSize; yw.provider = data.provider;
+      yw.readyCbs.forEach(fn => fn(yw)); yw.readyCbs = [];
+    }
+    if (data.type === 'result') {
+      yw.busy = false;
+      if (yw.resultCb) { yw.resultCb(data.detections); yw.resultCb = null; }
+    }
+    if (data.type === 'error') console.error('[YOLO Worker]', data.message);
+  };
+}
 
-<!-- ════════════════════════════════════════════
-     APP MARKUP
-════════════════════════════════════════════ -->
-<div id="yolo-app">
+/* Callback sobald Modell bereit ist (oder sofort) */
+window.__ywReady = fn => window.__yw.ready ? fn(window.__yw) : window.__yw.readyCbs.push(fn);
 
-  <!-- Header -->
-  <div id="header">
-    <div id="header-left">
-      <h1>YOLO Objekterkennung</h1>
-      <p>YOLOv8n · ONNX Runtime Web · 30 FPS</p>
-    </div>
-    <div id="status-row">
-      <span id="model-badge" class="badge loading">
-        <span class="dot"></span>Modell lädt…
-      </span>
-      <span id="fps-badge" class="badge">FPS: --</span>
-      <span id="det-badge" class="badge">0 Objekte</span>
-    </div>
+/* Inferenz senden; gibt false zurück wenn Worker beschäftigt */
+window.__ywInfer = function(f32, meta, cb) {
+  const yw = window.__yw;
+  if (yw.busy) return false;
+  yw.busy = true; yw.resultCb = cb;
+  yw.w.postMessage({ type: 'infer', float32: f32, ...meta }, [f32.buffer]);
+  return true;
+};
+
+/* Letterbox-Vorverarbeitung (Quelle → Float32 CHW) */
+window.__ywPrep = function(src, sw, sh, sz) {
+  const scale = Math.min(sz/sw, sz/sh);
+  const nw = Math.round(sw*scale), nh = Math.round(sh*scale);
+  const px = Math.floor((sz-nw)/2), py = Math.floor((sz-nh)/2);
+  const c = document.createElement('canvas'); c.width = sz; c.height = sz;
+  const cx = c.getContext('2d', { willReadFrequently: true });
+  cx.fillStyle = '#808080'; cx.fillRect(0,0,sz,sz);
+  cx.drawImage(src, px, py, nw, nh);
+  const pix = cx.getImageData(0,0,sz,sz).data;
+  const f32 = new Float32Array(3*sz*sz), a = sz*sz;
+  for (let i=0;i<a;i++) {
+    f32[i] = pix[i*4]/255; f32[i+a] = pix[i*4+1]/255; f32[i+2*a] = pix[i*4+2]/255;
+  }
+  return { f32, scale, padX: px, padY: py };
+};
+
+/* Deterministisch reproduzierbare Farbe je Klassenname */
+window.__ywColor = function(name) {
+  const pal = ['#3b82f6','#eab308','#22c55e','#ec4899','#06b6d4','#a855f7','#f97316','#10b981','#ef4444','#8b5cf6'];
+  let h = 0; for (const c of name) h = (h*31 + c.charCodeAt(0))|0;
+  return pal[Math.abs(h) % pal.length];
+};
+</script>
+```
+
+### 4.1 Grid-Visualisierung {#sec-demo-grid}
+
+Bild hochladen, dann mit den Reglern Grid-Größe $S$ und Confidence-Schwellwert $C$ anpassen.
+Die **blaue Zelle** ist jeweils die verantwortliche Gitterzelle des erkannten Objekts.
+
+```{=html}
+<div class="vc-card">
+  <div class="vc-upload" id="g-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px">
+      <line x1="12" y1="15" x2="12" y2="3"/><polyline points="7 8 12 3 17 8"/>
+      <line x1="4" y1="21" x2="20" y2="21"/>
+    </svg><br>
+    <span style="font-size:14px">Bild ablegen oder <u style="cursor:pointer">klicken</u></span>
+    <input type="file" id="g-file" accept="image/*" style="display:none">
   </div>
-
-  <!-- Model loading progress -->
-  <div id="model-progress-wrap">
-    <div id="model-progress"><div id="model-progress-bar"></div></div>
+  <div class="vc-status" id="g-status">Modell wird geladen …</div>
+  <div class="vc-row">
+    <label>Grid <strong>S</strong> =</label>
+    <input type="range" id="g-s" min="3" max="15" step="2" value="7" disabled>
+    <span class="val" id="g-sv">7</span>
   </div>
-
-  <!-- Error box -->
-  <div id="error-box">
-    <strong>❌ Fehler beim Laden des Modells</strong>
-    <span id="error-msg"></span>
-    <br><br>
-    Stelle sicher, dass <code>yolov8n.onnx</code> im selben Verzeichnis liegt wie diese Seite
-    und dass der Server die Datei korrekt ausliefert (kein CORS-Fehler).
+  <div class="vc-row">
+    <label>Conf. <strong>C</strong> ≥</label>
+    <input type="range" id="g-c" min="0.05" max="0.95" step="0.05" value="0.40" disabled>
+    <span class="val" id="g-cv">0.40</span>
   </div>
-
-  <!-- Upload zone -->
-  <div id="upload-zone" class="disabled">
-    <div class="icon">📁</div>
-    <div class="zone-title">Video hochladen</div>
-    <div class="zone-hint">MP4 · WebM · MOV · AVI — oder hierher ziehen</div>
-    <input type="file" id="file-input" accept="video/*">
-    <button class="btn primary" id="upload-btn">Video auswählen</button>
+  <canvas id="g-canvas" style="width:100%;display:none;border-radius:6px;border:1px solid #1e3a5f;"></canvas>
+  <div class="vc-legend">
+    <span><span style="width:12px;height:12px;background:rgba(59,130,246,0.22);border:1.5px solid #3b82f6;display:inline-block;border-radius:2px;"></span>Verantwortliche Zelle</span>
+    <span><span style="width:14px;height:3px;background:#e2e8f0;display:inline-block;border-radius:1px;"></span>Bounding Box</span>
+    <span><span style="width:9px;height:9px;border-radius:50%;background:#00e5ff;display:inline-block;"></span>Objektmittelpunkt</span>
   </div>
-
-  <!-- Canvas -->
-  <div id="canvas-wrap">
-    <canvas id="display-canvas"></canvas>
-    <div id="canvas-overlay">
-      <span class="overlay-badge" id="fps-overlay">FPS: --</span>
-      <span class="overlay-badge" id="inf-overlay" style="color:#a78bfa">INF: --ms</span>
-    </div>
-  </div>
-
-  <!-- Controls -->
-  <div id="controls">
-    <button id="play-btn" class="btn">▶ Play</button>
-    <button id="restart-btn" class="btn">↺ Neustart</button>
-    <div class="sep"></div>
-    <div class="slider-group">
-      <label>Konfidenz: <span id="conf-val">25%</span></label>
-      <input type="range" id="conf-slider" min="5" max="95" value="25">
-    </div>
-    <div class="sep"></div>
-    <button id="new-video-btn" class="btn stop">✕ Neues Video</button>
-  </div>
-
-  <!-- Detections panel -->
-  <div id="detections-panel">
-    <h3>Erkannte Objekte</h3>
-    <div id="det-grid"></div>
-  </div>
-
-  <!-- Footer -->
-  <div id="footer-note">
-    Verarbeitung läuft vollständig im Browser · Kein Upload zu Servern · COCO 80 Klassen
-  </div>
-
+  <div class="vc-detlist" id="g-list"></div>
 </div>
 
-<video id="video-el" playsinline muted></video>
-
-<!-- ════════════════════════════════════════════
-     APPLICATION LOGIC
-════════════════════════════════════════════ -->
 <script>
 (function () {
-  'use strict';
+  const zone   = document.getElementById('g-zone');
+  const fileIn = document.getElementById('g-file');
+  const canvas = document.getElementById('g-canvas');
+  const ctx    = canvas.getContext('2d');
+  const sSldr  = document.getElementById('g-s');
+  const sSv    = document.getElementById('g-sv');
+  const cSldr  = document.getElementById('g-c');
+  const cSv    = document.getElementById('g-cv');
+  const status = document.getElementById('g-status');
+  const list   = document.getElementById('g-list');
 
-  // ── Config ──────────────────────────────────
-  const MODEL_PATH       = './yolov8n.onnx';
-  const MODEL_SIZE       = 640;
-  const TARGET_FPS       = 30;
-  const IOU_THRESHOLD    = 0.45;
-  let   CONF_THRESHOLD   = 0.25;
+  let curImg = null, allDets = [];
 
-  // ── COCO Classes ────────────────────────────
-  const CLASSES = [
-    'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat',
-    'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat',
-    'dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack',
-    'umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball',
-    'kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket',
-    'bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
-    'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair',
-    'couch','potted plant','bed','dining table','toilet','tv','laptop','mouse',
-    'remote','keyboard','cell phone','microwave','oven','toaster','sink',
-    'refrigerator','book','clock','vase','scissors','teddy bear','hair drier',
-    'toothbrush'
-  ];
+  window.__ywReady(yw => {
+    status.textContent = `Bereit (${yw.provider}) · Bild hochladen`;
+  });
 
-  // ── Color palette (golden-angle HSL) ────────
-  const _colorCache = {};
-  function classColor(id) {
-    if (!_colorCache[id]) {
-      const h = (id * 137.508) % 360;
-      _colorCache[id] = { stroke: `hsl(${h},75%,58%)`, fill: `hsla(${h},75%,58%,0.15)` };
-    }
-    return _colorCache[id];
+  zone.addEventListener('click', () => fileIn.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+  });
+  fileIn.addEventListener('change', () => { if (fileIn.files[0]) load(fileIn.files[0]); });
+
+  function load(file) {
+    if (!file.type.startsWith('image/')) return;
+    const img = new Image();
+    img.onload = () => { curImg = img; infer(); };
+    img.src = URL.createObjectURL(file);
   }
 
-  // ── DOM refs ────────────────────────────────
-  const $ = (id) => document.getElementById(id);
-  const uploadZone   = $('upload-zone');
-  const fileInput    = $('file-input');
-  const uploadBtn    = $('upload-btn');
-  const canvasWrap   = $('canvas-wrap');
-  const canvas       = $('display-canvas');
-  const ctx          = canvas.getContext('2d');
-  const videoEl      = $('video-el');
-  const controls     = $('controls');
-  const playBtn      = $('play-btn');
-  const restartBtn   = $('restart-btn');
-  const newVideoBtn  = $('new-video-btn');
-  const confSlider   = $('conf-slider');
-  const confVal      = $('conf-val');
-  const detPanel     = $('detections-panel');
-  const detGrid      = $('det-grid');
-  const modelBadge   = $('model-badge');
-  const fpsBadge     = $('fps-badge');
-  const detBadge     = $('det-badge');
-  const fpsOverlay   = $('fps-overlay');
-  const infOverlay   = $('inf-overlay');
-  const progressWrap = $('model-progress-wrap');
-  const progressBar  = $('model-progress-bar');
-  const errorBox     = $('error-box');
-  const errorMsg     = $('error-msg');
-
-  // ── State ───────────────────────────────────
-  let session          = null;
-  let inputName        = 'images';
-  let isRunning        = false;
-  let isInferencing    = false;
-  let latestDets       = [];
-  let animId           = null;
-  let lastDisplayTime  = 0;
-  let lastInfTime      = 0;
-  let fpsFrameCount    = 0;
-  let fpsWindowStart   = 0;
-  let displayFPS       = 0;
-  let infMs            = 0;
-
-  // offscreen canvas for preprocessing
-  const offCanvas   = document.createElement('canvas');
-  offCanvas.width   = MODEL_SIZE;
-  offCanvas.height  = MODEL_SIZE;
-  const offCtx      = offCanvas.getContext('2d');
-
-  // ── Status helpers ──────────────────────────
-  function setModelBadge(state, text) {
-    modelBadge.className = `badge ${state}`;
-    modelBadge.innerHTML = `<span class="dot"></span>${text}`;
-  }
-
-  function showError(msg) {
-    errorBox.style.display = 'block';
-    errorMsg.textContent   = msg;
-    progressWrap.style.display = 'none';
-    setModelBadge('error', 'Fehler');
-  }
-
-  // ── Model Loading ────────────────────────────
-  async function loadModel() {
-    try {
-      progressWrap.style.display = 'block';
-      animateProgress();
-
-      // Point WASM assets to CDN
-      ort.env.wasm.wasmPaths =
-        'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
-      ort.env.wasm.numThreads = navigator.hardwareConcurrency
-        ? Math.min(navigator.hardwareConcurrency, 4)
-        : 2;
-
-      session = await ort.InferenceSession.create(MODEL_PATH, {
-        executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all',
-      });
-
-      // Detect actual input tensor name
-      if (session.inputNames && session.inputNames.length > 0) {
-        inputName = session.inputNames[0];
+  function infer() {
+    if (!curImg || !window.__yw.ready) return;
+    status.textContent = 'Inferenz läuft …';
+    canvas.style.display = 'none';
+    const yw = window.__yw;
+    const { f32, scale, padX, padY } = window.__ywPrep(curImg, curImg.width, curImg.height, yw.sz);
+    window.__ywInfer(f32,
+      { scale, padX, padY, origW: curImg.width, origH: curImg.height, confThresh: 0.05 },
+      dets => {
+        allDets = dets;
+        sSldr.disabled = false; cSldr.disabled = false;
+        canvas.style.display = 'block';
+        status.textContent = `${dets.length} Kandidaten · Regler anpassen`;
+        render();
       }
-
-      progressBar.style.width = '100%';
-      setTimeout(() => { progressWrap.style.display = 'none'; }, 400);
-
-      setModelBadge('ready', 'Modell bereit');
-      uploadZone.classList.remove('disabled');
-
-    } catch (err) {
-      showError(err.message || String(err));
-    }
+    );
   }
 
-  function animateProgress() {
-    let w = 0;
-    const iv = setInterval(() => {
-      w = Math.min(w + Math.random() * 8, 88);
-      progressBar.style.width = w + '%';
-      if (!session && document.getElementById('model-progress-wrap').style.display === 'none') {
-        clearInterval(iv);
+  function render() {
+    if (!curImg) return;
+    const S    = parseInt(sSldr.value);
+    const conf = parseFloat(cSldr.value);
+    sSv.textContent = S; cSv.textContent = conf.toFixed(2);
+    canvas.width = curImg.width; canvas.height = curImg.height;
+    const W = canvas.width, H = canvas.height;
+    const cw = W/S, ch = H/S;
+
+    ctx.drawImage(curImg, 0, 0);
+
+    // Gitternetz
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+    for (let i=0;i<=S;i++) {
+      ctx.beginPath(); ctx.moveTo(i*cw, 0); ctx.lineTo(i*cw, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i*ch); ctx.lineTo(W, i*ch); ctx.stroke();
+    }
+
+    const filtered = allDets.filter(d => d.score >= conf);
+
+    // Verantwortliche Zellen
+    const seen = new Set();
+    filtered.forEach(d => {
+      const [x,y,w,h] = d.bbox;
+      const col = Math.min(Math.floor((x+w/2)/cw), S-1);
+      const row = Math.min(Math.floor((y+h/2)/ch), S-1);
+      const key = `${row}_${col}`;
+      if (!seen.has(key)) {
+        ctx.fillStyle = 'rgba(59,130,246,0.18)'; ctx.fillRect(col*cw, row*ch, cw, ch);
+        ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(col*cw, row*ch, cw, ch);
+        seen.add(key);
       }
-    }, 200);
+    });
+
+    // Bounding Boxes
+    filtered.forEach(d => {
+      const [x,y,w,h] = d.bbox;
+      const color = window.__ywColor(d.class);
+      ctx.strokeStyle = color; ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+      const lbl = `${d.class}  ${(d.score*100).toFixed(0)}%`;
+      ctx.font = 'bold 15px "JetBrains Mono", monospace';
+      const tw = ctx.measureText(lbl).width;
+      ctx.fillStyle = color; ctx.fillRect(x-1, y-20, tw+8, 20);
+      ctx.fillStyle = '#fff'; ctx.fillText(lbl, x+3, y-5);
+      // Mittelpunkt
+      const mx = x+w/2, my = y+h/2;
+      ctx.fillStyle = '#00e5ff';
+      ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI*2); ctx.stroke();
+    });
+
+    // Detektionsliste
+    list.innerHTML = filtered.length === 0
+      ? `<div style="font-size:12px;color:#475569;grid-column:1/-1">Keine Objekte ≥ ${conf.toFixed(2)}</div>`
+      : filtered.map(d => {
+          const [x,y,w,h] = d.bbox;
+          const col = Math.min(Math.floor((x+w/2)/cw), S-1);
+          const row = Math.min(Math.floor((y+h/2)/ch), S-1);
+          return `<div class="vc-det" style="border-left-color:${window.__ywColor(d.class)}">
+            <div class="vc-det-name">${d.class}</div>
+            <div class="vc-det-info">${(d.score*100).toFixed(0)}% · Zelle (${row},${col})</div>
+          </div>`;
+        }).join('');
   }
 
-  // ── Preprocessing ────────────────────────────
-  function preprocessFrame() {
-    const vw = videoEl.videoWidth;
-    const vh = videoEl.videoHeight;
-    const scale = Math.min(MODEL_SIZE / vw, MODEL_SIZE / vh);
-    const sw    = Math.round(vw * scale);
-    const sh    = Math.round(vh * scale);
-    const dx    = Math.round((MODEL_SIZE - sw) / 2);
-    const dy    = Math.round((MODEL_SIZE - sh) / 2);
-
-    offCtx.fillStyle = '#000';
-    offCtx.fillRect(0, 0, MODEL_SIZE, MODEL_SIZE);
-    offCtx.drawImage(videoEl, dx, dy, sw, sh);
-
-    const imgData = offCtx.getImageData(0, 0, MODEL_SIZE, MODEL_SIZE);
-    const pixels  = imgData.data;
-    const stride  = MODEL_SIZE * MODEL_SIZE;
-    const tensor  = new Float32Array(3 * stride);
-
-    for (let i = 0; i < stride; i++) {
-      tensor[i]            = pixels[i * 4]     / 255; // R
-      tensor[stride + i]   = pixels[i * 4 + 1] / 255; // G
-      tensor[stride*2 + i] = pixels[i * 4 + 2] / 255; // B
-    }
-
-    return { tensor, dx, dy, scale, vw, vh };
-  }
-
-  // ── IoU ──────────────────────────────────────
-  function iou(a, b) {
-    const x1 = Math.max(a[0], b[0]), y1 = Math.max(a[1], b[1]);
-    const x2 = Math.min(a[2], b[2]), y2 = Math.min(a[3], b[3]);
-    const inter = Math.max(0, x2-x1) * Math.max(0, y2-y1);
-    const aA = (a[2]-a[0]) * (a[3]-a[1]);
-    const bA = (b[2]-b[0]) * (b[3]-b[1]);
-    return inter / (aA + bA - inter + 1e-7);
-  }
-
-  // ── NMS ──────────────────────────────────────
-  function nms(dets) {
-    dets.sort((a, b) => b.score - a.score);
-    const keep = [];
-    const used = new Uint8Array(dets.length);
-    for (let i = 0; i < dets.length; i++) {
-      if (used[i]) continue;
-      keep.push(dets[i]);
-      for (let j = i+1; j < dets.length; j++) {
-        if (!used[j] && iou(dets[i].box, dets[j].box) > IOU_THRESHOLD) {
-          used[j] = 1;
-        }
-      }
-    }
-    return keep;
-  }
-
-  // ── Post-processing ──────────────────────────
-  function postprocess(data, dims, vw, vh, dx, dy, scale) {
-    // Support [1, 84, 8400] and [1, 8400, 84]
-    const d1 = dims[1], d2 = dims[2];
-    const transposed = (d1 > d2); // [1,8400,84] → transposed
-    const numAnchors = transposed ? d1 : d2;
-    const numCh      = transposed ? d2 : d1; // should be 84
-    const numClasses = numCh - 4;
-
-    const dets = [];
-
-    for (let a = 0; a < numAnchors; a++) {
-      let maxScore = CONF_THRESHOLD;
-      let maxClass = -1;
-
-      for (let c = 0; c < numClasses; c++) {
-        const idx   = transposed ? (a * numCh + 4 + c) : ((4 + c) * numAnchors + a);
-        const score = data[idx];
-        if (score > maxScore) { maxScore = score; maxClass = c; }
-      }
-
-      if (maxClass < 0) continue;
-
-      const cx_i = transposed ? (a * numCh + 0) : (0 * numAnchors + a);
-      const cy_i = transposed ? (a * numCh + 1) : (1 * numAnchors + a);
-      const w_i  = transposed ? (a * numCh + 2) : (2 * numAnchors + a);
-      const h_i  = transposed ? (a * numCh + 3) : (3 * numAnchors + a);
-
-      const cx = data[cx_i], cy = data[cy_i], w = data[w_i], h = data[h_i];
-
-      // Remove letterbox padding and scale back to video dimensions
-      const x1 = (cx - w/2 - dx) / scale;
-      const y1 = (cy - h/2 - dy) / scale;
-      const x2 = (cx + w/2 - dx) / scale;
-      const y2 = (cy + h/2 - dy) / scale;
-
-      const bx1 = Math.max(0, x1), by1 = Math.max(0, y1);
-      const bx2 = Math.min(vw,  x2), by2 = Math.min(vh,  y2);
-      if (bx2 <= bx1 || by2 <= by1) continue;
-
-      dets.push({ box: [bx1, by1, bx2, by2], score: maxScore, cls: maxClass });
-    }
-
-    return nms(dets);
-  }
-
-  // ── Draw ─────────────────────────────────────
-  function drawDets(dets, vw, vh) {
-    const scaleX = canvas.width  / vw;
-    const scaleY = canvas.height / vh;
-    ctx.lineWidth = 2;
-    ctx.font = 'bold 13px JetBrains Mono, monospace';
-
-    for (const d of dets) {
-      const [x1, y1, x2, y2] = d.box;
-      const { stroke, fill } = classColor(d.cls);
-      const bx = x1*scaleX, by = y1*scaleY, bw = (x2-x1)*scaleX, bh = (y2-y1)*scaleY;
-
-      // Filled rect (semi-transparent)
-      ctx.fillStyle = fill;
-      ctx.fillRect(bx, by, bw, bh);
-
-      // Border
-      ctx.strokeStyle = stroke;
-      ctx.strokeRect(bx, by, bw, bh);
-
-      // Label
-      const label   = `${CLASSES[d.cls]}  ${(d.score*100).toFixed(0)}%`;
-      const tw      = ctx.measureText(label).width + 10;
-      const lh      = 20;
-      const lx      = bx;
-      const ly      = by > lh ? by - lh : by + bh;
-
-      ctx.fillStyle = stroke;
-      ctx.beginPath();
-      ctx.roundRect(lx, ly, tw, lh, 3);
-      ctx.fill();
-
-      ctx.fillStyle = '#fff';
-      ctx.fillText(label, lx + 5, ly + 14);
-    }
-  }
-
-  // ── Detections side panel ────────────────────
-  function updateDetPanel(dets) {
-    if (dets.length === 0) {
-      detGrid.innerHTML = '<span style="color:var(--text3);font-size:0.72rem">Keine Objekte erkannt</span>';
-      detBadge.textContent = '0 Objekte';
-      return;
-    }
-
-    const counts = {};
-    for (const d of dets) {
-      const name = CLASSES[d.cls];
-      counts[name] = (counts[name] || { count: 0, cls: d.cls, score: 0 });
-      counts[name].count++;
-      counts[name].score = Math.max(counts[name].score, d.score);
-    }
-
-    detBadge.textContent = `${dets.length} Objekt${dets.length !== 1 ? 'e' : ''}`;
-
-    detGrid.innerHTML = '';
-    for (const [name, info] of Object.entries(counts)) {
-      const { stroke } = classColor(info.cls);
-      const tag = document.createElement('span');
-      tag.className = 'det-tag';
-      tag.style.borderColor = stroke;
-      tag.style.color = stroke;
-      tag.innerHTML =
-        `${name} <span class="det-count">${info.count}</span>`;
-      detGrid.appendChild(tag);
-    }
-  }
-
-  // ── Inference ────────────────────────────────
-  async function runInference() {
-    if (!session || isInferencing || videoEl.readyState < 2 || videoEl.paused) return;
-    isInferencing = true;
-    const t0 = performance.now();
-
-    try {
-      const { tensor, dx, dy, scale, vw, vh } = preprocessFrame();
-      const feed = {};
-      feed[inputName] = new ort.Tensor('float32', tensor, [1, 3, MODEL_SIZE, MODEL_SIZE]);
-
-      const results = await session.run(feed);
-      const outKey  = Object.keys(results)[0];
-      const out     = results[outKey];
-
-      latestDets = postprocess(out.data, out.dims, vw, vh, dx, dy, scale);
-      infMs       = Math.round(performance.now() - t0);
-    } catch (e) {
-      console.error('Inference error:', e);
-    } finally {
-      isInferencing = false;
-    }
-  }
-
-  // ── Display loop (~30 FPS) ───────────────────
-  function displayLoop(ts) {
-    if (!isRunning) return;
-    animId = requestAnimationFrame(displayLoop);
-
-    const frameInterval = 1000 / TARGET_FPS;
-    if (ts - lastDisplayTime < frameInterval) return;
-    lastDisplayTime = ts;
-
-    // Draw video frame
-    if (videoEl.readyState >= 2) {
-      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-      drawDets(latestDets, videoEl.videoWidth, videoEl.videoHeight);
-    }
-
-    // FPS
-    fpsFrameCount++;
-    if (ts - fpsWindowStart >= 1000) {
-      displayFPS = Math.round(fpsFrameCount * 1000 / (ts - fpsWindowStart));
-      fpsFrameCount = 0;
-      fpsWindowStart = ts;
-      const fpsStr = `FPS: ${displayFPS}`;
-      fpsBadge.textContent    = fpsStr;
-      fpsOverlay.textContent  = fpsStr;
-      infOverlay.textContent  = `INF: ${infMs}ms`;
-      updateDetPanel(latestDets);
-    }
-
-    // Trigger async inference (won't block)
-    runInference();
-  }
-
-  // ── Start / Stop ─────────────────────────────
-  function startProcessing() {
-    if (!session) return;
-    isRunning = true;
-    latestDets = [];
-    fpsWindowStart = performance.now();
-    fpsFrameCount  = 0;
-    lastDisplayTime = 0;
-
-    videoEl.play();
-    playBtn.textContent = '⏸ Pause';
-    setModelBadge('running', 'Läuft');
-    detPanel.style.display = 'block';
-    animId = requestAnimationFrame(displayLoop);
-  }
-
-  function pauseProcessing() {
-    videoEl.pause();
-    isRunning = false;
-    cancelAnimationFrame(animId);
-    playBtn.textContent = '▶ Play';
-    setModelBadge('ready', 'Pausiert');
-  }
-
-  function togglePlay() {
-    if (videoEl.paused || !isRunning) {
-      startProcessing();
-    } else {
-      pauseProcessing();
-    }
-  }
-
-  function resetVideo() {
-    videoEl.pause();
-    videoEl.currentTime = 0;
-    isRunning = false;
-    cancelAnimationFrame(animId);
-    playBtn.textContent = '▶ Play';
-    setModelBadge('ready', 'Modell bereit');
-    startProcessing();
-  }
-
-  function loadVideo(file) {
-    const url = URL.createObjectURL(file);
-    videoEl.src = url;
-
-    videoEl.onloadedmetadata = () => {
-      const vw = videoEl.videoWidth;
-      const vh = videoEl.videoHeight;
-
-      // Scale canvas to video aspect, max width = container
-      const maxW = canvasWrap.clientWidth || 900;
-      const ratio = Math.min(maxW / vw, 1);
-      canvas.width  = Math.round(vw * ratio);
-      canvas.height = Math.round(vh * ratio);
-
-      uploadZone.style.display   = 'none';
-      canvasWrap.style.display   = 'block';
-      controls.style.display     = 'flex';
-
-      startProcessing();
-    };
-  }
-
-  function returnToUpload() {
-    pauseProcessing();
-    videoEl.src         = '';
-    latestDets          = [];
-    uploadZone.style.display = '';
-    canvasWrap.style.display = 'none';
-    controls.style.display   = 'none';
-    detPanel.style.display   = 'none';
-    setModelBadge('ready', 'Modell bereit');
-    detBadge.textContent     = '0 Objekte';
-    fpsBadge.textContent     = 'FPS: --';
-  }
-
-  // ── Event listeners ──────────────────────────
-  uploadBtn.addEventListener('click', () => fileInput.click());
-  uploadZone.addEventListener('click', (e) => {
-    if (e.target !== uploadBtn) fileInput.click();
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    const f = e.target.files[0];
-    if (f) loadVideo(f);
-  });
-
-  // Drag & Drop
-  uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.classList.add('drag-over');
-  });
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-  uploadZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadZone.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('video/')) loadVideo(f);
-  });
-
-  playBtn.addEventListener('click', togglePlay);
-  restartBtn.addEventListener('click', resetVideo);
-  newVideoBtn.addEventListener('click', returnToUpload);
-
-  confSlider.addEventListener('input', () => {
-    CONF_THRESHOLD = confSlider.value / 100;
-    confVal.textContent = confSlider.value + '%';
-  });
-
-  videoEl.addEventListener('ended', () => {
-    isRunning = false;
-    cancelAnimationFrame(animId);
-    playBtn.textContent = '▶ Play';
-    setModelBadge('ready', 'Video beendet');
-  });
-
-  // ── Boot ────────────────────────────────────
-  loadModel();
-
+  sSldr.addEventListener('input', render);
+  cSldr.addEventListener('input', render);
 })();
 </script>
 ```
+
+### 4.2 Bild und Video {#sec-demo-datei}
+
+Bild oder Video hochladen. Bei Bildern erfolgt eine einmalige Inferenz; bei Videos läuft die Erkennung Frame für Frame.
+
+```{=html}
+<div class="vc-card">
+  <div class="vc-upload" id="f-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px">
+      <line x1="12" y1="15" x2="12" y2="3"/><polyline points="7 8 12 3 17 8"/>
+      <line x1="4" y1="21" x2="20" y2="21"/>
+    </svg><br>
+    <span style="font-size:14px">Bild oder Video ablegen oder <u style="cursor:pointer">klicken</u></span>
+    <input type="file" id="f-file" accept="image/*,video/*" style="display:none">
+  </div>
+  <div class="vc-status" id="f-status">Modell wird geladen …</div>
+  <div class="vc-row">
+    <label>Conf. <strong>C</strong> ≥</label>
+    <input type="range" id="f-c" min="0.05" max="0.95" step="0.05" value="0.40" disabled>
+    <span class="val" id="f-cv">0.40</span>
+  </div>
+  <div class="vc-vid-wrap" id="f-wrap">
+    <video id="f-vid" muted playsinline></video>
+    <canvas id="f-cvs"></canvas>
+  </div>
+  <div class="vc-detlist" id="f-list"></div>
+</div>
+
+<script>
+(function () {
+  const zone   = document.getElementById('f-zone');
+  const fileIn = document.getElementById('f-file');
+  const wrap   = document.getElementById('f-wrap');
+  const vid    = document.getElementById('f-vid');
+  const cvs    = document.getElementById('f-cvs');
+  const ctx    = cvs.getContext('2d');
+  const cSldr  = document.getElementById('f-c');
+  const cSv    = document.getElementById('f-cv');
+  const status = document.getElementById('f-status');
+  const list   = document.getElementById('f-list');
+
+  let isVideo = false, loopOn = false, lastDets = [], rawDets = [], curImg = null;
+
+  window.__ywReady(yw => { status.textContent = `Bereit (${yw.provider}) · Datei hochladen`; });
+
+  cSldr.addEventListener('input', () => {
+    cSv.textContent = parseFloat(cSldr.value).toFixed(2);
+    if (!isVideo && curImg) drawStatic();
+  });
+
+  zone.addEventListener('click', () => fileIn.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
+  });
+  fileIn.addEventListener('change', () => { if (fileIn.files[0]) handle(fileIn.files[0]); });
+
+  function handle(file) {
+    loopOn = false;
+    const url = URL.createObjectURL(file);
+    if (file.type.startsWith('image/')) {
+      isVideo = false;
+      const img = new Image();
+      img.onload = () => inferImage(img);
+      img.src = url;
+    } else {
+      isVideo = true;
+      vid.src = url;
+      vid.onloadeddata = startVideo;
+    }
+  }
+
+  /* ── Bild-Modus ───────────────────────────────────────────── */
+  function inferImage(img) {
+    curImg = img; status.textContent = 'Inferenz läuft …';
+    wrap.style.display = 'none';
+    const yw = window.__yw;
+    const { f32, scale, padX, padY } = window.__ywPrep(img, img.width, img.height, yw.sz);
+    window.__ywInfer(f32,
+      { scale, padX, padY, origW: img.width, origH: img.height, confThresh: 0.05 },
+      dets => {
+        rawDets = dets; cSldr.disabled = false;
+        vid.style.display = 'none';
+        cvs.style.position = 'static'; cvs.style.width = '100%'; cvs.style.height = 'auto';
+        cvs.width = img.width; cvs.height = img.height;
+        wrap.style.display = 'block';
+        status.textContent = `${dets.length} Kandidaten gefunden`;
+        drawStatic();
+      }
+    );
+  }
+
+  function drawStatic() {
+    if (!curImg) return;
+    const conf = parseFloat(cSldr.value); cSv.textContent = conf.toFixed(2);
+    cvs.width = curImg.width; cvs.height = curImg.height;
+    ctx.drawImage(curImg, 0, 0);
+    const filtered = rawDets.filter(d => d.score >= conf);
+    drawBoxes(filtered);
+    updateList(filtered, conf);
+  }
+
+  /* ── Video-Modus ──────────────────────────────────────────── */
+  async function startVideo() {
+    const yw = window.__yw;
+    vid.style.display = 'block';
+    cvs.style.position = 'absolute'; cvs.style.width = '100%'; cvs.style.height = '100%';
+    wrap.style.display = 'block';
+    cSldr.disabled = false;
+    await vid.play();
+    loopOn = true;
+    inferLoop(); drawLoop();
+  }
+
+  async function inferLoop() {
+    while (loopOn && !vid.paused && !vid.ended) {
+      const W = vid.videoWidth, H = vid.videoHeight;
+      if (W > 0) {
+        const conf = parseFloat(cSldr.value);
+        const yw = window.__yw;
+        const { f32, scale, padX, padY } = window.__ywPrep(vid, W, H, yw.sz);
+        const t0 = performance.now();
+        await new Promise(res => window.__ywInfer(f32,
+          { scale, padX, padY, origW: W, origH: H, confThresh: conf },
+          dets => { lastDets = dets; res(); updateList(dets, conf);
+                    const fps = (1000/(performance.now()-t0)).toFixed(1);
+                    status.textContent = `${dets.length} Objekt(e) · ${fps} FPS`; }
+        ) || res());
+      }
+    }
+    if (!loopOn) return;
+    status.textContent = 'Video beendet.';
+  }
+
+  function drawLoop() {
+    if (!loopOn || vid.ended) return;
+    const W = vid.videoWidth, H = vid.videoHeight;
+    if (W > 0) { cvs.width = W; cvs.height = H; ctx.clearRect(0,0,W,H); drawBoxes(lastDets); }
+    requestAnimationFrame(drawLoop);
+  }
+
+  /* ── Zeichnen ──────────────────────────────────────────────── */
+  function drawBoxes(dets) {
+    dets.forEach(d => {
+      const [x,y,w,h] = d.bbox, color = window.__ywColor(d.class);
+      ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+      const lbl = `${d.class}  ${(d.score*100).toFixed(0)}%`;
+      ctx.font = 'bold 15px "JetBrains Mono", monospace';
+      const tw = ctx.measureText(lbl).width;
+      ctx.fillStyle = color; ctx.fillRect(x-1, y-20, tw+8, 20);
+      ctx.fillStyle = '#fff'; ctx.fillText(lbl, x+3, y-5);
+      ctx.fillStyle = '#00e5ff';
+      ctx.beginPath(); ctx.arc(x+w/2, y+h/2, 4, 0, Math.PI*2); ctx.fill();
+    });
+  }
+
+  function updateList(dets, conf) {
+    list.innerHTML = dets.length === 0
+      ? `<div style="font-size:12px;color:#475569;grid-column:1/-1">Keine Objekte ≥ ${conf.toFixed(2)}</div>`
+      : dets.map(d => `<div class="vc-det" style="border-left-color:${window.__ywColor(d.class)}">
+          <div class="vc-det-name">${d.class}</div>
+          <div class="vc-det-info">${(d.score*100).toFixed(0)}% · ${Math.round(d.bbox[2])}×${Math.round(d.bbox[3])} px</div>
+        </div>`).join('');
+  }
+})();
+</script>
+```
+
+### 4.3 Webcam-Stream {#sec-demo-webcam}
+
+Live-Erkennung über die Gerätekamera. Start und Stop über die Schaltflächen.
+
+```{=html}
+<div class="vc-card">
+  <div class="vc-row" style="margin-bottom:0.75rem">
+    <button class="vc-btn" id="cam-start">▶ Kamera starten</button>
+    <button class="vc-btn red" id="cam-stop" disabled>■ Stoppen</button>
+  </div>
+  <div class="vc-status" id="cam-status">Modell wird geladen …</div>
+  <div class="vc-row">
+    <label>Conf. <strong>C</strong> ≥</label>
+    <input type="range" id="cam-c" min="0.05" max="0.95" step="0.05" value="0.40" disabled>
+    <span class="val" id="cam-cv">0.40</span>
+  </div>
+  <div class="vc-vid-wrap" id="cam-wrap">
+    <video id="cam-vid" muted playsinline autoplay></video>
+    <canvas id="cam-cvs"></canvas>
+  </div>
+  <div class="vc-legend">
+    <span><span style="width:14px;height:3px;background:#e2e8f0;display:inline-block;border-radius:1px;"></span>Bounding Box</span>
+    <span><span style="width:9px;height:9px;border-radius:50%;background:#00e5ff;display:inline-block;"></span>Objektmittelpunkt</span>
+  </div>
+  <div class="vc-detlist" id="cam-list"></div>
+</div>
+
+<script>
+(function () {
+  const btnStart = document.getElementById('cam-start');
+  const btnStop  = document.getElementById('cam-stop');
+  const wrap     = document.getElementById('cam-wrap');
+  const vid      = document.getElementById('cam-vid');
+  const cvs      = document.getElementById('cam-cvs');
+  const ctx      = cvs.getContext('2d');
+  const cSldr    = document.getElementById('cam-c');
+  const cSv      = document.getElementById('cam-cv');
+  const status   = document.getElementById('cam-status');
+  const list     = document.getElementById('cam-list');
+
+  let loopOn = false, stream = null, lastDets = [];
+
+  window.__ywReady(yw => { status.textContent = `Bereit (${yw.provider}) · Kamera starten`; });
+  cSldr.addEventListener('input', () => { cSv.textContent = parseFloat(cSldr.value).toFixed(2); });
+
+  btnStart.addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+      vid.srcObject = stream;
+      await vid.play();
+      wrap.style.display = 'block';
+      btnStart.disabled = true; btnStop.disabled = false; cSldr.disabled = false;
+      loopOn = true;
+      const yw = window.__yw;
+      inferLoop(yw); drawLoop();
+    } catch(e) {
+      status.textContent = `Kamera-Fehler: ${e.message}`;
+    }
+  });
+
+  btnStop.addEventListener('click', () => {
+    loopOn = false;
+    if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
+    vid.srcObject = null; wrap.style.display = 'none';
+    btnStart.disabled = false; btnStop.disabled = true; cSldr.disabled = true;
+    status.textContent = 'Kamera gestoppt.'; list.innerHTML = '';
+  });
+
+  async function inferLoop(yw) {
+    while (loopOn) {
+      const W = vid.videoWidth, H = vid.videoHeight;
+      if (W > 0) {
+        const conf = parseFloat(cSldr.value);
+        const { f32, scale, padX, padY } = window.__ywPrep(vid, W, H, yw.sz);
+        const t0 = performance.now();
+        await new Promise(res => {
+          const sent = window.__ywInfer(f32,
+            { scale, padX, padY, origW: W, origH: H, confThresh: conf },
+            dets => {
+              lastDets = dets;
+              const fps = (1000/(performance.now()-t0)).toFixed(1);
+              status.textContent = `${dets.length} Objekt(e) · ${fps} FPS`;
+              const c = parseFloat(cSldr.value);
+              list.innerHTML = dets.length === 0
+                ? `<div style="font-size:12px;color:#475569;grid-column:1/-1">Keine Objekte ≥ ${c.toFixed(2)}</div>`
+                : dets.map(d=>`<div class="vc-det" style="border-left-color:${window.__ywColor(d.class)}">
+                    <div class="vc-det-name">${d.class}</div>
+                    <div class="vc-det-info">${(d.score*100).toFixed(0)}%</div>
+                  </div>`).join('');
+              res();
+            }
+          );
+          if (!sent) res();
+        });
+      } else {
+        await new Promise(r => setTimeout(r, 16));
+      }
+    }
+  }
+
+  function drawLoop() {
+    if (!loopOn) return;
+    const W = vid.videoWidth, H = vid.videoHeight;
+    if (W > 0) {
+      cvs.width = W; cvs.height = H; ctx.clearRect(0,0,W,H);
+      lastDets.forEach(d => {
+        const [x,y,w,h] = d.bbox, color = window.__ywColor(d.class);
+        ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+        const lbl = `${d.class}  ${(d.score*100).toFixed(0)}%`;
+        ctx.font = 'bold 15px "JetBrains Mono", monospace';
+        const tw = ctx.measureText(lbl).width;
+        ctx.fillStyle = color; ctx.fillRect(x-1, y-20, tw+8, 20);
+        ctx.fillStyle = '#fff'; ctx.fillText(lbl, x+3, y-5);
+        ctx.fillStyle = '#00e5ff';
+        ctx.beginPath(); ctx.arc(x+w/2, y+h/2, 4, 0, Math.PI*2); ctx.fill();
+      });
+    }
+    requestAnimationFrame(drawLoop);
+  }
+})();
+</script>
+```
+
+<!-- ============================================================ -->
+
+## 5. Fazit {#sec-fazit}
+
+YOLO löst das in [Abschnitt 1](#sec-einordnung) beschriebene Echtzeit-Problem konsequent: Durch die einstufige Grid-Regression entstehen alle Erkennungen in einem einzigen Netzwerkdurchlauf.
+Die Implementierung mit YOLOv8 in [Abschnitt 3](#sec-implementierung) zeigt, dass das Verfahren heute mit wenigen Zeilen Python produktiv nutzbar ist.
+Die Browser-Demos in [Abschnitt 4](#sec-demos) machen die Stärken — aber auch die Grenzen — des Modells direkt erfahrbar.
+
+**Verdeckung (Occlusion):** Da jede Gitterzelle nur für eine Klasse zuständig ist, hat YOLO Schwierigkeiten, wenn mehrere gleichartige Objekte eng beieinanderliegen oder sich überlappen — z.B. dicht aufgefahrene Fahrzeuge oder eine Menschenmenge.
+
+**Kleine Objekte:** Das Grid-Raster stellt eine räumliche Vergröberung dar. Objekte, die nur wenige Pixel einnehmen, fallen häufig durch das Raster, weil sie nicht eindeutig einer Zelle zugeordnet werden können. Modernere Versionen wie YOLOv3 begegnen dem durch Multi-Skalen-Erkennung auf drei Auflösungsstufen.
+
+**Geschwindigkeit vs. Genauigkeit:** YOLOv8 ist in fünf Größen verfügbar (n/s/m/l/x). Kleinere Varianten sind schneller, aber ungenauer; größere präziser, aber langsamer. Welche Variante geeignet ist, hängt stets vom konkreten Einsatzszenario ab.
+
+**Umgebungsbedingungen:** Schlechte Lichtverhältnisse, Regen oder Gegenlicht können die Erkennungsrate erheblich senken — gerade im autonomen Fahren eine kritische Einschränkung, die durch gezielte Datenerweiterung beim Training adressiert werden muss.
+
+Insgesamt gilt: YOLO ist kein universelles Allheilmittel, aber ein pragmatischer und gut dokumentierter Ausgangspunkt für echtzeitfähige Objekterkennung, der sich in vielen realen Szenarien bewährt hat.
