@@ -41,7 +41,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5a7edf553ce6f37e40c66d907d0f4061.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-b9c91b1e117c879de662b9ae260051b4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -702,11 +702,6 @@ body {
 <div class="hero fade-up">
   <div class="hero-eyebrow">Visual Computing · Erkennung</div>
   <h1>Echtzeit-Objekterkennung<br>mit YOLO</h1>
-  <p class="hero-sub">
-    Eine interaktive Demo zur Objekterkennung – eingebettet in die Themen
-    Klassifikation, Segmentierung und Anomalieerkennung aus der Vorlesung
-    <em>Visual Computing</em> (Prof.&nbsp;Dr.&nbsp;Friedrich, HM).
-  </p>
   <div class="hero-tags">
     <span class="tag tag-blue">One-stage Detector</span>
     <span class="tag tag-red">CNN-basiert</span>
@@ -804,7 +799,7 @@ body {
 <div class="callout info fade-up">
   <span class="ci">💡</span>
   <div class="ct">
-    <strong>Aus der Vorlesung (Folie 43)</strong>
+    <strong>Aus der Vorlesung</strong>
     Convolution-Schichten erkennen in den ersten Ebenen einfache Muster (Linien, Farbkombinationen).
     In tieferen Schichten entstehen daraus immer komplexere Repräsentationen –
     die Grundlage für leistungsstarke Detektoren wie YOLO.
@@ -1035,7 +1030,7 @@ body {
     <button id="reload" style="display:none">↩ Neue Datei</button>
     <label>Konfidenz ≥</label>
     <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.30">
-    <span class="val" id="confv">0.30</span>
+    <span class="val" id="confv">0.40</span>
   </div>
 
   <div id="wrap">
@@ -1098,23 +1093,6 @@ body {
     Kein Neutraining nötig – ein Paradebeispiel für den Einsatz von Transfer Learning.
   </div>
 </div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     FOOTER
-══════════════════════════════════════════════════════════════════ -->
-<div class="page-footer fade-up">
-  <div class="pf-info">
-    <strong>Vorlesung: Visual Computing</strong><br>
-    Prof. Dr. Markus Friedrich · Hochschule München (HM)<br>
-    Fakultät für Informatik und Mathematik
-  </div>
-  <div class="pf-logo">
-    <span>HM</span>
-    Visual Computing
-  </div>
-</div>
-
-</div><!-- /.page -->
 
 <!-- ══════════════════════════════════════════════════════════════
      YOLO WORKER + INFERENCE
@@ -1284,7 +1262,7 @@ function drawLoop() {
 
 
 
-</main> <!-- /main -->
+</div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
