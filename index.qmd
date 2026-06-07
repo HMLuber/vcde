@@ -1,4 +1,4 @@
----
+﻿---
 title: "Echtzeit-Objekterkennung mit YOLO"
 format:
   html:
@@ -607,11 +607,6 @@ body {
 <div class="hero fade-up">
   <div class="hero-eyebrow">Visual Computing · Erkennung</div>
   <h1>Echtzeit-Objekterkennung<br>mit YOLO</h1>
-  <p class="hero-sub">
-    Eine interaktive Demo zur Objekterkennung – eingebettet in die Themen
-    Klassifikation, Segmentierung und Anomalieerkennung aus der Vorlesung
-    <em>Visual Computing</em> (Prof.&nbsp;Dr.&nbsp;Friedrich, HM).
-  </p>
   <div class="hero-tags">
     <span class="tag tag-blue">One-stage Detector</span>
     <span class="tag tag-red">CNN-basiert</span>
@@ -709,7 +704,7 @@ body {
 <div class="callout info fade-up">
   <span class="ci">💡</span>
   <div class="ct">
-    <strong>Aus der Vorlesung (Folie 43)</strong>
+    <strong>Aus der Vorlesung</strong>
     Convolution-Schichten erkennen in den ersten Ebenen einfache Muster (Linien, Farbkombinationen).
     In tieferen Schichten entstehen daraus immer komplexere Repräsentationen –
     die Grundlage für leistungsstarke Detektoren wie YOLO.
@@ -938,7 +933,7 @@ body {
     <button id="reload" style="display:none">↩ Neue Datei</button>
     <label>Konfidenz ≥</label>
     <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.30">
-    <span class="val" id="confv">0.30</span>
+    <span class="val" id="confv">0.40</span>
   </div>
 
   <div id="wrap">
@@ -1001,23 +996,6 @@ body {
     Kein Neutraining nötig – ein Paradebeispiel für den Einsatz von Transfer Learning.
   </div>
 </div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     FOOTER
-══════════════════════════════════════════════════════════════════ -->
-<div class="page-footer fade-up">
-  <div class="pf-info">
-    <strong>Vorlesung: Visual Computing</strong><br>
-    Prof. Dr. Markus Friedrich · Hochschule München (HM)<br>
-    Fakultät für Informatik und Mathematik
-  </div>
-  <div class="pf-logo">
-    <span>HM</span>
-    Visual Computing
-  </div>
-</div>
-
-</div><!-- /.page -->
 
 <!-- ══════════════════════════════════════════════════════════════
      YOLO WORKER + INFERENCE
