@@ -3,20 +3,7 @@ project:
   output-dir: docs
 
 website:
-  title: "Echtzeit-Objekterkennung"
-  navbar:
-    background: light
-    left:
-      - href: index.qmd
-        text: Startseite
-      - href: grundlagen.qmd
-        text: Grundlagen
-      - href: motivation.qmd
-        text: Motivation
-      - href: technik.qmd
-        text: Technik
-      - href: demo.qmd
-        text: Demo-Bereich
+  title: "Echtzeit-Objekterkennung in Videostreams"
 
 format:
   html:
