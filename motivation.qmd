@@ -1,0 +1,202 @@
+---
+title: "Motivation"
+engine: markdown
+---
+
+```{=html}
+<div class="page">
+
+<!-- ══════════════════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════════════════ -->
+<div class="hero fade-up">
+  <div class="hero-eyebrow">Kapitel 2</div>
+  <h1>Motivation</h1>
+  <p class="hero-sub">
+    Warum ist Echtzeit-Objekterkennung so wichtig – und warum reicht „gut genug"
+    in vielen Anwendungen nicht aus, wenn es um Millisekunden geht?
+  </p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     WARUM ECHTZEIT?
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up fade-up-1">
+  <div class="section-label">Das Problem</div>
+  <div class="section-title">Warum Echtzeit entscheidend ist</div>
+  <p class="section-body">
+    Viele der wichtigsten Anwendungen der Objekterkennung sind sicherheitskritisch:
+    Ein autonomes Fahrzeug, das einen Fußgänger 200 ms zu spät erkennt,
+    hat bei 50&nbsp;km/h bereits 2,8 Meter zurückgelegt – zu viel für eine sichere Reaktion.
+    Echtzeit ist hier keine komfortsteigernde Eigenschaft, sondern eine harte Anforderung.
+  </p>
+</div>
+
+<div class="metrics fade-up fade-up-1">
+  <div class="metric">
+    <div class="m-val">30+</div>
+    <div class="m-label">FPS nötig</div>
+  </div>
+  <div class="metric">
+    <div class="m-val">&lt;33</div>
+    <div class="m-label">ms pro Frame</div>
+  </div>
+  <div class="metric">
+    <div class="m-val">80</div>
+    <div class="m-label">COCO-Klassen</div>
+  </div>
+  <div class="metric">
+    <div class="m-val">1-Pass</div>
+    <div class="m-label">YOLO-Prinzip</div>
+  </div>
+</div>
+
+<div class="card-grid fade-up fade-up-1">
+  <div class="card">
+    <div class="card-icon red">🚨</div>
+    <h3>Sicherheitskritische Systeme</h3>
+    <p>Autonome Fahrzeuge, Drohnen und Roboter müssen ihre Umgebung schneller verarbeiten
+    als Menschen reagieren können. Latenz bedeutet hier direkte physische Gefahr.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon blue">📡</div>
+    <h3>Edge Computing</h3>
+    <p>Kameras in Produktionsanlagen, Überwachungssysteme und IoT-Geräte können oft keine
+    Daten in die Cloud senden. Schnelle, lokale Inferenz ist zwingend erforderlich.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon amber">💻</div>
+    <h3>Interaktive Anwendungen</h3>
+    <p>Augmented Reality, Sport-Broadcasting und medizinische Assistenzsysteme brauchen
+    sofortige visuelle Rückmeldung – jede spürbare Verzögerung macht das System unbrauchbar.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     GESCHWINDIGKEIT VS GENAUIGKEIT
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Die Herausforderung</div>
+  <div class="section-title">Das Dilemma: Genauigkeit vs. Geschwindigkeit</div>
+  <p class="section-body">
+    Lange Zeit bestand ein scheinbar unüberwindbarer Zielkonflikt: Genaue Modelle
+    waren zu langsam für Echtzeit, schnelle Modelle waren zu ungenau für den Praxiseinsatz.
+    Dieses Spannungsfeld trieb die Entwicklung von YOLO an.
+  </p>
+</div>
+
+<div class="two-col fade-up">
+  <div class="card">
+    <h3>🐢 Two-Stage-Detektoren</h3>
+    <p><strong>Faster R-CNN, Mask R-CNN</strong> und ähnliche Ansätze erzielen
+    hohe Genauigkeit (mAP ~42 auf COCO), brauchen aber 100–500 ms pro Frame –
+    zu langsam für Echtzeit. Sie eignen sich für die Offline-Verarbeitung von Bildern,
+    nicht für Live-Videostreams.</p>
+  </div>
+  <div class="card">
+    <h3>⚡ One-Stage-Detektoren</h3>
+    <p><strong>YOLO, SSD, RetinaNet</strong> opfern etwas Genauigkeit für drastisch
+    höhere Geschwindigkeit. YOLOv8n schafft &lt;5 ms auf einer modernen GPU –
+    das bedeutet über 200 FPS. Selbst im Browser per WebAssembly sind 10–30 FPS realistisch.</p>
+  </div>
+</div>
+
+<div class="callout info fade-up">
+  <span class="ci">📊</span>
+  <div class="ct">
+    <strong>Der Kompromiss in Zahlen</strong>
+    YOLOv8n erzielt 37,3 mAP@50-95 auf COCO bei 3,2 ms Inferenz (A100-GPU).
+    Faster R-CNN erreicht ~42 mAP, braucht aber ~50 ms.
+    Für die meisten Echtzeit-Anwendungen ist dieser Genauigkeitsverlust von ~5 Punkten
+    ein fairer Preis für 15× höhere Geschwindigkeit.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     WARUM YOLO?
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Die Lösung</div>
+  <div class="section-title">Warum YOLO die richtige Wahl ist</div>
+  <p class="section-body">
+    YOLO löst das Geschwindigkeit-Genauigkeit-Dilemma nicht durch Kompromisse,
+    sondern durch ein grundlegend anderes Denkmodell: Das gesamte Erkennungsproblem
+    wird als einzelnes Regressionsproblem formuliert.
+  </p>
+</div>
+
+<div class="yolo-box fade-up">
+  <div class="yb-label">Das YOLO-Prinzip</div>
+  <h3>You Only Look Once</h3>
+  <p>
+    Während Two-Stage-Detektoren das Bild zweimal verarbeiten – erst zur Regionenauswahl,
+    dann zur Klassifikation – sieht YOLO das Bild genau <em>einmal</em>.
+    Ein einziger Forward-Pass durch das Netz liefert direkt alle Bounding Boxes,
+    Klassen und Konfidenzwerte. Das eliminiert den zeitaufwändigen Zwischenschritt
+    der Regionenvorschläge vollständig.
+  </p>
+  <p>
+    Moderne YOLO-Versionen (v5, v8) sind zudem ankerbasiert optimiert oder vollständig
+    ankerfrei (v8), was Training und Deployment weiter vereinfacht. Das Ultralytics-Ökosystem
+    bietet dabei alles in einer Zeile: <em>YOLO('yolov8n.pt').predict('video.mp4')</em>.
+  </p>
+  <div class="yb-props">
+    <span class="yb-prop">1 Forward-Pass</span>
+    <span class="yb-prop">Ankerfrei (v8)</span>
+    <span class="yb-prop">Multi-Scale</span>
+    <span class="yb-prop">ONNX-Export</span>
+    <span class="yb-prop">Browser-fähig</span>
+  </div>
+</div>
+
+<div class="card-grid fade-up">
+  <div class="card">
+    <div class="card-icon green">🎯</div>
+    <h3>Unified Detection</h3>
+    <p>Lokalisierung und Klassifikation werden in einem einzigen Netz vereint.
+    Das reduziert Komplexität und ermöglicht End-to-End-Training mit einer einzigen
+    Loss-Funktion.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon blue">🔄</div>
+    <h3>Transfer Learning</h3>
+    <p>Vortrainierte YOLO-Gewichte (auf COCO mit 80 Klassen) können schnell auf
+    neue Domänen angepasst werden – wenige hundert Bilder und Stunden Finetuning
+    genügen oft für produktionstaugliche Ergebnisse.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon amber">📱</div>
+    <h3>Deployment-Flexibilität</h3>
+    <p>YOLO-Modelle exportieren nach ONNX, TFLite, CoreML und mehr. Damit laufen
+    sie auf GPU-Servern, eingebetteten Systemen (Jetson, Raspberry Pi) und
+    direkt im Browser – wie in dieser Demo.</p>
+  </div>
+</div>
+
+<div class="callout tip fade-up">
+  <span class="ci">🌐</span>
+  <div class="ct">
+    <strong>Browser-Demo als Proof of Concept</strong>
+    Diese Präsentation demonstriert YOLOv8n direkt im Browser via ONNX Runtime WebAssembly.
+    Ohne Server, ohne Cloud, ohne Installation – das Modell (6 MB) wird einmalig geladen
+    und führt alle Berechnungen lokal durch. Das zeigt: Echtzeit-Objekterkennung ist heute
+    zugänglich genug, um sie in einer einfachen Webseite zu demonstrieren.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════════════ -->
+<div class="page-footer">
+  <div class="pf-info">
+    <strong>Motivation</strong> · Echtzeit-Objekterkennung in Videostreams<br>
+    Jasmin Kohlpaintner · Henrik Berg · Markus Luber
+  </div>
+</div>
+
+</div>
+```

@@ -3,9 +3,29 @@ project:
   output-dir: docs
 
 website:
-  title: "Echtzeit-Objekterkennung mit YOLO"
+  title: "Echtzeit-Objekterkennung"
+  navbar:
+    background: light
+    left:
+      - href: index.qmd
+        text: Startseite
+      - href: grundlagen.qmd
+        text: Grundlagen
+      - href: motivation.qmd
+        text: Motivation
+      - href: technik.qmd
+        text: Technik
+      - href: demo.qmd
+        text: Demo-Bereich
+
+format:
+  html:
+    theme: flatly
+    css: styles.css
+    toc: false
 
 resources:
   - models/
   - worker.js
   - videos/
+  - styles.css

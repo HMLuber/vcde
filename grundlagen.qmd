@@ -1,0 +1,282 @@
+---
+title: "Grundlagen"
+engine: markdown
+---
+
+```{=html}
+<div class="page">
+
+<!-- ══════════════════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════════════════ -->
+<div class="hero fade-up">
+  <div class="hero-eyebrow">Kapitel 1</div>
+  <h1>Grundlagen</h1>
+  <p class="hero-sub">
+    Geschichte der Objekterkennung, wichtige Begriffe und typische Anwendungsfälle –
+    das Fundament zum Verstehen moderner Detektoren wie YOLO.
+  </p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     GESCHICHTE
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up fade-up-1">
+  <div class="section-label">Geschichte</div>
+  <div class="section-title">Geschichte der Objekterkennung</div>
+  <p class="section-body">
+    Die Entwicklung von der regelbasierten Bildverarbeitung hin zu neuronalen Echtzeit-Detektoren
+    dauerte rund zwei Jahrzehnte. Die folgenden Meilensteine zeigen, wie aus langsamen,
+    handgefertigten Merkmalsbeschreibungen moderne End-to-End-Netze wurden.
+  </p>
+</div>
+
+<div class="timeline fade-up fade-up-1">
+
+  <div class="tl-item">
+    <div class="tl-dot">2001</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Klassisch</div>
+      <h4>Viola-Jones: Erster Echtzeit-Detektor</h4>
+      <p>Paul Viola und Michael Jones veröffentlichen einen Algorithmus zur Gesichtserkennung
+      mit Haar-Merkmalen und Cascade Classifier. Erstmals ist Echtzeit-Erkennung auf
+      Consumer-Hardware möglich – allerdings nur für eine Klasse (Gesichter).</p>
+    </div>
+  </div>
+
+  <div class="tl-item">
+    <div class="tl-dot">2005</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Klassisch</div>
+      <h4>HOG + SVM (Dalal &amp; Triggs)</h4>
+      <p>Histograms of Oriented Gradients (HOG) kombiniert mit Support Vector Machines
+      ermöglicht robuste Personenerkennung. HOG bleibt für Jahre der Industriestandard
+      für Fußgängererkennung.</p>
+    </div>
+  </div>
+
+  <div class="tl-item">
+    <div class="tl-dot">2012</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Durchbruch</div>
+      <h4>AlexNet – Die Deep-Learning-Revolution</h4>
+      <p>Krizhevsky et al. gewinnen den ImageNet-Wettbewerb mit einem tiefen CNN und
+      reduzieren den Top-5-Fehler von 26 % auf 15 %. Diese Arbeit läutet das Zeitalter
+      des Deep Learning ein und macht GPU-Training zum Standard.</p>
+    </div>
+  </div>
+
+  <div class="tl-item">
+    <div class="tl-dot">2013</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">CNN</div>
+      <h4>R-CNN (Girshick et al.)</h4>
+      <p>Regions with Convolutional Neural Networks: ~2000 Regionenvorschläge per
+      Selective Search → jede Region einzeln durch ein CNN → SVM-Klassifikation.
+      Durchbruch für CNN-basierte Objekterkennung, aber langsam (47 s/Bild).</p>
+    </div>
+  </div>
+
+  <div class="tl-item highlight">
+    <div class="tl-dot">2015</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Meilenstein</div>
+      <h4>YOLO v1 &amp; Faster R-CNN</h4>
+      <p>Redmon et al. präsentieren <em>You Only Look Once</em>: erstmals verarbeitet ein
+      einziger Forward-Pass das gesamte Bild und liefert alle Bounding Boxes direkt.
+      45 FPS auf einer GPU – Echtzeit-Objekterkennung wird Realität. Im selben Jahr
+      erscheint Faster R-CNN mit integriertem Region Proposal Network.</p>
+    </div>
+  </div>
+
+  <div class="tl-item">
+    <div class="tl-dot">2018</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">CNN</div>
+      <h4>YOLOv3 – Multi-Scale-Erkennung</h4>
+      <p>YOLOv3 führt Vorhersagen auf drei verschiedenen Skalenstufen ein (Feature Pyramid)
+      und verbessert damit die Erkennung kleiner Objekte deutlich. Der Darknet-53-Backbone
+      erzielt Genauigkeit auf Niveau von Faster R-CNN bei deutlich höherer Geschwindigkeit.</p>
+    </div>
+  </div>
+
+  <div class="tl-item">
+    <div class="tl-dot">2020</div>
+    <div class="tl-body">
+      <div class="tl-badge green">Modern</div>
+      <h4>YOLOv4 / YOLOv5 – Optimierung &amp; Ökosystem</h4>
+      <p>YOLOv4 bündelt Best Practices (CSPNet, PANet, Mish-Aktivierung) zu einem hochoptimierten
+      Modell. YOLOv5 (Ultralytics) bringt ein Python-Ökosystem mit einfachem Training,
+      Export und Deployment – YOLO wird zum De-facto-Standard der Branche.</p>
+    </div>
+  </div>
+
+  <div class="tl-item highlight">
+    <div class="tl-dot">2023</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Aktuell</div>
+      <h4>YOLOv8 – Stand der Technik</h4>
+      <p>Ultralytics veröffentlicht YOLOv8 mit ankerfreier Architektur, verbessertem
+      Neck und einheitlicher API für Detection, Segmentation und Classification.
+      Die Nano-Variante (YOLOv8n) erreicht 37,3 mAP bei nur 3,2 ms Inferenz auf einer
+      modernen GPU – das Modell dieser Demo.</p>
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     BEGRIFFE
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Terminologie</div>
+  <div class="section-title">Begriffserklärungen</div>
+  <p class="section-body">
+    Diese Kernbegriffe bilden das gemeinsame Vokabular der Objekterkennung –
+    sie tauchen in jedem Paper, jeder API und jeder Benchmark-Auswertung auf.
+  </p>
+</div>
+
+<div class="def-grid fade-up">
+
+  <div class="def-card">
+    <div class="def-term">Begriff 01</div>
+    <div class="def-name">Bounding Box</div>
+    <p>Achsenparalleles Rechteck, das ein erkanntes Objekt umschließt.
+    Definiert durch vier Werte: <em>x, y</em> (Mittelpunkt oder obere linke Ecke),
+    <em>Breite</em> und <em>Höhe</em> in Pixeln oder als normalisierte Koordinaten.</p>
+  </div>
+
+  <div class="def-card">
+    <div class="def-term">Begriff 02</div>
+    <div class="def-name">Confidence Score</div>
+    <p>Zahl zwischen 0 und 1, die angibt, wie sicher sich das Modell ist,
+    dass eine Bounding Box ein Objekt enthält <em>und</em> dass die Klasse korrekt ist.
+    Boxen unterhalb eines Schwellwerts (z.&nbsp;B. 0,30) werden verworfen.</p>
+  </div>
+
+  <div class="def-card">
+    <div class="def-term">Begriff 03</div>
+    <div class="def-name">IoU – Intersection over Union</div>
+    <p>Maß für die Überlappung zweier Rechtecke:
+    <em>IoU = Schnittfläche / Vereinigungsfläche</em>.
+    Wert 0 = keine Überlappung, 1 = identisch. Gilt eine vorhergesagte Box als korrekt,
+    wenn IoU ≥ 0,5 (COCO-Standard: 0,5 bis 0,95).</p>
+  </div>
+
+  <div class="def-card">
+    <div class="def-term">Begriff 04</div>
+    <div class="def-name">NMS – Non-Maximum Suppression</div>
+    <p>Algorithmus, der mehrfach erkannte Objekte bereinigt: Behalte die Box mit dem
+    höchsten Score; unterdrücke alle Nachbarboxen mit IoU über einem Schwellwert (z.&nbsp;B. 0,45).
+    Wiederholen, bis keine überlappenden Kandidaten mehr übrig sind.</p>
+  </div>
+
+  <div class="def-card">
+    <div class="def-term">Begriff 05</div>
+    <div class="def-name">Anchor Box</div>
+    <p>Vordefinierte Box-Formen (Seitenverhältnisse, Größen), die als Referenz für
+    Vorhersagen dienen. Ältere YOLO-Versionen (v3–v5) nutzen Anker; YOLOv8 ist
+    <em>ankerfrei</em> und sagt den Mittelpunkt der Box direkt vorher.</p>
+  </div>
+
+  <div class="def-card">
+    <div class="def-term">Begriff 06</div>
+    <div class="def-name">mAP – mean Average Precision</div>
+    <p>Hauptmetrik zur Bewertung von Objektdetektoren. Berechnet den Durchschnitt
+    der Average Precision über alle Klassen. Auf COCO wird mAP@[0.5:0.95]
+    verwendet – der Durchschnitt bei IoU-Schwellwerten von 0,5 bis 0,95.</p>
+  </div>
+
+</div>
+
+<div class="callout note fade-up">
+  <span class="ci">📐</span>
+  <div class="ct">
+    <strong>IoU in der Praxis</strong>
+    Bei dieser Demo gilt eine Detektion als gültig, wenn der Confidence Score über
+    dem eingestellten Schwellwert liegt. Die IoU-Schwelle von 0,45 steuert die NMS-Bereinigung:
+    höherer Wert → mehr Boxen bleiben erhalten; niedrigerer Wert → aggressiveres Bereinigen.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     ANWENDUNGSFÄLLE
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Praxis</div>
+  <div class="section-title">Typische Anwendungsfälle</div>
+  <p class="section-body">
+    Echtzeit-Objekterkennung ist aus zahlreichen modernen Systemen nicht mehr wegzudenken.
+    Die drei wichtigsten Domänen illustrieren die Bandbreite möglicher Einsatzgebiete.
+  </p>
+</div>
+
+<div class="usecase-grid fade-up">
+
+  <div class="usecase-card">
+    <span class="usecase-icon">🚗</span>
+    <h3>Autonomes Fahren</h3>
+    <p>Fahrzeuge müssen ihre Umgebung in Echtzeit verstehen, um sicher zu navigieren.
+    Objekterkennung identifiziert dabei:</p>
+    <ul>
+      <li>Fußgänger und Radfahrer</li>
+      <li>Andere Fahrzeuge und Motorräder</li>
+      <li>Verkehrsschilder und Ampeln</li>
+      <li>Fahrbahnmarkierungen und Hindernisse</li>
+    </ul>
+  </div>
+
+  <div class="usecase-card">
+    <span class="usecase-icon">📹</span>
+    <h3>Sicherheit &amp; Überwachung</h3>
+    <p>Moderne Sicherheitssysteme ersetzen manuelle Videoüberwachung durch KI.
+    Typische Aufgaben:</p>
+    <ul>
+      <li>Personenzählung in Menschenmassen</li>
+      <li>Erkennung unerlaubter Personen</li>
+      <li>Verlassengegenstand-Erkennung</li>
+      <li>Verhaltensanalyse und Tracking</li>
+    </ul>
+  </div>
+
+  <div class="usecase-card">
+    <span class="usecase-icon">⚽</span>
+    <h3>Sport &amp; Medizin</h3>
+    <p>In Sport und Medizin liefert Objekterkennung wertvolle Analysedaten:</p>
+    <ul>
+      <li>Spieler- und Balltracking im Sport</li>
+      <li>Taktische Auswertung (Formation, Laufwege)</li>
+      <li>Chirurgische Instrumentenverfolgung</li>
+      <li>Zellanalyse in der Pathologie</li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="callout tip fade-up">
+  <span class="ci">🔬</span>
+  <div class="ct">
+    <strong>Industrielle Qualitätskontrolle</strong>
+    Ein weiteres wichtiges Anwendungsfeld ist die automatische Fehlererkennung in der Produktion.
+    YOLO-Modelle, die auf spezifische Defektklassen feintrainiert wurden, können Fertigungsfehler
+    in Echtzeit erkennen – mit höherer Genauigkeit und Konsistenz als menschliche Prüfer.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════════════ -->
+<div class="page-footer">
+  <div class="pf-info">
+    <strong>Grundlagen</strong> · Echtzeit-Objekterkennung in Videostreams<br>
+    Jasmin Kohlpaintner · Henrik Berg · Markus Luber
+  </div>
+</div>
+
+</div>
+```
