@@ -492,6 +492,7 @@ worker.onmessage = ({ data }) => {
     previewVid.src = 'videos/queue-management.mp4';
     previewVid.onloadeddata = () => {
       previewWrap.style.display = 'block';
+      previewStatus.textContent = `✓ ${provider}`;
       previewVid.play();
       activeVid = previewVid; activeCtx = previewCtx;
       activeCanvas = previewCv; activeStatus = previewStatus;
@@ -578,7 +579,7 @@ async function inferLoop() {
         confThresh: parseFloat(confEl.value),
       }, [f32.buffer]);
     });
-    if (activeStatus) {
+    if (activeStatus && activeVid !== previewVid) {
       const fps = (1000 / (performance.now() - t0)).toFixed(1);
       activeStatus.textContent = `${provider} · ${fps} FPS · ${lastDets.length} Objekt(e)`;
     }
