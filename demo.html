@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Startseite – Echtzeit-Objekterkennung</title>
+<title>Demo-Bereich – Echtzeit-Objekterkennung</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -93,7 +93,7 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Startseite</span></a>
   </li>  
   <li class="nav-item">
@@ -109,7 +109,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Technik</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./demo.html"> 
+    <a class="nav-link active" href="./demo.html" aria-current="page"> 
 <span class="menu-text">Demo-Bereich</span></a>
   </li>  
 </ul>
@@ -129,7 +129,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Startseite</h1>
+<h1 class="title">Demo-Bereich</h1>
 </div>
 
 
@@ -152,103 +152,28 @@ ul.task-list li input[type="checkbox"] {
      HERO
 ══════════════════════════════════════════════════════════════════ -->
 <div class="hero fade-up">
-  <div class="hero-eyebrow">Visual Computing · Präsentation</div>
-  <h1>Echtzeit-Objekterkennung<br>in Videostreams</h1>
+  <div class="hero-eyebrow">Kapitel 4</div>
+  <h1>Demo-Bereich</h1>
   <p class="hero-sub">
-    Wie Computer in Echtzeit Objekte in bewegten Bildern erkennen und lokalisieren –
-    von den Grundlagen bis zur Live-Demo direkt im Browser.
+    Live-Erkennung im Browser, Bibliotheks-Vergleich und eine lokale
+    Demo mit OpenCV + YOLO – alles in einem Bereich.
   </p>
-  <div class="hero-authors">
-    <div class="author-label">Autoren</div>
-    <div class="author-list">
-      <span class="author-chip">Jasmin Kohlpaintner</span>
-      <span class="author-chip">Henrik Berg</span>
-      <span class="author-chip">Markus Luber</span>
-    </div>
-  </div>
-  <div class="hero-tags">
-    <span class="tag tag-red">YOLO</span>
-    <span class="tag tag-blue">Deep Learning</span>
-    <span class="tag tag-green">OpenCV</span>
-    <span class="tag tag-amber">Echtzeit</span>
-  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
-     WAS IST ECHTZEIT-OBJEKTERKENNUNG?
+     LIVE DEMO
 ══════════════════════════════════════════════════════════════════ -->
 <div class="fade-up fade-up-1">
-  <div class="section-label">Kurz erklärt</div>
-  <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
-  <p class="section-body">
-    Objekterkennung ist die Fähigkeit eines Computersystems, in einem Bild oder Video
-    <strong>gleichzeitig zu lokalisieren</strong> (wo befindet sich ein Objekt?) und
-    <strong>zu klassifizieren</strong> (was ist es?). Das Ergebnis sind sogenannte
-    <em>Bounding Boxes</em> – Rechtecke, die jedes erkannte Objekt umrahmen – zusammen mit
-    einem Klassenlabel und einem Konfidenzwert.
-  </p>
-  <p class="section-body">
-    Der Zusatz <em>Echtzeit</em> bedeutet, dass dieser Prozess schnell genug sein muss,
-    um jeden Frame eines Videostreams zu verarbeiten – typischerweise 25–30 Frames pro Sekunde.
-    Das stellt hohe Anforderungen an Algorithmen und Hardware und war lange Zeit
-    eine der größten Herausforderungen im Bereich Computer Vision.
-  </p>
-</div>
-
-<div class="card-grid fade-up fade-up-1">
-  <div class="card">
-    <div class="card-icon red">📦</div>
-    <h3 class="anchored">Lokalisierung</h3>
-    <p>Das System bestimmt die genaue Position jedes Objekts im Bild – definiert durch
-    Koordinaten (x, y) sowie Breite und Höhe der Bounding Box.</p>
-  </div>
-  <div class="card">
-    <div class="card-icon blue">🏷️</div>
-    <h3 class="anchored">Klassifikation</h3>
-    <p>Gleichzeitig wird jedem erkannten Objekt ein Klassenlabel zugeordnet –
-    z.&nbsp;B. „Person", „Auto" oder „Hund" – mit einem zugehörigen Konfidenzwert.</p>
-  </div>
-  <div class="card">
-    <div class="card-icon green">⚡</div>
-    <h3 class="anchored">Echtzeitfähigkeit</h3>
-    <p>Moderne One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware
-    und ermöglichen damit den Einsatz in autonomen Fahrzeugen, Überwachungssystemen und mehr.</p>
-  </div>
-  <div class="card">
-    <div class="card-icon amber">🌐</div>
-    <h3 class="anchored">Im Browser</h3>
-    <p>Diese Demo nutzt ONNX Runtime WebAssembly und läuft vollständig client-seitig –
-    kein Server, kein Upload, Privatsphäre bleibt gewahrt.</p>
-  </div>
-</div>
-
-<div class="callout info fade-up fade-up-2">
-  <span class="ci">💡</span>
-  <div class="ct">
-    <strong>So navigierst du durch die Präsentation</strong>
-    Über die Navigation oben erreichst du die einzelnen Abschnitte:
-    <strong>Grundlagen</strong> erklärt Geschichte und Begriffe,
-    <strong>Motivation</strong> zeigt warum Echtzeit wichtig ist,
-    <strong>Technik</strong> erklärt wie YOLO funktioniert,
-    und im <strong>Demo-Bereich</strong> findest du die vollständige interaktive Demo mit Vergleichstabelle.
-  </div>
-</div>
-
-<hr class="divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     LIVE-DEMO
-══════════════════════════════════════════════════════════════════ -->
-<div class="fade-up fade-up-2">
   <div class="section-label">Interaktiv</div>
-  <div class="section-title">Kurze Live-Demo</div>
+  <div class="section-title">Live-Demo: Video-Upload mit Erkennung</div>
   <p class="section-body">
-    Lade eine Videodatei hoch und beobachte, wie YOLOv8 Objekte in Echtzeit erkennt.
-    Das Modell läuft vollständig im Browser – keine Serververbindung nötig.
+    Lade eine beliebige Videodatei hoch – YOLOv8n erkennt Objekte in jedem Frame in Echtzeit.
+    Das Modell läuft vollständig im Browser via ONNX Runtime WebAssembly.
+    Passe den Konfidenz-Schwellwert an, um Precision und Recall zu beeinflussen.
   </p>
 </div>
 
-<div class="demo-wrap fade-up fade-up-2">
+<div class="demo-wrap fade-up fade-up-1">
   <div id="drop">
     <span class="drop-icon">🎬</span>
     Videodatei hier ablegen oder klicken zum Auswählen
@@ -270,16 +195,208 @@ ul.task-list li input[type="checkbox"] {
   </div>
 </div>
 
+<div class="callout info fade-up">
+  <span class="ci">💡</span>
+  <div class="ct">
+    <strong>Tipp: Konfidenz-Schwellwert</strong>
+    Niedrigerer Wert (z.&nbsp;B. 0,15) → mehr Detektionen, höheres Recall, mehr Fehlalarme.
+    Höherer Wert (z.&nbsp;B. 0,70) → nur sichere Detektionen, höhere Precision, möglicherweise
+    werden schwache Objekte übersehen. Der Standard von 0,30 ist ein guter Ausgangspunkt.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     BIBLIOTHEKS-VERGLEICH
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Vergleich</div>
+  <div class="section-title">YOLO vs. TensorFlow Object Detection API</div>
+  <p class="section-body">
+    Neben YOLO ist die <strong>TensorFlow Object Detection API</strong> (TF OD API)
+    eines der meistgenutzten Frameworks für Objekterkennung. Beide Ansätze haben
+    unterschiedliche Stärken – die Wahl hängt von Anforderungen und Kontext ab.
+  </p>
+</div>
+
+
+<table class="cmp-table fade-up caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Merkmal</th>
+<th data-quarto-table-cell-role="th">YOLOv8n (diese Demo)</th>
+<th data-quarto-table-cell-role="th">TF Object Detection API</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Architektur</strong></td>
+<td>One-Stage (ankerfrei)</td>
+<td>Two-Stage (Faster R-CNN) oder One-Stage (SSD, EfficientDet)</td>
+</tr>
+<tr class="even">
+<td><strong>Framework</strong></td>
+<td>PyTorch (Ultralytics)</td>
+<td>TensorFlow / Keras</td>
+</tr>
+<tr class="odd">
+<td><strong>Inferenz-Geschwindigkeit</strong></td>
+<td><span class="badge badge-green">~3–30 ms/Frame</span></td>
+<td><span class="badge badge-amber">~50–500 ms/Frame (Two-Stage)</span></td>
+</tr>
+<tr class="even">
+<td><strong>mAP auf COCO</strong></td>
+<td>37,3 @ [0.5:0.95] (Nano)</td>
+<td>~28–45 (je nach Modell: SSD bis Faster R-CNN)</td>
+</tr>
+<tr class="odd">
+<td><strong>Modellgröße</strong></td>
+<td><span class="badge badge-green">~6 MB (nano)</span></td>
+<td><span class="badge badge-amber">~25–200 MB</span></td>
+</tr>
+<tr class="even">
+<td><strong>Browser-fähig</strong></td>
+<td><span class="badge badge-green">Ja (ONNX Runtime Web)</span></td>
+<td><span class="badge badge-amber">Begrenzt (TensorFlow.js)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Training/Finetuning</strong></td>
+<td><span class="badge badge-green">Sehr einfach (1 Zeile)</span></td>
+<td><span class="badge badge-amber">Komplex (Config-Dateien, Pipeline)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Export-Formate</strong></td>
+<td>ONNX, TFLite, CoreML, TensorRT</td>
+<td>SavedModel, TFLite, TF.js</td>
+</tr>
+<tr class="odd">
+<td><strong>Community &amp; Docs</strong></td>
+<td><span class="badge badge-green">Sehr aktiv (Ultralytics)</span></td>
+<td><span class="badge badge-blue">Groß (Google-backed)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Lizenz</strong></td>
+<td>AGPL-3.0 (kommerziell: kostenpflichtig)</td>
+<td>Apache 2.0 (frei)</td>
+</tr>
+<tr class="odd">
+<td><strong>Beste Eignung</strong></td>
+<td>Echtzeit, Edge, Rapid Prototyping</td>
+<td>Forschung, Produktionspipelines, TF-Ökosystem</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="callout note fade-up">
+  <span class="ci">⚖️</span>
+  <div class="ct">
+    <strong>Wann welche Bibliothek?</strong>
+    YOLO ist erste Wahl, wenn Geschwindigkeit und einfaches Deployment wichtig sind.
+    Die TF OD API ist besser integriert, wenn ohnehin mit TensorFlow gearbeitet wird
+    oder wenn komplexe Two-Stage-Modelle für maximale Genauigkeit nötig sind.
+    Für diese Browser-Demo war YOLO mit ONNX-Export die einzig praktikable Option.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOKALE DEMO
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Lokal ausführen</div>
+  <div class="section-title">Lokale Demo mit OpenCV + YOLO</div>
+  <p class="section-body">
+    Das Skript <code style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:13px;">scripts/yolo_demo.py</code>
+    führt YOLOv8-Inferenz auf einem Bild oder Video lokal aus und speichert ein
+    annotiertes Ergebnisbild. So lässt sich die Demo ohne Browser und mit voller
+    GPU-Beschleunigung reproduzieren.
+  </p>
+</div>
+
+<div class="two-col fade-up">
+  <div class="card">
+    <h3 class="anchored">📦 Voraussetzungen</h3>
+    <p style="margin-bottom:.6rem;">Python 3.8+ und folgende Pakete:</p>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:.75rem 1rem;font-family:monospace;font-size:12.5px;line-height:1.8;">
+      pip install ultralytics opencv-python
+    </div>
+    <p style="margin-top:.6rem;font-size:13px;color:var(--text-2);">
+      Das Modell <code style="font-family:monospace;font-size:11px;">yolov8n.pt</code> wird beim
+      ersten Aufruf automatisch von Ultralytics heruntergeladen (~6 MB).
+    </p>
+  </div>
+  <div class="card">
+    <h3 class="anchored">▶️ Ausführung</h3>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:.75rem 1rem;font-family:monospace;font-size:12.5px;line-height:1.8;margin-bottom:.6rem;">
+      <span style="color:var(--text-3);"># Einzelbild</span><br>
+      python scripts/yolo_demo.py --input bild.jpg<br><br>
+      <span style="color:var(--text-3);"># Video</span><br>
+      python scripts/yolo_demo.py --input video.mp4<br><br>
+      <span style="color:var(--text-3);"># Webcam (live)</span><br>
+      python scripts/yolo_demo.py --input 0
+    </div>
+  </div>
+</div>
+
+<div class="code-block fade-up">
+  <div class="code-header">
+    <span class="dot" style="background:#ff5f57;"></span>
+    <span class="dot" style="background:#febc2e;margin-left:6px;"></span>
+    <span class="dot" style="background:#28c840;margin-left:6px;"></span>
+    <span style="margin-left:12px;">scripts/yolo_demo.py</span>
+  </div>
+  <pre><span class="code-comment">"""
+Lokale YOLO-Demo: Inferenz auf Bild, Video oder Webcam.
+Ergebnisbild/-video wird in runs/detect/ gespeichert.
+"""</span>
+<span class="code-keyword">import</span> argparse
+<span class="code-keyword">import</span> cv2
+<span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
+
+<span class="code-keyword">def</span> <span class="code-func">run</span>(source: str, conf: float = <span class="code-string">0.30</span>, save: bool = <span class="code-keyword">True</span>):
+    model = <span class="code-func">YOLO</span>(<span class="code-string">"yolov8n.pt"</span>)
+
+    <span class="code-keyword">if</span> source == <span class="code-string">"0"</span> <span class="code-keyword">or</span> source.isdigit():
+        <span class="code-comment"># Webcam: Ergebnisse live anzeigen</span>
+        <span class="code-keyword">for</span> result <span class="code-keyword">in</span> model.<span class="code-func">predict</span>(<span class="code-func">int</span>(source), stream=<span class="code-keyword">True</span>, conf=conf):
+            cv2.<span class="code-func">imshow</span>(<span class="code-string">"YOLO Demo"</span>, result.<span class="code-func">plot</span>())
+            <span class="code-keyword">if</span> cv2.<span class="code-func">waitKey</span>(<span class="code-string">1</span>) == <span class="code-func">ord</span>(<span class="code-string">"q"</span>):
+                <span class="code-keyword">break</span>
+        cv2.<span class="code-func">destroyAllWindows</span>()
+    <span class="code-keyword">else</span>:
+        <span class="code-comment"># Bild oder Video: Ergebnisse speichern</span>
+        results = model.<span class="code-func">predict</span>(source, conf=conf, save=save)
+        <span class="code-func">print</span>(<span class="code-string">f"Gespeichert in: {results[0].save_dir}"</span>)
+
+<span class="code-keyword">if</span> __name__ == <span class="code-string">"__main__"</span>:
+    parser = argparse.<span class="code-func">ArgumentParser</span>()
+    parser.<span class="code-func">add_argument</span>(<span class="code-string">"--input"</span>, required=<span class="code-keyword">True</span>)
+    parser.<span class="code-func">add_argument</span>(<span class="code-string">"--conf"</span>, type=float, default=<span class="code-string">0.30</span>)
+    args = parser.<span class="code-func">parse_args</span>()
+    <span class="code-func">run</span>(args.input, args.conf)</pre>
+</div>
+
+<div class="callout tip fade-up">
+  <span class="ci">🖼️</span>
+  <div class="ct">
+    <strong>Ergebnisbild</strong>
+    Nach Ausführung speichert Ultralytics das annotierte Bild automatisch in
+    <code style="font-family:monospace;font-size:12px;">runs/detect/predict/</code>.
+    Für Videos wird eine annotierte <code style="font-family:monospace;font-size:12px;">.mp4</code>-Datei erzeugt –
+    Bounding Boxes, Klassenlabels und Konfidenzwerte werden direkt eingebettet.
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════════════
      FOOTER
 ══════════════════════════════════════════════════════════════════ -->
 <div class="page-footer">
   <div class="pf-info">
-    <strong>Echtzeit-Objekterkennung in Videostreams</strong><br>
+    <strong>Demo-Bereich</strong> · Echtzeit-Objekterkennung in Videostreams<br>
     Jasmin Kohlpaintner · Henrik Berg · Markus Luber
-  </div>
-  <div class="pf-info">
-    YOLOv8n · ONNX Runtime Web · Visual Computing
   </div>
 </div>
 

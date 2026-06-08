@@ -3,7 +3,7 @@
 
 importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js');
 
-const CONF_THRESH = 0.30;
+const CONF_THRESH = 0.40;
 const IOU_THRESH  = 0.45;
 const ORT_CDN     = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
 
