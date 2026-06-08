@@ -170,29 +170,16 @@ ul.task-list li input[type="checkbox"] {
   <div class="section-label">Interaktiv</div>
   <div class="section-title">Kurze Live-Demo</div>
   <p class="section-body">
-    Videodatei hochladen – YOLOv8n erkennt Objekte in jedem Frame in Echtzeit,
+    YOLOv8n erkennt Objekte im Beispielvideo in Echtzeit –
     vollständig im Browser ohne Server.
   </p>
 </div>
 
 <div class="demo-wrap fade-up fade-up-2">
-  <div id="drop">
-    <span class="drop-icon">🎬</span>
-    Videodatei hier ablegen oder klicken zum Auswählen
-    <input type="file" id="fi" accept="video/*" style="display:none">
-    <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
-    <span class="drop-example">oder <button id="example" type="button">Beispielvideo laden</button></span>
-  </div>
-  <div id="bar">
-    <span id="st">Modell wird geladen …</span>
-    <button id="reload" style="display:none">↩ Neue Datei</button>
-    <label>Konfidenz ≥</label>
-    <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.40">
-    <span class="val" id="confv">0.40</span>
-  </div>
-  <div id="wrap">
-    <video id="vid" loop="" muted="" playsinline=""></video>
-    <canvas id="cv"></canvas>
+  <div id="preview-status">Modell wird geladen …</div>
+  <div id="preview-wrap">
+    <video id="preview-vid" loop="" muted="" playsinline=""></video>
+    <canvas id="preview-cv"></canvas>
   </div>
 </div>
 
@@ -440,6 +427,27 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   <div class="section-title">Demo-Bereich</div>
 </div>
 
+<!-- Upload-Demo -->
+<div class="demo-wrap fade-up" style="margin-bottom:2rem;">
+  <div id="drop">
+    <span class="drop-icon">📁</span>
+    Eigenes Video hochladen oder hier ablegen
+    <input type="file" id="fi" accept="video/*" style="display:none">
+    <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
+  </div>
+  <div id="bar">
+    <span id="st"></span>
+    <button id="reload" style="display:none">↩ Neue Datei</button>
+    <label>Konfidenz ≥</label>
+    <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.40">
+    <span class="val" id="confv">0.40</span>
+  </div>
+  <div id="wrap">
+    <video id="vid" loop="" muted="" playsinline=""></video>
+    <canvas id="cv"></canvas>
+  </div>
+</div>
+
 <!-- Vergleich -->
 <div class="fade-up" style="margin-bottom:.75rem;">
   <div class="section-label" style="margin-top:1rem;">Vergleich: YOLO vs. TensorFlow Object Detection API</div>
@@ -552,6 +560,14 @@ function hsl(name) {
   return `hsl(${h % 360},65%,48%)`;
 }
 
+// Preview (top) elements
+const previewWrap   = document.getElementById('preview-wrap');
+const previewVid    = document.getElementById('preview-vid');
+const previewCv     = document.getElementById('preview-cv');
+const previewCtx    = previewCv.getContext('2d');
+const previewStatus = document.getElementById('preview-status');
+
+// Upload (bottom) elements
 const drop   = document.getElementById('drop');
 const fi     = document.getElementById('fi');
 const wrap   = document.getElementById('wrap');
@@ -565,22 +581,33 @@ const reload = document.getElementById('reload');
 
 confEl.addEventListener('input', () => confv.textContent = parseFloat(confEl.value).toFixed(2));
 
+// Shared worker & state
 const worker = new Worker('worker.js');
 let ready = false, sz = 640, provider = 'WASM';
 let lastDets = [], running = false, resolveResult = null;
+let activeVid = null, activeCtx = null, activeCanvas = null, activeStatus = null;
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') {
     ready = true; sz = data.inputSize; provider = data.provider;
-    stEl.textContent = `✓ Modell geladen · ${provider}`;
+    // Auto-start preview video
+    previewVid.src = 'videos/queue-management.mp4';
+    previewVid.onloadeddata = () => {
+      previewWrap.style.display = 'block';
+      previewVid.play();
+      activeVid = previewVid; activeCtx = previewCtx;
+      activeCanvas = previewCv; activeStatus = previewStatus;
+      if (!running) { running = true; inferLoop(); drawLoop(); }
+    };
   } else if (data.type === 'result') {
     lastDets = data.detections;
     if (resolveResult) { resolveResult(); resolveResult = null; }
   } else if (data.type === 'error') {
-    stEl.textContent = `⚠ Fehler: ${data.message}`;
+    previewStatus.textContent = `⚠ Fehler: ${data.message}`;
   }
 };
 
+// Upload demo events
 drop.addEventListener('click', () => fi.click());
 drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -591,32 +618,28 @@ drop.addEventListener('drop', e => {
 fi.addEventListener('change', () => { if (fi.files[0]) load(fi.files[0]); });
 
 reload.addEventListener('click', () => {
-  running = false; lastDets = [];
   vid.pause(); vid.src = '';
   wrap.style.display = 'none';
   drop.style.display = '';
   reload.style.display = 'none';
-  stEl.textContent = `✓ Modell geladen · ${provider}`;
+  stEl.textContent = '';
+  // Switch back to preview
+  activeVid = previewVid; activeCtx = previewCtx;
+  activeCanvas = previewCv; activeStatus = previewStatus;
+  previewVid.play();
 });
 
-function startVideo(src) {
-  vid.src = src;
+function load(file) {
+  vid.src = URL.createObjectURL(file);
   vid.onloadeddata = () => {
+    previewVid.pause();
+    activeVid = vid; activeCtx = ctx;
+    activeCanvas = cv; activeStatus = stEl;
     drop.style.display = 'none';
     reload.style.display = '';
     wrap.style.display = 'block';
     vid.play();
-    if (!running) { running = true; inferLoop(); drawLoop(); }
   };
-}
-
-document.getElementById('example').addEventListener('click', (e) => {
-  e.stopPropagation();
-  startVideo('videos/queue-management.mp4');
-});
-
-function load(file) {
-  startVideo(URL.createObjectURL(file));
 }
 
 const off  = document.createElement('canvas');
@@ -642,13 +665,13 @@ function prep(src, W, H) {
 
 async function inferLoop() {
   while (running) {
-    if (!ready || vid.readyState < 2 || vid.paused) {
+    if (!ready || !activeVid || activeVid.readyState < 2 || activeVid.paused) {
       await new Promise(r => setTimeout(r, 50)); continue;
     }
-    const W = vid.videoWidth, H = vid.videoHeight;
+    const W = activeVid.videoWidth, H = activeVid.videoHeight;
     if (!W) { await new Promise(r => setTimeout(r, 16)); continue; }
     const t0 = performance.now();
-    const { f32, scale, padX, padY } = prep(vid, W, H);
+    const { f32, scale, padX, padY } = prep(activeVid, W, H);
     await new Promise(r => {
       resolveResult = r;
       worker.postMessage({
@@ -657,29 +680,35 @@ async function inferLoop() {
         confThresh: parseFloat(confEl.value),
       }, [f32.buffer]);
     });
-    const fps = (1000 / (performance.now() - t0)).toFixed(1);
-    stEl.textContent = `${provider} · ${fps} FPS · ${lastDets.length} Objekt(e) erkannt`;
+    if (activeStatus) {
+      const fps = (1000 / (performance.now() - t0)).toFixed(1);
+      activeStatus.textContent = `${provider} · ${fps} FPS · ${lastDets.length} Objekt(e)`;
+    }
   }
 }
 
 function drawLoop() {
   if (!running) return;
-  const W = vid.videoWidth, H = vid.videoHeight;
-  if (W > 0 && H > 0) {
-    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    ctx.clearRect(0, 0, W, H);
-    for (const d of lastDets) {
-      const c = hsl(d.class);
-      const [x, y, w, h] = d.bbox;
-      ctx.strokeStyle = c; ctx.lineWidth = 2.5;
-      ctx.strokeRect(x, y, w, h);
-      const lbl = `${d.class} ${Math.round(d.score * 100)}%`;
-      ctx.font = 'bold 24px DM Sans, system-ui, sans-serif';
-      const tw = ctx.measureText(lbl).width;
-      ctx.fillStyle = c;
-      ctx.fillRect(x, y - 30, tw + 12, 30);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(lbl, x + 6, y - 7);
+  if (activeVid && activeCanvas) {
+    const W = activeVid.videoWidth, H = activeVid.videoHeight;
+    if (W > 0 && H > 0) {
+      if (activeCanvas.width !== W || activeCanvas.height !== H) {
+        activeCanvas.width = W; activeCanvas.height = H;
+      }
+      activeCtx.clearRect(0, 0, W, H);
+      for (const d of lastDets) {
+        const c = hsl(d.class);
+        const [x, y, w, h] = d.bbox;
+        activeCtx.strokeStyle = c; activeCtx.lineWidth = 2.5;
+        activeCtx.strokeRect(x, y, w, h);
+        const lbl = `${d.class} ${Math.round(d.score * 100)}%`;
+        activeCtx.font = 'bold 24px DM Sans, system-ui, sans-serif';
+        const tw = activeCtx.measureText(lbl).width;
+        activeCtx.fillStyle = c;
+        activeCtx.fillRect(x, y - 30, tw + 12, 30);
+        activeCtx.fillStyle = '#fff';
+        activeCtx.fillText(lbl, x + 6, y - 7);
+      }
     }
   }
   requestAnimationFrame(drawLoop);
