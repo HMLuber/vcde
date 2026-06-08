@@ -181,6 +181,7 @@ ul.task-list li input[type="checkbox"] {
     Videodatei hier ablegen oder klicken zum Auswählen
     <input type="file" id="fi" accept="video/*" style="display:none">
     <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
+    <span class="drop-example">oder <button id="example" type="button">Beispielvideo laden</button></span>
   </div>
   <div id="bar">
     <span id="st">Modell wird geladen …</span>
@@ -598,8 +599,8 @@ reload.addEventListener('click', () => {
   stEl.textContent = `✓ Modell geladen · ${provider}`;
 });
 
-function load(file) {
-  vid.src = URL.createObjectURL(file);
+function startVideo(src) {
+  vid.src = src;
   vid.onloadeddata = () => {
     drop.style.display = 'none';
     reload.style.display = '';
@@ -607,6 +608,15 @@ function load(file) {
     vid.play();
     if (!running) { running = true; inferLoop(); drawLoop(); }
   };
+}
+
+document.getElementById('example').addEventListener('click', (e) => {
+  e.stopPropagation();
+  startVideo('videos/queue-management.mp4');
+});
+
+function load(file) {
+  startVideo(URL.createObjectURL(file));
 }
 
 const off  = document.createElement('canvas');
