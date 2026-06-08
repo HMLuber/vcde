@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Startseite – Echtzeit-Objekterkennung</title>
+<title>Echtzeit-Objekterkennung in Videostreams</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -27,7 +27,6 @@ ul.task-list li input[type="checkbox"] {
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
 <script src="site_libs/quarto-search/fuse.min.js"></script>
@@ -42,13 +41,13 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-bb8e4260b46bb841b0ca94319973de0d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-5a7edf553ce6f37e40c66d907d0f4061.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
-  "location": "navbar",
+  "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
-  "panel-placement": "end",
-  "type": "overlay",
+  "panel-placement": "start",
+  "type": "textbox",
   "limit": 50,
   "keyboard-shortcut": [
     "f",
@@ -75,52 +74,11 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
-      <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Echtzeit-Objekterkennung</span>
-    </a>
-  </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-  <span class="navbar-toggler-icon"></span>
-</button>
-          <div class="collapse navbar-collapse" id="navbarCollapse">
-            <ul class="navbar-nav navbar-nav-scroll me-auto">
-  <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
-<span class="menu-text">Startseite</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./grundlagen.html"> 
-<span class="menu-text">Grundlagen</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./motivation.html"> 
-<span class="menu-text">Motivation</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./technik.html"> 
-<span class="menu-text">Technik</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./demo.html"> 
-<span class="menu-text">Demo-Bereich</span></a>
-  </li>  
-</ul>
-          </div> <!-- /navcollapse -->
-            <div class="quarto-navbar-tools">
-</div>
-      </div> <!-- /container-fluid -->
-    </nav>
-</header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     
@@ -129,7 +87,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Startseite</h1>
+<h1 class="title">Echtzeit-Objekterkennung in Videostreams</h1>
 </div>
 
 
@@ -148,9 +106,7 @@ ul.task-list li input[type="checkbox"] {
 
 <div class="page">
 
-<!-- ══════════════════════════════════════════════════════════════
-     HERO
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ HERO ═══════════════════════════════════════════════════════ -->
 <div class="hero fade-up">
   <div class="hero-eyebrow">Visual Computing · Präsentation</div>
   <h1>Echtzeit-Objekterkennung<br>in Videostreams</h1>
@@ -174,24 +130,15 @@ ul.task-list li input[type="checkbox"] {
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     WAS IST ECHTZEIT-OBJEKTERKENNUNG?
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ WAS IST ECHTZEIT-OBJEKTERKENNUNG? ══════════════════════════ -->
 <div class="fade-up fade-up-1">
   <div class="section-label">Kurz erklärt</div>
   <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
   <p class="section-body">
-    Objekterkennung ist die Fähigkeit eines Computersystems, in einem Bild oder Video
-    <strong>gleichzeitig zu lokalisieren</strong> (wo befindet sich ein Objekt?) und
-    <strong>zu klassifizieren</strong> (was ist es?). Das Ergebnis sind sogenannte
-    <em>Bounding Boxes</em> – Rechtecke, die jedes erkannte Objekt umrahmen – zusammen mit
-    einem Klassenlabel und einem Konfidenzwert.
-  </p>
-  <p class="section-body">
-    Der Zusatz <em>Echtzeit</em> bedeutet, dass dieser Prozess schnell genug sein muss,
-    um jeden Frame eines Videostreams zu verarbeiten – typischerweise 25–30 Frames pro Sekunde.
-    Das stellt hohe Anforderungen an Algorithmen und Hardware und war lange Zeit
-    eine der größten Herausforderungen im Bereich Computer Vision.
+    Objekterkennung löst gleichzeitig zwei Aufgaben: <strong>Lokalisierung</strong>
+    (wo ist das Objekt? → Bounding Box) und <strong>Klassifikation</strong>
+    (was ist es? → Klasse + Konfidenz). <em>Echtzeit</em> bedeutet mindestens
+    25–30 Frames pro Sekunde – jeder Frame muss in unter 33 ms verarbeitet sein.
   </p>
 </div>
 
@@ -199,52 +146,32 @@ ul.task-list li input[type="checkbox"] {
   <div class="card">
     <div class="card-icon red">📦</div>
     <h3 class="anchored">Lokalisierung</h3>
-    <p>Das System bestimmt die genaue Position jedes Objekts im Bild – definiert durch
-    Koordinaten (x, y) sowie Breite und Höhe der Bounding Box.</p>
+    <p>Position und Größe jedes Objekts als Bounding Box (x, y, Breite, Höhe).</p>
   </div>
   <div class="card">
     <div class="card-icon blue">🏷️</div>
     <h3 class="anchored">Klassifikation</h3>
-    <p>Gleichzeitig wird jedem erkannten Objekt ein Klassenlabel zugeordnet –
-    z.&nbsp;B. „Person", „Auto" oder „Hund" – mit einem zugehörigen Konfidenzwert.</p>
+    <p>Gleichzeitige Zuweisung eines Klassen-Labels mit Konfidenzwert.</p>
   </div>
   <div class="card">
     <div class="card-icon green">⚡</div>
     <h3 class="anchored">Echtzeitfähigkeit</h3>
-    <p>Moderne One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware
-    und ermöglichen damit den Einsatz in autonomen Fahrzeugen, Überwachungssystemen und mehr.</p>
+    <p>One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware.</p>
   </div>
   <div class="card">
     <div class="card-icon amber">🌐</div>
     <h3 class="anchored">Im Browser</h3>
-    <p>Diese Demo nutzt ONNX Runtime WebAssembly und läuft vollständig client-seitig –
-    kein Server, kein Upload, Privatsphäre bleibt gewahrt.</p>
+    <p>Diese Demo läuft vollständig client-seitig via ONNX Runtime WebAssembly.</p>
   </div>
 </div>
 
-<div class="callout info fade-up fade-up-2">
-  <span class="ci">💡</span>
-  <div class="ct">
-    <strong>So navigierst du durch die Präsentation</strong>
-    Über die Navigation oben erreichst du die einzelnen Abschnitte:
-    <strong>Grundlagen</strong> erklärt Geschichte und Begriffe,
-    <strong>Motivation</strong> zeigt warum Echtzeit wichtig ist,
-    <strong>Technik</strong> erklärt wie YOLO funktioniert,
-    und im <strong>Demo-Bereich</strong> findest du die vollständige interaktive Demo mit Vergleichstabelle.
-  </div>
-</div>
-
-<hr class="divider">
-
-<!-- ══════════════════════════════════════════════════════════════
-     LIVE-DEMO
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ LIVE-DEMO ═══════════════════════════════════════════════════ -->
 <div class="fade-up fade-up-2">
   <div class="section-label">Interaktiv</div>
   <div class="section-title">Kurze Live-Demo</div>
   <p class="section-body">
-    Lade eine Videodatei hoch und beobachte, wie YOLOv8 Objekte in Echtzeit erkennt.
-    Das Modell läuft vollständig im Browser – keine Serververbindung nötig.
+    Videodatei hochladen – YOLOv8n erkennt Objekte in jedem Frame in Echtzeit,
+    vollständig im Browser ohne Server.
   </p>
 </div>
 
@@ -255,7 +182,6 @@ ul.task-list li input[type="checkbox"] {
     <input type="file" id="fi" accept="video/*" style="display:none">
     <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
   </div>
-
   <div id="bar">
     <span id="st">Modell wird geladen …</span>
     <button id="reload" style="display:none">↩ Neue Datei</button>
@@ -263,24 +189,341 @@ ul.task-list li input[type="checkbox"] {
     <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.30">
     <span class="val" id="confv">0.30</span>
   </div>
-
   <div id="wrap">
     <video id="vid" loop="" muted="" playsinline=""></video>
     <canvas id="cv"></canvas>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     FOOTER
-══════════════════════════════════════════════════════════════════ -->
+<hr class="divider">
+
+<!-- ══ GRUNDLAGEN ═════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Kapitel 1</div>
+  <div class="section-title">Grundlagen</div>
+</div>
+
+<!-- Geschichte -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1.5rem;">Geschichte der Objekterkennung</div>
+</div>
+
+<div class="timeline fade-up">
+  <div class="tl-item">
+    <div class="tl-dot">2001</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Klassisch</div>
+      <h4 class="anchored">Viola-Jones – Erster Echtzeit-Detektor</h4>
+      <p>Haar-Merkmale + Cascade Classifier ermöglichen erstmals Echtzeit-Gesichtserkennung auf Consumer-Hardware.</p>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-dot">2012</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Durchbruch</div>
+      <h4 class="anchored">AlexNet – Deep Learning Revolution</h4>
+      <p>Tiefes CNN gewinnt ImageNet und halbiert die Fehlerrate. GPU-Training und Deep Learning werden zum Standard.</p>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-dot">2013</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">CNN</div>
+      <h4 class="anchored">R-CNN – Regionenbasierte Erkennung</h4>
+      <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
+    </div>
+  </div>
+  <div class="tl-item highlight">
+    <div class="tl-dot">2015</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Meilenstein</div>
+      <h4 class="anchored">YOLO v1 – You Only Look Once</h4>
+      <p>Ein einziger Forward-Pass liefert alle Bounding Boxes direkt. 45 FPS auf einer GPU – Echtzeit-Objekterkennung ist Realität.</p>
+    </div>
+  </div>
+  <div class="tl-item highlight">
+    <div class="tl-dot">2023</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Aktuell</div>
+      <h4 class="anchored">YOLOv8 – Stand der Technik</h4>
+      <p>Ankerfreie Architektur, 37,3 mAP auf COCO, einheitliche API für Detection/Segmentation. Nano-Variante: 3,2 ms/Bild auf A100.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Begriffe -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:.5rem;">Begriffserklärungen</div>
+</div>
+
+<div class="def-grid fade-up">
+  <div class="def-card">
+    <div class="def-term">Begriff 01</div>
+    <div class="def-name">Bounding Box</div>
+    <p>Achsenparalleles Rechteck um ein erkanntes Objekt – definiert durch Mittelpunkt (cx, cy) sowie Breite und Höhe.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 02</div>
+    <div class="def-name">Confidence Score</div>
+    <p>Zahl [0–1]: Wie sicher ist das Modell, dass die Box ein Objekt enthält und die Klasse korrekt ist?</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 03</div>
+    <div class="def-name">IoU – Intersection over Union</div>
+    <p>Schnittfläche / Vereinigungsfläche zweier Boxen. 0 = keine Überlappung, 1 = identisch. COCO-Schwellwert: ≥ 0,5.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 04</div>
+    <div class="def-name">NMS – Non-Maximum Suppression</div>
+    <p>Bereinigt mehrfach erkannte Objekte: Beste Box behalten, alle Nachbarboxen mit IoU &gt; 0,45 unterdrücken.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 05</div>
+    <div class="def-name">Anchor Box</div>
+    <p>Vordefinierte Box-Formen als Vorhersage-Referenz. YOLOv8 ist ankerfrei und sagt den Mittelpunkt direkt vorher.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 06</div>
+    <div class="def-name">mAP – mean Average Precision</div>
+    <p>Hauptmetrik für Objektdetektoren: Durchschnitt der Average Precision über alle Klassen bei variierenden IoU-Schwellwerten.</p>
+  </div>
+</div>
+
+<!-- Anwendungsfälle -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:.5rem;">Typische Anwendungsfälle</div>
+</div>
+
+<div class="usecase-grid fade-up">
+  <div class="usecase-card">
+    <span class="usecase-icon">🚗</span>
+    <h3 class="anchored">Autonomes Fahren</h3>
+    <ul>
+      <li>Fußgänger &amp; Radfahrer</li>
+      <li>Verkehrsschilder &amp; Ampeln</li>
+      <li>Fahrzeuge &amp; Hindernisse</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
+    <span class="usecase-icon">📹</span>
+    <h3 class="anchored">Sicherheit &amp; Überwachung</h3>
+    <ul>
+      <li>Personenzählung &amp; Tracking</li>
+      <li>Eindringling-Erkennung</li>
+      <li>Verlassengegenstand-Alarm</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
+    <span class="usecase-icon">⚽</span>
+    <h3 class="anchored">Sport &amp; Medizin</h3>
+    <ul>
+      <li>Spieler- &amp; Balltracking</li>
+      <li>Taktische Bewegungsanalyse</li>
+      <li>Chirurgische Instrumente</li>
+    </ul>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══ MOTIVATION ═════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Kapitel 2</div>
+  <div class="section-title">Motivation</div>
+  <p class="section-body">
+    Warum ist Geschwindigkeit so kritisch? Ein autonomes Fahrzeug, das einen Fußgänger
+    200 ms zu spät erkennt, hat bei 50 km/h bereits 2,8 m zurückgelegt – zu viel für
+    eine sichere Reaktion. One-Stage-Detektoren wie YOLO lösen den Zielkonflikt zwischen
+    Genauigkeit und Geschwindigkeit.
+  </p>
+</div>
+
+<div class="two-col fade-up">
+  <div class="card">
+    <h3 class="anchored">🐢 Two-Stage langsam</h3>
+    <p>Faster R-CNN: hohe Genauigkeit (~42 mAP), aber 100–500 ms/Frame –
+    zu langsam für Live-Video.</p>
+  </div>
+  <div class="card">
+    <h3 class="anchored">⚡ One-Stage schnell</h3>
+    <p>YOLOv8n: 37 mAP bei &lt;5 ms/Frame auf GPU, im Browser 10–30 FPS –
+    Echtzeit auch ohne Server.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══ TECHNIK ════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Kapitel 3</div>
+  <div class="section-title">Technik</div>
+</div>
+
+<!-- YOLO Pipeline -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Wie YOLO funktioniert (Input → Netzwerk → Bounding Boxes)</div>
+  <p class="section-body">
+    Ein einziger Forward-Pass durch fünf Stufen liefert alle Detektionen –
+    kein zweiter Pass, keine separaten Regionenvorschläge.
+  </p>
+</div>
+
+<div class="pipeline fade-up">
+  <div class="pipe-step">
+    <div class="step-num">01</div>
+    <h4 class="anchored">Input</h4>
+    <p>Letterboxing<br>640×640 px<br>RGB-Norm.</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">02</div>
+    <h4 class="anchored">Backbone</h4>
+    <p>CSPDarknet<br>Merkmals-<br>extraktion</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">03</div>
+    <h4 class="anchored">Neck</h4>
+    <p>FPN + PAN<br>Multi-Scale<br>Features</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step active">
+    <div class="step-num">04</div>
+    <h4 class="anchored">Head ★</h4>
+    <p>BBox + Score<br>80 Klassen-<br>vorhersage</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">05</div>
+    <h4 class="anchored">NMS</h4>
+    <p>Bereinigung<br>überlappender<br>Boxen</p>
+  </div>
+</div>
+
+<!-- OpenCV -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Rolle von OpenCV für Video-Capture und Vorverarbeitung</div>
+  <p class="section-body">
+    OpenCV übernimmt in klassischen Pipelines Video-Capture, Farbkonvertierung (BGR→RGB),
+    Resize/Letterboxing und die Visualisierung der Bounding Boxes.
+    In dieser Browser-Demo erfüllt JavaScript + Canvas dieselbe Aufgabe.
+  </p>
+</div>
+
+<div class="code-block fade-up">
+  <div class="code-header">
+    <span class="dot" style="background:#ff5f57;"></span>
+    <span class="dot" style="background:#febc2e;margin-left:6px;"></span>
+    <span class="dot" style="background:#28c840;margin-left:6px;"></span>
+    <span style="margin-left:12px;">OpenCV + YOLO (Python)</span>
+  </div>
+  <pre><span class="code-keyword">import</span> cv2
+<span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
+
+model = <span class="code-func">YOLO</span>(<span class="code-string">'yolov8n.pt'</span>)
+cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string">'video.mp4'</span>)  <span class="code-comment"># oder 0 für Webcam</span>
+
+<span class="code-keyword">while</span> cap.<span class="code-func">isOpened</span>():
+    ret, frame = cap.<span class="code-func">read</span>()
+    <span class="code-keyword">if not</span> ret: <span class="code-keyword">break</span>
+    results = model.<span class="code-func">predict</span>(frame, conf=<span class="code-string">0.30</span>)
+    cv2.<span class="code-func">imshow</span>(<span class="code-string">'YOLO'</span>, results[<span class="code-string">0</span>].<span class="code-func">plot</span>())
+    <span class="code-keyword">if</span> cv2.<span class="code-func">waitKey</span>(<span class="code-string">1</span>) == <span class="code-func">ord</span>(<span class="code-string">'q'</span>): <span class="code-keyword">break</span></pre>
+</div>
+
+<hr class="divider">
+
+<!-- ══ DEMO-BEREICH ════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Kapitel 4</div>
+  <div class="section-title">Demo-Bereich</div>
+</div>
+
+<!-- Vergleich -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Vergleich: YOLO vs. TensorFlow Object Detection API</div>
+</div>
+
+
+<table class="cmp-table fade-up caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Merkmal</th>
+<th data-quarto-table-cell-role="th">YOLOv8n (diese Demo)</th>
+<th data-quarto-table-cell-role="th">TF Object Detection API</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Architektur</strong></td>
+<td>One-Stage, ankerfrei</td>
+<td>Two-Stage (Faster R-CNN) oder One-Stage (SSD)</td>
+</tr>
+<tr class="even">
+<td><strong>Geschwindigkeit</strong></td>
+<td><span class="badge badge-green">~3–30 ms/Frame</span></td>
+<td><span class="badge badge-amber">~50–500 ms/Frame</span></td>
+</tr>
+<tr class="odd">
+<td><strong>mAP (COCO)</strong></td>
+<td>37,3 @ [0.5:0.95]</td>
+<td>28–45 (je nach Modell)</td>
+</tr>
+<tr class="even">
+<td><strong>Modellgröße</strong></td>
+<td><span class="badge badge-green">~6 MB (nano)</span></td>
+<td><span class="badge badge-amber">~25–200 MB</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Browser-fähig</strong></td>
+<td><span class="badge badge-green">Ja (ONNX Runtime Web)</span></td>
+<td><span class="badge badge-amber">Begrenzt (TF.js)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Nutzungsaufwand</strong></td>
+<td><span class="badge badge-green">Sehr einfach (1 Zeile)</span></td>
+<td><span class="badge badge-amber">Komplex (Config-Dateien)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Beste Eignung</strong></td>
+<td>Echtzeit, Edge, Rapid Prototyping</td>
+<td>Forschung, TF-Ökosystem, Produktion</td>
+</tr>
+</tbody>
+</table>
+
+
+<!-- Lokale Demo -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Lokale Demo mit OpenCV + YOLO</div>
+  <p class="section-body">
+    <code style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:13px;">scripts/yolo_demo.py</code>
+    führt YOLOv8-Inferenz lokal aus und speichert ein annotiertes Ergebnisbild in
+    <code style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:13px;">runs/detect/</code>.
+  </p>
+</div>
+
+<div class="code-block fade-up">
+  <div class="code-header">
+    <span class="dot" style="background:#ff5f57;"></span>
+    <span class="dot" style="background:#febc2e;margin-left:6px;"></span>
+    <span class="dot" style="background:#28c840;margin-left:6px;"></span>
+    <span style="margin-left:12px;">scripts/yolo_demo.py</span>
+  </div>
+  <pre><span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
+
+model   = <span class="code-func">YOLO</span>(<span class="code-string">"yolov8n.pt"</span>)
+results = model.<span class="code-func">predict</span>(<span class="code-string">"input.mp4"</span>, conf=<span class="code-string">0.30</span>, save=<span class="code-keyword">True</span>)
+<span class="code-func">print</span>(<span class="code-string">f"Ergebnisse gespeichert in: {results[0].save_dir}"</span>)</pre>
+</div>
+
+<!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
 <div class="page-footer">
   <div class="pf-info">
     <strong>Echtzeit-Objekterkennung in Videostreams</strong><br>
     Jasmin Kohlpaintner · Henrik Berg · Markus Luber
   </div>
-  <div class="pf-info">
-    YOLOv8n · ONNX Runtime Web · Visual Computing
-  </div>
+  <div class="pf-info">YOLOv8n · ONNX Runtime Web · Visual Computing</div>
 </div>
 
 </div>
@@ -323,14 +566,11 @@ confEl.addEventListener('input', () => confv.textContent = parseFloat(confEl.val
 
 const worker = new Worker('worker.js');
 let ready = false, sz = 640, provider = 'WASM';
-let lastDets = [], running = false;
-let resolveResult = null;
+let lastDets = [], running = false, resolveResult = null;
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') {
-    ready    = true;
-    sz       = data.inputSize;
-    provider = data.provider;
+    ready = true; sz = data.inputSize; provider = data.provider;
     stEl.textContent = `✓ Modell geladen · ${provider}`;
   } else if (data.type === 'result') {
     lastDets = data.detections;
@@ -363,7 +603,7 @@ function load(file) {
   vid.onloadeddata = () => {
     drop.style.display = 'none';
     reload.style.display = '';
-    wrap.style.display  = 'block';
+    wrap.style.display = 'block';
     vid.play();
     if (!running) { running = true; inferLoop(); drawLoop(); }
   };
