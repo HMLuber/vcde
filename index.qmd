@@ -76,7 +76,6 @@ engine: markdown
 </div>
 
 <div class="demo-wrap fade-up fade-up-2">
-  <div id="preview-status">Modell wird geladen …</div>
   <div id="preview-wrap">
     <video id="preview-vid" loop muted playsinline></video>
     <canvas id="preview-cv"></canvas>
@@ -463,7 +462,7 @@ const previewWrap   = document.getElementById('preview-wrap');
 const previewVid    = document.getElementById('preview-vid');
 const previewCv     = document.getElementById('preview-cv');
 const previewCtx    = previewCv.getContext('2d');
-const previewStatus = document.getElementById('preview-status');
+const previewStatus = null;
 
 // Upload (bottom) elements
 const drop   = document.getElementById('drop');
@@ -492,7 +491,6 @@ worker.onmessage = ({ data }) => {
     previewVid.src = 'videos/queue-management.mp4';
     previewVid.onloadeddata = () => {
       previewWrap.style.display = 'block';
-      previewStatus.textContent = `✓ ${provider}`;
       previewVid.play();
       activeVid = previewVid; activeCtx = previewCtx;
       activeCanvas = previewCv; activeStatus = previewStatus;
@@ -502,7 +500,7 @@ worker.onmessage = ({ data }) => {
     lastDets = data.detections;
     if (resolveResult) { resolveResult(); resolveResult = null; }
   } else if (data.type === 'error') {
-    previewStatus.textContent = `⚠ Fehler: ${data.message}`;
+    console.error('Worker error:', data.message);
   }
 };
 
