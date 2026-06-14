@@ -107,7 +107,7 @@ ul.task-list li input[type="checkbox"] {
 
 <!-- ══ HERO ═══════════════════════════════════════════════════════ -->
 <div class="hero fade-up">
-  <div class="hero-eyebrow">Visual Computing · Präsentation</div>
+  <div class="hero-eyebrow">Visual Computing</div>
   <h1>Echtzeit-Objekterkennung<br>in Videostreams</h1>
   <p class="hero-sub">
     Wie Computer in Echtzeit Objekte in bewegten Bildern erkennen und lokalisieren –
@@ -313,48 +313,28 @@ ul.task-list li input[type="checkbox"] {
   <p class="section-body">
     Warum ist Geschwindigkeit so kritisch? Ein autonomes Fahrzeug, das einen Fußgänger
     200 ms zu spät erkennt, hat bei 50 km/h bereits 2,8 m zurückgelegt – zu viel für
-    eine sichere Reaktion. One-Stage-Detektoren wie YOLO lösen den Zielkonflikt zwischen
-    Genauigkeit und Geschwindigkeit.
+    eine sichere Reaktion. Millisekunden entscheiden hier über Leben und Tod, und das
+    gilt nicht nur im Straßenverkehr: Industrieroboter, die Defekte am Fließband erkennen,
+    medizinische Systeme, die während einer Operation assistieren, oder Sicherheitskameras,
+    die Eindringlinge in Echtzeit melden – all diese Anwendungen verlangen, dass jeder
+    einzelne Frame innerhalb von unter 33 ms vollständig verarbeitet ist.
   </p>
-</div>
-
-<div class="stat-grid fade-up">
-  <div class="stat-card">
-    <div class="stat-number">&lt; 33 ms</div>
-    <div class="stat-label">Max. Latenz für flüssiges Echtzeit-Video (30 FPS)</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number">50 Mrd. $</div>
-    <div class="stat-label">Prognostiziertes Marktvolumen Computer Vision bis 2030</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number">2,8 m</div>
-    <div class="stat-label">Bremsweg-Verlust bei 200 ms Verzögerung und 50 km/h</div>
-  </div>
-</div>
-
-<div class="callout info fade-up">
-  <span class="ci">💡</span>
-  <div class="ct">
-    <strong>Warum jetzt?</strong>
-    Drei Entwicklungen machen Echtzeit-Erkennung heute so relevant wie nie:
-    leistungsfähige Edge-GPUs, optimierte ONNX-Modelle für den Browser und eine
-    explodierende Nachfrage aus Industrie, Medizin und Mobilität.
-    Was vor zehn Jahren ein Rechenzentrum benötigte, läuft heute auf einem Smartphone.
-  </div>
-</div>
-
-<div class="two-col fade-up">
-  <div class="card">
-    <h3>🐢 Two-Stage langsam</h3>
-    <p>Faster R-CNN: hohe Genauigkeit (~42 mAP), aber 100–500 ms/Frame –
-    zu langsam für Live-Video.</p>
-  </div>
-  <div class="card">
-    <h3>⚡ One-Stage schnell</h3>
-    <p>YOLOv8n: 37 mAP bei &lt;5 ms/Frame auf GPU, im Browser 10–30 FPS –
-    Echtzeit auch ohne Server.</p>
-  </div>
+  <p class="section-body">
+    Lange Zeit schien das ein unlösbarer Zielkonflikt zu sein: Genaue Modelle wie
+    Faster R-CNN benötigen 100 bis 500 ms pro Frame und sind damit für Live-Video
+    schlicht ungeeignet. Schnellere Ansätze opferten dafür zu viel Erkennungsqualität.
+    YOLO durchbricht diesen Kompromiss, indem es Detection und Klassifikation in einem
+    einzigen Forward-Pass zusammenfasst. YOLOv8n erreicht dabei unter 5 ms pro Frame
+    auf einer GPU – und selbst im Browser, wie in dieser Demo, sind 10 bis 30 FPS
+    ohne jeden Server möglich.
+  </p>
+  <p class="section-body">
+    Der Bedarf wächst rasant: Der globale Markt für Computer Vision wird bis 2030 auf
+    über 50 Milliarden US-Dollar geschätzt. Was vor zehn Jahren noch spezialisierte
+    Rechenzentren erforderte, läuft heute auf Smartphones, Mikrocontrollern und direkt
+    im Browser – und macht Echtzeit-Objekterkennung damit zu einer der praktisch
+    relevantesten Technologien unserer Zeit.
+  </p>
 </div>
 
 <hr class="divider">
