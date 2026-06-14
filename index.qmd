@@ -1,6 +1,7 @@
 ---
 title: "Echtzeit-Objekterkennung in Videostreams"
 engine: markdown
+anchor-sections: false
 ---
 
 ```{=html}
@@ -21,12 +22,6 @@ engine: markdown
       <span class="author-chip">Henrik Berg</span>
       <span class="author-chip">Markus Luber</span>
     </div>
-  </div>
-  <div class="hero-tags">
-    <span class="tag tag-red">YOLO</span>
-    <span class="tag tag-blue">Deep Learning</span>
-    <span class="tag tag-green">OpenCV</span>
-    <span class="tag tag-amber">Echtzeit</span>
   </div>
 </div>
 
@@ -57,11 +52,6 @@ engine: markdown
     <div class="card-icon green">⚡</div>
     <h3>Echtzeitfähigkeit</h3>
     <p>One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware.</p>
-  </div>
-  <div class="card">
-    <div class="card-icon amber">🌐</div>
-    <h3>Im Browser</h3>
-    <p>Diese Demo läuft vollständig client-seitig via ONNX Runtime WebAssembly.</p>
   </div>
 </div>
 
@@ -228,6 +218,32 @@ engine: markdown
     eine sichere Reaktion. One-Stage-Detektoren wie YOLO lösen den Zielkonflikt zwischen
     Genauigkeit und Geschwindigkeit.
   </p>
+</div>
+
+<div class="stat-grid fade-up">
+  <div class="stat-card">
+    <div class="stat-number">&lt; 33 ms</div>
+    <div class="stat-label">Max. Latenz für flüssiges Echtzeit-Video (30 FPS)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">50 Mrd. $</div>
+    <div class="stat-label">Prognostiziertes Marktvolumen Computer Vision bis 2030</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">2,8 m</div>
+    <div class="stat-label">Bremsweg-Verlust bei 200 ms Verzögerung und 50 km/h</div>
+  </div>
+</div>
+
+<div class="callout info fade-up">
+  <span class="ci">💡</span>
+  <div class="ct">
+    <strong>Warum jetzt?</strong>
+    Drei Entwicklungen machen Echtzeit-Erkennung heute so relevant wie nie:
+    leistungsfähige Edge-GPUs, optimierte ONNX-Modelle für den Browser und eine
+    explodierende Nachfrage aus Industrie, Medizin und Mobilität.
+    Was vor zehn Jahren ein Rechenzentrum benötigte, läuft heute auf einem Smartphone.
+  </div>
 </div>
 
 <div class="two-col fade-up">
