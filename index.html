@@ -36,7 +36,6 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
@@ -122,12 +121,6 @@ ul.task-list li input[type="checkbox"] {
       <span class="author-chip">Markus Luber</span>
     </div>
   </div>
-  <div class="hero-tags">
-    <span class="tag tag-red">YOLO</span>
-    <span class="tag tag-blue">Deep Learning</span>
-    <span class="tag tag-green">OpenCV</span>
-    <span class="tag tag-amber">Echtzeit</span>
-  </div>
 </div>
 
 <!-- ══ WAS IST ECHTZEIT-OBJEKTERKENNUNG? ══════════════════════════ -->
@@ -145,23 +138,18 @@ ul.task-list li input[type="checkbox"] {
 <div class="card-grid fade-up fade-up-1">
   <div class="card">
     <div class="card-icon red">📦</div>
-    <h3 class="anchored">Lokalisierung</h3>
+    <h3>Lokalisierung</h3>
     <p>Position und Größe jedes Objekts als Bounding Box (x, y, Breite, Höhe).</p>
   </div>
   <div class="card">
     <div class="card-icon blue">🏷️</div>
-    <h3 class="anchored">Klassifikation</h3>
+    <h3>Klassifikation</h3>
     <p>Gleichzeitige Zuweisung eines Klassen-Labels mit Konfidenzwert.</p>
   </div>
   <div class="card">
     <div class="card-icon green">⚡</div>
-    <h3 class="anchored">Echtzeitfähigkeit</h3>
+    <h3>Echtzeitfähigkeit</h3>
     <p>One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware.</p>
-  </div>
-  <div class="card">
-    <div class="card-icon amber">🌐</div>
-    <h3 class="anchored">Im Browser</h3>
-    <p>Diese Demo läuft vollständig client-seitig via ONNX Runtime WebAssembly.</p>
   </div>
 </div>
 
@@ -196,7 +184,7 @@ ul.task-list li input[type="checkbox"] {
     <div class="tl-dot">2001</div>
     <div class="tl-body">
       <div class="tl-badge blue">Klassisch</div>
-      <h4 class="anchored">Viola-Jones – Erster Echtzeit-Detektor</h4>
+      <h4>Viola-Jones – Erster Echtzeit-Detektor</h4>
       <p>Haar-Merkmale + Cascade Classifier ermöglichen erstmals Echtzeit-Gesichtserkennung auf Consumer-Hardware.</p>
     </div>
   </div>
@@ -204,7 +192,7 @@ ul.task-list li input[type="checkbox"] {
     <div class="tl-dot">2012</div>
     <div class="tl-body">
       <div class="tl-badge red">Durchbruch</div>
-      <h4 class="anchored">AlexNet – Deep Learning Revolution</h4>
+      <h4>AlexNet – Deep Learning Revolution</h4>
       <p>Tiefes CNN gewinnt ImageNet und halbiert die Fehlerrate. GPU-Training und Deep Learning werden zum Standard.</p>
     </div>
   </div>
@@ -212,7 +200,7 @@ ul.task-list li input[type="checkbox"] {
     <div class="tl-dot">2013</div>
     <div class="tl-body">
       <div class="tl-badge blue">CNN</div>
-      <h4 class="anchored">R-CNN – Regionenbasierte Erkennung</h4>
+      <h4>R-CNN – Regionenbasierte Erkennung</h4>
       <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
     </div>
   </div>
@@ -220,7 +208,7 @@ ul.task-list li input[type="checkbox"] {
     <div class="tl-dot">2015</div>
     <div class="tl-body">
       <div class="tl-badge red">Meilenstein</div>
-      <h4 class="anchored">YOLO v1 – You Only Look Once</h4>
+      <h4>YOLO v1 – You Only Look Once</h4>
       <p>Ein einziger Forward-Pass liefert alle Bounding Boxes direkt. 45 FPS auf einer GPU – Echtzeit-Objekterkennung ist Realität.</p>
     </div>
   </div>
@@ -228,7 +216,7 @@ ul.task-list li input[type="checkbox"] {
     <div class="tl-dot">2023</div>
     <div class="tl-body">
       <div class="tl-badge red">Aktuell</div>
-      <h4 class="anchored">YOLOv8 – Stand der Technik</h4>
+      <h4>YOLOv8 – Stand der Technik</h4>
       <p>Ankerfreie Architektur, 37,3 mAP auf COCO, einheitliche API für Detection/Segmentation. Nano-Variante: 3,2 ms/Bild auf A100.</p>
     </div>
   </div>
@@ -280,7 +268,7 @@ ul.task-list li input[type="checkbox"] {
 <div class="usecase-grid fade-up">
   <div class="usecase-card">
     <span class="usecase-icon">🚗</span>
-    <h3 class="anchored">Autonomes Fahren</h3>
+    <h3>Autonomes Fahren</h3>
     <ul>
       <li>Fußgänger &amp; Radfahrer</li>
       <li>Verkehrsschilder &amp; Ampeln</li>
@@ -289,7 +277,7 @@ ul.task-list li input[type="checkbox"] {
   </div>
   <div class="usecase-card">
     <span class="usecase-icon">📹</span>
-    <h3 class="anchored">Sicherheit &amp; Überwachung</h3>
+    <h3>Sicherheit &amp; Überwachung</h3>
     <ul>
       <li>Personenzählung &amp; Tracking</li>
       <li>Eindringling-Erkennung</li>
@@ -298,7 +286,7 @@ ul.task-list li input[type="checkbox"] {
   </div>
   <div class="usecase-card">
     <span class="usecase-icon">⚽</span>
-    <h3 class="anchored">Sport &amp; Medizin</h3>
+    <h3>Sport &amp; Medizin</h3>
     <ul>
       <li>Spieler- &amp; Balltracking</li>
       <li>Taktische Bewegungsanalyse</li>
@@ -307,7 +295,7 @@ ul.task-list li input[type="checkbox"] {
   </div>
   <div class="usecase-card">
     <span class="usecase-icon">🏭</span>
-    <h3 class="anchored">Industrie &amp; Qualitätskontrolle</h3>
+    <h3>Industrie &amp; Qualitätskontrolle</h3>
     <ul>
       <li>Defekterkennung am Fließband</li>
       <li>Montagekontrolle &amp; Vollständigkeit</li>
@@ -330,14 +318,40 @@ ul.task-list li input[type="checkbox"] {
   </p>
 </div>
 
+<div class="stat-grid fade-up">
+  <div class="stat-card">
+    <div class="stat-number">&lt; 33 ms</div>
+    <div class="stat-label">Max. Latenz für flüssiges Echtzeit-Video (30 FPS)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">50 Mrd. $</div>
+    <div class="stat-label">Prognostiziertes Marktvolumen Computer Vision bis 2030</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">2,8 m</div>
+    <div class="stat-label">Bremsweg-Verlust bei 200 ms Verzögerung und 50 km/h</div>
+  </div>
+</div>
+
+<div class="callout info fade-up">
+  <span class="ci">💡</span>
+  <div class="ct">
+    <strong>Warum jetzt?</strong>
+    Drei Entwicklungen machen Echtzeit-Erkennung heute so relevant wie nie:
+    leistungsfähige Edge-GPUs, optimierte ONNX-Modelle für den Browser und eine
+    explodierende Nachfrage aus Industrie, Medizin und Mobilität.
+    Was vor zehn Jahren ein Rechenzentrum benötigte, läuft heute auf einem Smartphone.
+  </div>
+</div>
+
 <div class="two-col fade-up">
   <div class="card">
-    <h3 class="anchored">🐢 Two-Stage langsam</h3>
+    <h3>🐢 Two-Stage langsam</h3>
     <p>Faster R-CNN: hohe Genauigkeit (~42 mAP), aber 100–500 ms/Frame –
     zu langsam für Live-Video.</p>
   </div>
   <div class="card">
-    <h3 class="anchored">⚡ One-Stage schnell</h3>
+    <h3>⚡ One-Stage schnell</h3>
     <p>YOLOv8n: 37 mAP bei &lt;5 ms/Frame auf GPU, im Browser 10–30 FPS –
     Echtzeit auch ohne Server.</p>
   </div>
@@ -363,31 +377,31 @@ ul.task-list li input[type="checkbox"] {
 <div class="pipeline fade-up">
   <div class="pipe-step">
     <div class="step-num">01</div>
-    <h4 class="anchored">Input</h4>
+    <h4>Input</h4>
     <p>Letterboxing<br>640×640 px<br>RGB-Norm.</p>
   </div>
   <div class="pipe-arrow">›</div>
   <div class="pipe-step">
     <div class="step-num">02</div>
-    <h4 class="anchored">Backbone</h4>
+    <h4>Backbone</h4>
     <p>CSPDarknet<br>Merkmals-<br>extraktion</p>
   </div>
   <div class="pipe-arrow">›</div>
   <div class="pipe-step">
     <div class="step-num">03</div>
-    <h4 class="anchored">Neck</h4>
+    <h4>Neck</h4>
     <p>FPN + PAN<br>Multi-Scale<br>Features</p>
   </div>
   <div class="pipe-arrow">›</div>
   <div class="pipe-step active">
     <div class="step-num">04</div>
-    <h4 class="anchored">Head ★</h4>
+    <h4>Head ★</h4>
     <p>BBox + Score<br>80 Klassen-<br>vorhersage</p>
   </div>
   <div class="pipe-arrow">›</div>
   <div class="pipe-step">
     <div class="step-num">05</div>
-    <h4 class="anchored">NMS</h4>
+    <h4>NMS</h4>
     <p>Bereinigung<br>überlappender<br>Boxen</p>
   </div>
 </div>
@@ -726,13 +740,6 @@ function drawLoop() {
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
     const isCodeAnnotation = (el) => {
       for (const clz of el.classList) {
         if (clz.startsWith('code-annotation-')) {                     
