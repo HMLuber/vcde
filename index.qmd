@@ -222,21 +222,23 @@ anchor-sections: false
     einzelne Frame innerhalb von unter 33 ms vollständig verarbeitet ist.
   </p>
   <p class="section-body">
-    Lange Zeit schien das ein unlösbarer Zielkonflikt zu sein: Genaue Modelle wie
-    Faster R-CNN benötigen 100 bis 500 ms pro Frame und sind damit für Live-Video
-    schlicht ungeeignet. Schnellere Ansätze opferten dafür zu viel Erkennungsqualität.
-    YOLO durchbricht diesen Kompromiss, indem es Detection und Klassifikation in einem
-    einzigen Forward-Pass zusammenfasst. YOLOv8n erreicht dabei unter 5 ms pro Frame
-    auf einer GPU – und selbst im Browser, wie in dieser Demo, sind 10 bis 30 FPS
-    ohne jeden Server möglich.
-  </p>
-  <p class="section-body">
     Der Bedarf wächst rasant: Der globale Markt für Computer Vision wird bis 2030 auf
     über 50 Milliarden US-Dollar geschätzt. Was vor zehn Jahren noch spezialisierte
     Rechenzentren erforderte, läuft heute auf Smartphones, Mikrocontrollern und direkt
     im Browser – und macht Echtzeit-Objekterkennung damit zu einer der praktisch
     relevantesten Technologien unserer Zeit.
   </p>
+</div>
+
+<div class="two-col fade-up">
+  <div class="card">
+    <h3>🐢 Two-Stage – langsam</h3>
+    <p>Faster R-CNN erzielt hohe Genauigkeit (~42 mAP), benötigt aber 100–500 ms pro Frame – für Live-Video nicht einsetzbar.</p>
+  </div>
+  <div class="card">
+    <h3>⚡ One-Stage – schnell</h3>
+    <p>YOLOv8n erreicht 37 mAP bei unter 5 ms pro Frame auf der GPU, im Browser 10–30 FPS – Echtzeit ganz ohne Server.</p>
+  </div>
 </div>
 
 <hr class="divider">
@@ -400,29 +402,6 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   </tbody>
 </table>
 
-<!-- Lokale Demo -->
-<div class="fade-up" style="margin-bottom:.75rem;">
-  <div class="section-label" style="margin-top:1rem;">Lokale Demo mit OpenCV + YOLO</div>
-  <p class="section-body">
-    <code style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:13px;">scripts/yolo_demo.py</code>
-    führt YOLOv8-Inferenz lokal aus und speichert ein annotiertes Ergebnisbild in
-    <code style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:13px;">runs/detect/</code>.
-  </p>
-</div>
-
-<div class="code-block fade-up">
-  <div class="code-header">
-    <span class="dot" style="background:#ff5f57;"></span>
-    <span class="dot" style="background:#febc2e;margin-left:6px;"></span>
-    <span class="dot" style="background:#28c840;margin-left:6px;"></span>
-    <span style="margin-left:12px;">scripts/yolo_demo.py</span>
-  </div>
-  <pre><span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
-
-model   = <span class="code-func">YOLO</span>(<span class="code-string">"yolov8n.pt"</span>)
-results = model.<span class="code-func">predict</span>(<span class="code-string">"input.mp4"</span>, conf=<span class="code-string">0.30</span>, save=<span class="code-keyword">True</span>)
-<span class="code-func">print</span>(<span class="code-string">f"Ergebnisse gespeichert in: {results[0].save_dir}"</span>)</pre>
-</div>
 
 <!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
 <div class="page-footer">
