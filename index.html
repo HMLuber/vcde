@@ -103,6 +103,642 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+
+
+
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=DM+Sans:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #f8f6f1;
+  --surface:    #ffffff;
+  --surface-2:  #f2efe8;
+  --border:     #e0dbd0;
+  --text:        #1a1814;
+  --text-2:      #5a5550;
+  --text-3:      #9a948e;
+  --accent:      #c84b31;
+  --accent-2:    #e8734a;
+  --accent-soft: rgba(200,75,49,.1);
+  --blue:        #2563b0;
+  --blue-soft:   rgba(37,99,176,.1);
+  --green:       #1a7a4a;
+  --green-soft:  rgba(26,122,74,.1);
+  --amber:       #b45309;
+  --amber-soft:  rgba(180,83,9,.1);
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow:      0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
+  --radius:      12px;
+  --radius-sm:   8px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+/* ── Page wrapper ─────────────────────────────────────────────── */
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.hero {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: .6rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: .9rem;
+}
+.hero-sub {
+  font-size: 16px;
+  color: var(--text-2);
+  max-width: 620px;
+  line-height: 1.7;
+}
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 1.2rem;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.tag-blue  { background: var(--blue-soft);  color: var(--blue); }
+.tag-red   { background: var(--accent-soft); color: var(--accent); }
+.tag-green { background: var(--green-soft); color: var(--green); }
+.tag-amber { background: var(--amber-soft); color: var(--amber); }
+
+/* ── Section titles ───────────────────────────────────────────── */
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: .4rem;
+}
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.7rem;
+  color: var(--text);
+  margin-bottom: .5rem;
+  line-height: 1.2;
+}
+.section-body {
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.7;
+  max-width: 720px;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Cards ────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+.card-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+.card-icon.red   { background: var(--accent-soft); }
+.card-icon.blue  { background: var(--blue-soft); }
+.card-icon.green { background: var(--green-soft); }
+.card-icon.amber { background: var(--amber-soft); }
+.card h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem;
+  margin-bottom: .4rem;
+  color: var(--text);
+}
+.card p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+
+/* ── Pipeline diagram ─────────────────────────────────────────── */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 2.5rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.pipe-step {
+  flex: 1;
+  min-width: 130px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.1rem 1rem;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.pipe-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.pipe-step:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+.pipe-step.active {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, #fff 0%, #fdf4f2 100%);
+  z-index: 1;
+}
+.pipe-step .step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: .1em;
+  margin-bottom: .3rem;
+}
+.pipe-step h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: .25rem; }
+.pipe-step p  { font-size: 11.5px; color: var(--text-2); }
+.pipe-step.active h4 { color: var(--accent); }
+.pipe-arrow {
+  display: flex; align-items: center;
+  color: var(--border);
+  font-size: 20px;
+  margin: 0 -1px;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+/* ── Two-col layout ───────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── Formula box ──────────────────────────────────────────────── */
+.formula-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.formula-box .label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--accent);
+  margin-bottom: .4rem;
+}
+
+/* ── Comparison table ─────────────────────────────────────────── */
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-bottom: 2rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.cmp-table th {
+  background: var(--surface-2);
+  padding: .75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+.cmp-table td {
+  padding: .7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+}
+.cmp-table tr:last-child td { border-bottom: none; }
+.cmp-table tr:hover td { background: var(--surface-2); }
+.badge {
+  display: inline-block;
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.badge-green { background: var(--green-soft); color: var(--green); }
+.badge-red   { background: var(--accent-soft); color: var(--accent); }
+.badge-amber { background: var(--amber-soft); color: var(--amber); }
+.badge-blue  { background: var(--blue-soft); color: var(--blue); }
+
+/* ── Info callout ─────────────────────────────────────────────── */
+.callout {
+  display: flex; gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+}
+.callout.info  { background: var(--blue-soft); border-color: rgba(37,99,176,.2); }
+.callout.tip   { background: var(--green-soft); border-color: rgba(26,122,74,.2); }
+.callout.note  { background: var(--amber-soft); border-color: rgba(180,83,9,.2); }
+.callout .ci { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.callout .ct { font-size: 13.5px; color: var(--text); line-height: 1.6; }
+.callout .ct strong { display: block; margin-bottom: 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* ── Step list ────────────────────────────────────────────────── */
+.step-list { list-style: none; counter-reset: steps; margin-bottom: 1.5rem; }
+.step-list li {
+  counter-increment: steps;
+  display: flex; gap: 1rem;
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(steps);
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  margin-top: 1px;
+}
+.step-list li .st { font-size: 14px; color: var(--text); }
+.step-list li .st strong { color: var(--text); display: block; font-size: 13px; margin-bottom: 2px; }
+.step-list li .st span  { color: var(--text-2); font-size: 13px; }
+
+/* ── Divider ──────────────────────────────────────────────────── */
+.divider {
+  margin: 3rem 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Demo section ─────────────────────────────────────────────── */
+.demo-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2.5rem;
+}
+#drop {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-3);
+  font-size: 14px;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+#drop:hover, #drop.over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+#drop .drop-icon { font-size: 36px; margin-bottom: .75rem; display: block; }
+#drop .drop-hint {
+  display: block; margin-top: .4rem;
+  font-size: 12px; color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#bar {
+  display: flex; align-items: center; gap: 12px;
+  margin: 1rem 0 .5rem;
+  flex-wrap: wrap;
+}
+#st {
+  font-size: 12px; color: var(--text-2);
+  font-family: 'JetBrains Mono', monospace;
+  flex: 1;
+  background: var(--surface-2);
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--border);
+}
+#bar label { font-size: 13px; color: var(--text-2); white-space: nowrap; font-weight: 500; }
+#bar input[type=range] { accent-color: var(--accent); width: 130px; }
+#bar span.val {
+  font-size: 13px; font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 3ch;
+}
+#reload {
+  font-size: 12px; color: var(--text-3); cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+#reload:hover { color: var(--accent); border-color: var(--accent); }
+
+#wrap {
+  position: relative; display: none;
+  border-radius: var(--radius-sm); overflow: hidden;
+  background: #000; margin-top: .5rem;
+}
+#wrap video  { width: 100%; display: block; }
+#wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* ── Metric row ───────────────────────────────────────────────── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 600px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.metric .m-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: .25rem;
+}
+.metric .m-label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-3);
+}
+
+/* ── Seg type cards ───────────────────────────────────────────── */
+.seg-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 640px) { .seg-types { grid-template-columns: 1fr; } }
+.seg-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.seg-card .seg-vis {
+  height: 80px; border-radius: 6px;
+  margin-bottom: .9rem;
+  overflow: hidden;
+  position: relative;
+}
+.seg-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: .3rem; }
+.seg-card p  { font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+
+/* ── Anomaly section ──────────────────────────────────────────── */
+.anomaly-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+@media (max-width: 600px) { .anomaly-grid { grid-template-columns: 1fr; } }
+.anomaly-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  background: var(--surface);
+}
+.anomaly-card .a-head {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: .7rem;
+}
+.anomaly-card .a-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.anomaly-card h4 { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.anomaly-card p  { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.anomaly-card ul { margin-top: .5rem; padding-left: 1.1rem; }
+.anomaly-card ul li { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+
+/* ── YOLO highlight box ───────────────────────────────────────── */
+.yolo-box {
+  background: linear-gradient(135deg, #1a1814 0%, #2d2825 100%);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.yolo-box::before {
+  content: 'YOLO';
+  position: absolute; right: -20px; top: -20px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 9rem;
+  color: rgba(255,255,255,.04);
+  pointer-events: none;
+  line-height: 1;
+}
+.yolo-box .yb-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: var(--accent-2); margin-bottom: .5rem;
+}
+.yolo-box h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; margin-bottom: .7rem;
+  color: #fff;
+}
+.yolo-box p { font-size: 13.5px; color: rgba(255,255,255,.7); line-height: 1.7; margin-bottom: .8rem; }
+.yolo-box .yb-props {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.yb-prop {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.8);
+}
+
+/* ── Transfer learning row ────────────────────────────────────── */
+.tl-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tl-block {
+  flex: 1;
+  padding: .9rem .75rem;
+  text-align: center;
+  font-size: 12px;
+}
+.tl-block .tb-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text-3); margin-bottom: .25rem;
+}
+.tl-block .tb-title { font-weight: 600; color: var(--text); font-size: 12.5px; }
+.tl-block.frozen { background: var(--blue-soft); }
+.tl-block.frozen .tb-title { color: var(--blue); }
+.tl-block.new    { background: var(--accent-soft); }
+.tl-block.new .tb-title    { color: var(--accent); }
+.tl-arrow {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+  width: 24px; flex-shrink: 0;
+  color: var(--text-3); font-size: 14px;
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.page-footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem;
+}
+.page-footer .pf-info { font-size: 12px; color: var(--text-3); line-height: 1.6; }
+.page-footer .pf-info strong { color: var(--text-2); }
+.pf-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--text-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.pf-logo span {
+  display: inline-block; width: 28px; height: 28px;
+  background: var(--accent); border-radius: 6px;
+  color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Timeline ────────────────────────────────────────────────── */
+.timeline {
+  position: relative;
+  padding-left: 2.5rem;
+  margin-bottom: 2rem;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.tl-item {
+  position: relative;
+  padding: .5rem 0 1rem .5rem;
+}
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: .85rem;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.tl-year {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: .3rem;
+}
+.tl-item p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin: 0; }
+
+/* ── Fade-in animation ────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.fade-up { animation: fadeUp .5s ease both; }
+.fade-up-1 { animation-delay: .1s; }
+.fade-up-2 { animation-delay: .2s; }
+.fade-up-3 { animation-delay: .3s; }
+</style>
+
+=======
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; f230a4463903ce0369b3e1b053facd5b311e65da
 <div class="page">
 
 <!-- ══ HERO ═══════════════════════════════════════════════════════ -->
@@ -123,7 +759,145 @@ ul.task-list li input[type="checkbox"] {
   </div>
 </div>
 
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     EINFÜHRUNG
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Einführung</div>
+  <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
+  <p class="section-body">
+    Echtzeit-Objekterkennung ist die automatische Identifikation und Lokalisierung von Objekten in
+    Bildern oder Videoströmen mit minimaler Verzögerung. Im Gegensatz zu klassischen Bildanalyseverfahren
+    ermöglicht sie die gleichzeitige Erkennung mehrerer Objekte und deren Klassifizierung in wenigen Millisekunden.
+  </p>
+  <p class="section-body">
+    Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und
+    präzise Bounding Boxes um Objekte zu zeichnen – Grundlage für autonomes Fahren, Videoüberwachung,
+    medizinische Bilddiagnose und industrielle Qualitätsprüfung.
+  </p>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     GRUNDLAGEN
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Grundlagen</div>
+  <div class="section-title">Geschichte der Objekterkennung</div>
+</div>
+
+<div class="timeline fade-up">
+  <div class="tl-item">
+    <div class="tl-year">1960er – 1990er</div>
+    <p>Klassische Methoden wie Edge Detection und Feature Matching (z.B. Haar Cascades) dominieren.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2012</div>
+    <p>AlexNet gewinnt den ImageNet-Wettbewerb mit Deep Learning und zeigt die Überlegenheit von CNNs.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2015 – 2016</div>
+    <p>Faster R-CNN und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2016 – heute</div>
+    <p>YOLO (You Only Look Once) revolutioniert das Feld durch Echtzeit-Erkennung auf normaler Hardware. Weitere Varianten wie SSD und andere moderne Architekturen folgen.</p>
+  </div>
+</div>
+
+<div class="fade-up" style="margin-bottom: 2rem;">
+  <div class="section-title" style="font-size: 1.3rem; margin-bottom: 1rem;">Begriffserklärungen</div>
+  
+<table class="cmp-table caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Begriff</th>
+<th data-quarto-table-cell-role="th">Erklärung</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>CNN</strong></td>
+<td>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder (Convolutional Neural Network)</td>
+</tr>
+<tr class="even">
+<td><strong>Bounding Box</strong></td>
+<td>Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe)</td>
+</tr>
+<tr class="odd">
+<td><strong>Confidence Score</strong></td>
+<td>Wahrscheinlichkeit (0–1), ob ein erkanntes Objekt echt ist</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     ANWENDUNGSFÄLLE
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Praxis</div>
+  <div class="section-title">Typische Anwendungsfälle</div>
+</div>
+
+<div class="card-grid fade-up">
+  <div class="card">
+    <div class="card-icon blue">🚗</div>
+    <h3>Autonomes Fahren</h3>
+    <p>Erkennung von Fußgängern, Fahrzeugen und Verkehrszeichen in Echtzeit.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon red">📷</div>
+    <h3>Videoüberwachung</h3>
+    <p>Personen- und Fahrzeugerkennung, Sicherheitsanwendungen.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon green">⚽</div>
+    <h3>Sportanalyse</h3>
+    <p>Tracking von Spielern, Bällen und Bewegungsanalyse.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon amber">🩺</div>
+    <h3>Medizin</h3>
+    <p>Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon red">🏭</div>
+    <h3>Industrielle Inspektion</h3>
+    <p>Qualitätskontrolle und Defekterkennung an Produktionslinien.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     MOTIVATION
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Motivation</div>
+  <div class="section-title">Warum Echtzeit-Objekterkennung heute essentiell ist</div>
+  <p class="section-body">
+    Die Fähigkeit, Objekte augenblicklich und präzise zu erkennen, ist in einer zunehmend vernetzten
+    und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig
+    für moderne Anforderungen.
+  </p>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     PIPELINE OVERVIEW
+══════════════════════════════════════════════════════════════════ -->
+=======
 <!-- ══ WAS IST ECHTZEIT-OBJEKTERKENNUNG? ══════════════════════════ -->
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; f230a4463903ce0369b3e1b053facd5b311e65da
 <div class="fade-up fade-up-1">
   <div class="section-label">Kurz erklärt</div>
   <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
@@ -512,6 +1286,126 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   <div class="pf-info">YOLOv8n · ONNX Runtime Web · Visual Computing</div>
 </div>
 
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+<!-- YOLO highlight -->
+<div class="yolo-box fade-up">
+  <div class="yb-label">One-stage Detector · Diese Demo</div>
+  <h3>You Only Look Once</h3>
+  <p>
+    YOLO teilt das Bild in ein <em>S×S</em>-Gitter. Jede Zelle sagt gleichzeitig mehrere
+    Bounding-Boxes mit Konfidenz-Scores und Klassenwahrscheinlichkeiten voraus –
+    alles in einem einzigen Vorwärtsdurchlauf durch das CNN.
+    Das macht YOLO ideal für Echtzeitanwendungen.
+  </p>
+  <p>
+    Diese Demo verwendet <strong>YOLOv8n</strong> (nano), das direkt im Browser per
+    ONNX Runtime WebAssembly läuft – kein Server erforderlich.
+    Das Modell ist auf dem <strong>COCO-Datensatz</strong> mit 80 Klassen vortrainiert
+    und demonstriert Transfer Learning in der Praxis.
+  </p>
+  <div class="yb-props">
+    <span class="yb-prop">YOLOv8n · ONNX</span>
+    <span class="yb-prop">640×640 Input</span>
+    <span class="yb-prop">80 COCO-Klassen</span>
+    <span class="yb-prop">WebAssembly</span>
+    <span class="yb-prop">Client-seitig</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     WIE YOLO FUNKTIONIERT
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Funktionsweise</div>
+  <div class="section-title">Wie YOLO grob funktioniert</div>
+</div>
+
+<ul class="step-list fade-up">
+  <li>
+    <div class="st">
+      <strong>Input</strong>
+      <span>Ein Bild beliebiger Größe wird auf ein festes Format normalisiert.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Backbone-Netzwerk</strong>
+      <span>Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Gitter-Struktur</strong>
+      <span>Das Bild wird in Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Vorhersage</strong>
+      <span>Für jede Zelle werden Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Output</strong>
+      <span>Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Post-Processing</strong>
+      <span>NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen.</span>
+    </div>
+  </li>
+</ul>
+
+<div class="callout info fade-up">
+  <span class="ci">🖼️</span>
+  <div class="ct">
+    <strong>Rolle von OpenCV</strong>
+    OpenCV (Open Source Computer Vision) übernimmt die Bildvorverarbeitung: Skalierung und Normalisierung
+    für das Netzwerk, Farbkonvertierung (RGB ↔ BGR) sowie das Zeichnen von Bounding Boxes und Labels
+    auf das Ausgabebild.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DEMO
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Interaktiv</div>
+  <div class="section-title">Live-Demo: YOLO im Browser</div>
+  <p class="section-body">
+    Lade eine Videodatei hoch und beobachte, wie YOLO Objekte in Echtzeit erkennt und lokalisiert.
+    Passe den Konfidenz-Schwellwert an, um zu sehen, wie sich Precision und Recall verändern –
+    ein praktisches Beispiel für die in der Vorlesung besprochenen Metriken.
+  </p>
+</div>
+
+<div class="demo-wrap fade-up">
+
+  <div id="drop">
+    <span class="drop-icon">🎬</span>
+    Videodatei hier ablegen oder klicken zum Auswählen
+    <input type="file" id="fi" accept="video/*" style="display:none">
+    <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
+  </div>
+
+  <div id="bar">
+    <span id="st">Modell wird geladen …</span>
+    <button id="reload" style="display:none">↩ Neue Datei</button>
+    <label>Konfidenz ≥</label>
+    <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.30">
+    <span class="val" id="confv">0.40</span>
+  </div>
+
+  <div id="wrap">
+    <video id="vid" loop="" muted="" playsinline=""></video>
+    <canvas id="cv"></canvas>
+  </div>
+
+=======
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; f230a4463903ce0369b3e1b053facd5b311e65da
 </div>
 
 <script>
@@ -696,7 +1590,7 @@ function drawLoop() {
 
 
 
-</main> <!-- /main -->
+</div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const isCodeAnnotation = (el) => {
