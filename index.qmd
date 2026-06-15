@@ -35,6 +35,13 @@ anchor-sections: false
     (was ist es? → Klasse + Konfidenz). <em>Echtzeit</em> bedeutet mindestens
     25–30 Frames pro Sekunde – jeder Frame muss in unter 33 ms verarbeitet sein.
   </p>
+  <p class="section-body">
+    Im Gegensatz zu klassischen Bildanalyseverfahren ermöglicht sie die gleichzeitige
+    Erkennung mehrerer Objekte und deren Klassifizierung in wenigen Millisekunden.
+    Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster
+    zu erkennen und präzise Bounding Boxes um Objekte zu zeichnen – Grundlage für
+    autonomes Fahren, Videoüberwachung, medizinische Bilddiagnose und industrielle Qualitätsprüfung.
+  </p>
 </div>
 
 <div class="card-grid fade-up fade-up-1">
@@ -83,6 +90,14 @@ anchor-sections: false
 
 <div class="timeline fade-up">
   <div class="tl-item">
+    <div class="tl-dot">1960er–1990er</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Klassisch</div>
+      <h4>Klassische Computer Vision</h4>
+      <p>Edge Detection und Feature Matching (z.B. Haar Cascades) dominieren. Methoden sind handgefertigt und auf spezielle Szenarien begrenzt.</p>
+    </div>
+  </div>
+  <div class="tl-item">
     <div class="tl-dot">2001</div>
     <div class="tl-body">
       <div class="tl-badge blue">Klassisch</div>
@@ -104,6 +119,14 @@ anchor-sections: false
       <div class="tl-badge blue">CNN</div>
       <h4>R-CNN – Regionenbasierte Erkennung</h4>
       <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-dot">2015–2016</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Two-Stage</div>
+      <h4>Faster R-CNN – Zwei-Etappen-Verfahren</h4>
+      <p>Faster R-CNN und ähnliche Architekturen erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit – für Echtzeit-Anwendungen nicht geeignet.</p>
     </div>
   </div>
   <div class="tl-item">
@@ -160,6 +183,11 @@ anchor-sections: false
     <div class="def-name">mAP – mean Average Precision</div>
     <p>Hauptmetrik für Objektdetektoren: Durchschnitt der Average Precision über alle Klassen bei variierenden IoU-Schwellwerten.</p>
   </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 07</div>
+    <div class="def-name">CNN – Convolutional Neural Network</div>
+    <p>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder. Extrahiert Merkmale automatisch durch Faltungsoperationen – von einfachen Kanten bis zu komplexen Formen.</p>
+  </div>
 </div>
 
 <!-- Anwendungsfälle -->
@@ -196,6 +224,15 @@ anchor-sections: false
     </ul>
   </div>
   <div class="usecase-card">
+    <span class="usecase-icon">🩺</span>
+    <h3>Medizin</h3>
+    <ul>
+      <li>Erkennung von Tumoren &amp; Frakturen</li>
+      <li>Anomalien in Röntgen-/CT-Bildern</li>
+      <li>Assistenz bei medizinischer Diagnose</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
     <span class="usecase-icon">🏭</span>
     <h3>Industrie &amp; Qualitätskontrolle</h3>
     <ul>
@@ -212,6 +249,11 @@ anchor-sections: false
 <div class="fade-up">
   <div class="section-label">Kapitel 2</div>
   <div class="section-title">Motivation</div>
+  <p class="section-body">
+    Die Fähigkeit, Objekte augenblicklich und präzise zu erkennen, ist in einer zunehmend
+    vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind
+    zu langsam und fehleranfällig für moderne Anforderungen.
+  </p>
   <p class="section-body">
     Warum ist Geschwindigkeit so kritisch? Ein autonomes Fahrzeug, das einen Fußgänger
     200 ms zu spät erkennt, hat bei 50 km/h bereits 2,8 m zurückgelegt – zu viel für
@@ -287,6 +329,14 @@ anchor-sections: false
     <div class="step-num">05</div>
     <h4>NMS</h4>
     <p>Bereinigung<br>überlappender<br>Boxen</p>
+  </div>
+</div>
+
+<div class="callout info fade-up">
+  <span class="ci">🔲</span>
+  <div class="ct">
+    <strong>Gitter-Struktur</strong>
+    Das Bild wird in ein S×S-Raster unterteilt. Jede Zelle ist für Objekte verantwortlich, deren Mittelpunkt in ihr liegt. Für jede Zelle werden gleichzeitig Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt – daher der Name <em>You Only Look Once</em>.
   </div>
 </div>
 
