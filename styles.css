@@ -702,17 +702,14 @@ body {
   font-family: 'JetBrains Mono', monospace;
   min-width: 3ch;
 }
-#reload, #webcam-btn {
+#reload {
   font-size: 12px; color: var(--text-3); cursor: pointer;
   background: var(--surface-2);
   border: 1px solid var(--border);
   padding: 4px 10px; border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  transition: color .15s, border-color .15s, background .15s;
 }
-#reload:hover, #webcam-btn:hover {
-  color: var(--accent); border-color: var(--accent);
-}
+#reload:hover { color: var(--accent); border-color: var(--accent); }
 #wrap {
   position: relative; display: none;
   border-radius: var(--radius-sm); overflow: hidden;
