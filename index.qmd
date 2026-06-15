@@ -1,4 +1,4 @@
----
+﻿---
 title: "Echtzeit-Objekterkennung in Videostreams"
 engine: markdown
 anchor-sections: false
@@ -29,6 +29,7 @@ anchor-sections: false
 <div class="fade-up fade-up-1">
   <div class="section-label">Kurz erklärt</div>
   <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
+  <p style="margin-top:.5rem;font-size:.95rem;color:#999">Aufbauend auf Vorlesungsfolie: „Erkennung: Klassifikation, Segmentierung, Objekterkennung, Anomalieerkennung“.</p>
   <p class="section-body">
     Objekterkennung löst gleichzeitig zwei Aufgaben: <strong>Lokalisierung</strong>
     (wo ist das Objekt? → Bounding Box) und <strong>Klassifikation</strong>
@@ -81,6 +82,7 @@ anchor-sections: false
 <div class="fade-up">
   <div class="section-label">Kapitel 1</div>
   <div class="section-title">Grundlagen</div>
+  <p style="margin-top:.5rem;font-size:.95rem;color:#999">Dieses Kapitel stützt sich auf die Vorlesungsfolie „Objekterkennung“ aus dem Themenblock Erkennung.</p>
 </div>
 
 <!-- Geschichte -->
@@ -216,11 +218,10 @@ anchor-sections: false
   </div>
   <div class="usecase-card">
     <span class="usecase-icon">⚽</span>
-    <h3>Sport &amp; Medizin</h3>
+    <h3>Sport</h3>
     <ul>
       <li>Spieler- &amp; Balltracking</li>
       <li>Taktische Bewegungsanalyse</li>
-      <li>Chirurgische Instrumente</li>
     </ul>
   </div>
   <div class="usecase-card">
@@ -289,6 +290,7 @@ anchor-sections: false
 <div class="fade-up">
   <div class="section-label">Kapitel 3</div>
   <div class="section-title">Technik</div>
+  <p style="margin-top:.5rem;font-size:.95rem;color:#999">Technische Details basieren auf der Vorlesungsfolie „Objekterkennung“ und der behandelten Objekterkennungspipeline.</p>
 </div>
 
 <!-- YOLO Pipeline -->
