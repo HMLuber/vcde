@@ -588,6 +588,48 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ── Timeline ────────────────────────────────────────────────── */
+.timeline {
+  position: relative;
+  padding-left: 2.5rem;
+  margin-bottom: 2rem;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.tl-item {
+  position: relative;
+  padding: .5rem 0 1rem .5rem;
+}
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: .85rem;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.tl-year {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: .3rem;
+}
+.tl-item p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin: 0; }
+
 /* ── Fade-in animation ────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(16px); }
@@ -614,6 +656,136 @@ body {
     <span class="tag tag-amber">80 COCO-Klassen</span>
   </div>
 </div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     EINFÜHRUNG
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Einführung</div>
+  <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
+  <p class="section-body">
+    Echtzeit-Objekterkennung ist die automatische Identifikation und Lokalisierung von Objekten in
+    Bildern oder Videoströmen mit minimaler Verzögerung. Im Gegensatz zu klassischen Bildanalyseverfahren
+    ermöglicht sie die gleichzeitige Erkennung mehrerer Objekte und deren Klassifizierung in wenigen Millisekunden.
+  </p>
+  <p class="section-body">
+    Die Technologie nutzt tiefe neuronale Netze (Deep Learning), um visuell Muster zu erkennen und
+    präzise Bounding Boxes um Objekte zu zeichnen – Grundlage für autonomes Fahren, Videoüberwachung,
+    medizinische Bilddiagnose und industrielle Qualitätsprüfung.
+  </p>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     GRUNDLAGEN
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Grundlagen</div>
+  <div class="section-title">Geschichte der Objekterkennung</div>
+</div>
+
+<div class="timeline fade-up">
+  <div class="tl-item">
+    <div class="tl-year">1960er – 1990er</div>
+    <p>Klassische Methoden wie Edge Detection und Feature Matching (z.B. Haar Cascades) dominieren.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2012</div>
+    <p>AlexNet gewinnt den ImageNet-Wettbewerb mit Deep Learning und zeigt die Überlegenheit von CNNs.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2015 – 2016</div>
+    <p>Faster R-CNN und ähnliche Zwei-Etappen-Verfahren erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit.</p>
+  </div>
+  <div class="tl-item">
+    <div class="tl-year">2016 – heute</div>
+    <p>YOLO (You Only Look Once) revolutioniert das Feld durch Echtzeit-Erkennung auf normaler Hardware. Weitere Varianten wie SSD und andere moderne Architekturen folgen.</p>
+  </div>
+</div>
+
+<div class="fade-up" style="margin-bottom: 2rem;">
+  <div class="section-title" style="font-size: 1.3rem; margin-bottom: 1rem;">Begriffserklärungen</div>
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th>Begriff</th>
+        <th>Erklärung</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>CNN</strong></td>
+        <td>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder (Convolutional Neural Network)</td>
+      </tr>
+      <tr>
+        <td><strong>Bounding Box</strong></td>
+        <td>Rechteck um ein erkanntes Objekt mit Koordinaten (x, y, Breite, Höhe)</td>
+      </tr>
+      <tr>
+        <td><strong>Confidence Score</strong></td>
+        <td>Wahrscheinlichkeit (0–1), ob ein erkanntes Objekt echt ist</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     ANWENDUNGSFÄLLE
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Praxis</div>
+  <div class="section-title">Typische Anwendungsfälle</div>
+</div>
+
+<div class="card-grid fade-up">
+  <div class="card">
+    <div class="card-icon blue">🚗</div>
+    <h3>Autonomes Fahren</h3>
+    <p>Erkennung von Fußgängern, Fahrzeugen und Verkehrszeichen in Echtzeit.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon red">📷</div>
+    <h3>Videoüberwachung</h3>
+    <p>Personen- und Fahrzeugerkennung, Sicherheitsanwendungen.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon green">⚽</div>
+    <h3>Sportanalyse</h3>
+    <p>Tracking von Spielern, Bällen und Bewegungsanalyse.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon amber">🩺</div>
+    <h3>Medizin</h3>
+    <p>Erkennung von Tumoren, Frakturen und Anomalien in Röntgen-/CT-Bildern.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon red">🏭</div>
+    <h3>Industrielle Inspektion</h3>
+    <p>Qualitätskontrolle und Defekterkennung an Produktionslinien.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════════════════════
+     MOTIVATION
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Motivation</div>
+  <div class="section-title">Warum Echtzeit-Objekterkennung heute essentiell ist</div>
+  <p class="section-body">
+    Die Fähigkeit, Objekte augenblicklich und präzise zu erkennen, ist in einer zunehmend vernetzten
+    und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind zu langsam und fehleranfällig
+    für moderne Anforderungen.
+  </p>
+</div>
+
+<hr class="divider">
 
 <!-- ══════════════════════════════════════════════════════════════
      PIPELINE OVERVIEW
@@ -903,6 +1075,63 @@ body {
     <span class="yb-prop">80 COCO-Klassen</span>
     <span class="yb-prop">WebAssembly</span>
     <span class="yb-prop">Client-seitig</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     WIE YOLO FUNKTIONIERT
+══════════════════════════════════════════════════════════════════ -->
+<div class="fade-up">
+  <div class="section-label">Funktionsweise</div>
+  <div class="section-title">Wie YOLO grob funktioniert</div>
+</div>
+
+<ul class="step-list fade-up">
+  <li>
+    <div class="st">
+      <strong>Input</strong>
+      <span>Ein Bild beliebiger Größe wird auf ein festes Format normalisiert.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Backbone-Netzwerk</strong>
+      <span>Das tiefe neuronale Netz extrahiert Merkmale aus dem Bild in mehreren Schichten.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Gitter-Struktur</strong>
+      <span>Das Bild wird in Zellen aufgeteilt. Jede Zelle ist für Objekte in ihrem Bereich zuständig.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Vorhersage</strong>
+      <span>Für jede Zelle werden Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Output</strong>
+      <span>Kombination aller Vorhersagen ergibt die finalen Bounding Boxes mit Klassifizierung.</span>
+    </div>
+  </li>
+  <li>
+    <div class="st">
+      <strong>Post-Processing</strong>
+      <span>NMS eliminiert doppelte Erkennungen und filtert schwache Detektionen.</span>
+    </div>
+  </li>
+</ul>
+
+<div class="callout info fade-up">
+  <span class="ci">🖼️</span>
+  <div class="ct">
+    <strong>Rolle von OpenCV</strong>
+    OpenCV (Open Source Computer Vision) übernimmt die Bildvorverarbeitung: Skalierung und Normalisierung
+    für das Netzwerk, Farbkonvertierung (RGB ↔ BGR) sowie das Zeichnen von Bounding Boxes und Labels
+    auf das Ausgabebild.
   </div>
 </div>
 
