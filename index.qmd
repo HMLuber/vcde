@@ -339,10 +339,88 @@ anchor-sections: false
   </div>
 </div>
 
-<div class="fade-up" style="margin-bottom:.75rem;">
-  <p class="section-body">
-    TODO: Detaliiertere Beschreibung der einzelnen Schritte, z.B. wie die Bounding Box-Parameter genau vorhergesagt werden, die Rolle von Ankerboxen (oder deren Wegfall in YOLOv8), und wie NMS funktioniert.
-  </p>
+<div class="fade-up" style="margin-top:1.5rem;">
+
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+
+    <div class="card" style="border-left:4px solid #0078d4;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <span style="background:#0078d4;color:#fff;font-weight:700;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
+        <h4 style="margin:0;">Input – Vorverarbeitung</h4>
+      </div>
+      <p style="margin:0;font-size:.9rem;line-height:1.7;">
+        Das Eingabebild wird mittels <strong>Letterboxing</strong> auf exakt 640 × 640 Pixel gebracht:
+        Das Bild wird proportional skaliert und die verbleibenden Ränder mit einem neutralen Grau
+        (RGB 114, 114, 114) aufgefüllt. Anschließend werden die Pixelwerte von [0–255] auf [0–1]
+        normiert. Letterboxing statt einfachem Stretch stellt sicher, dass Seitenverhältnisse erhalten
+        bleiben und Objekte nicht verzerrt erkannt werden.
+      </p>
+    </div>
+
+    <div class="card" style="border-left:4px solid #7c3aed;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <span style="background:#7c3aed;color:#fff;font-weight:700;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
+        <h4 style="margin:0;">Backbone – Merkmalsextraktion</h4>
+      </div>
+      <p style="margin:0;font-size:.9rem;line-height:1.7;">
+        Das <strong>CSPDarknet</strong>-Backbone verarbeitet das Bild mit einer Folge von
+        Faltungsschichten (Convolutional Layers) und extrahiert dabei hierarchische visuelle Merkmale:
+        frühe Schichten erkennen einfache Kanten und Farben, spätere Schichten komplexe Formen und
+        Texturen. Der <em>Cross-Stage-Partial</em>-Ansatz teilt den Gradientenfluss auf, was
+        Trainingseffizienz und Genauigkeit verbessert. Das Backbone liefert Feature-Maps in
+        verschiedenen Auflösungen (z. B. 80 × 80, 40 × 40, 20 × 20 Zellen) für die nächste Stufe.
+      </p>
+    </div>
+
+    <div class="card" style="border-left:4px solid #059669;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <span style="background:#059669;color:#fff;font-weight:700;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
+        <h4 style="margin:0;">Neck – Multi-Scale-Fusion</h4>
+      </div>
+      <p style="margin:0;font-size:.9rem;line-height:1.7;">
+        Der Neck kombiniert die Feature-Maps aller drei Auflösungen. Dazu verwendet YOLOv8 eine
+        <strong>FPN</strong> (Feature Pyramid Network) und eine <strong>PAN</strong>
+        (Path Aggregation Network): FPN leitet semantisch reichhaltige Informationen der tiefen
+        Schichten nach oben weiter (Top-Down), PAN schickt räumlich genaue Informationen der
+        flachen Schichten zurück nach unten (Bottom-Up). Das Ergebnis sind drei fusionierte
+        Feature-Maps, die sowohl <em>Was</em> (Semantik) als auch <em>Wo</em> (Position) kodieren –
+        entscheidend für die Erkennung kleiner und großer Objekte im selben Bild.
+      </p>
+    </div>
+
+    <div class="card" style="border-left:4px solid #dc2626;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <span style="background:#dc2626;color:#fff;font-weight:700;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</span>
+        <h4 style="margin:0;">Head – Vorhersage (ankerfrei)</h4>
+      </div>
+      <p style="margin:0;font-size:.9rem;line-height:1.7;">
+        Der Detection Head liest die fusionierten Feature-Maps und sagt für jede Gitterzelle direkt
+        voraus: den <strong>Mittelpunkt</strong> (cx, cy), <strong>Breite und Höhe</strong> (w, h)
+        der Bounding Box sowie <strong>80 Klassenwahrscheinlichkeiten</strong>. YOLOv8 ist dabei
+        <em>ankerfrei</em> (anchor-free): Ältere YOLO-Versionen verwendeten vordefinierte
+        Ankerboxen als Referenzrahmen und passten diese an. YOLOv8 sagt die Box-Koordinaten
+        direkt vorher, was Hyperparameter-Tuning entfallen lässt und gerade bei untypischen
+        Seitenverhältnissen präziser ist.
+      </p>
+    </div>
+
+    <div class="card" style="border-left:4px solid #d97706;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <span style="background:#d97706;color:#fff;font-weight:700;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</span>
+        <h4 style="margin:0;">NMS – Duplikat-Bereinigung</h4>
+      </div>
+      <p style="margin:0;font-size:.9rem;line-height:1.7;">
+        Da das Netz dasselbe Objekt oft in mehreren benachbarten Zellen erkennt, entsteht ein
+        Schwarm überlappender Boxen. <strong>Non-Maximum Suppression</strong> bereinigt das:
+        Zuerst werden alle Boxen unterhalb des Konfidenzschwellwerts (hier 0,40) verworfen.
+        Dann wird iterativ die Box mit dem höchsten Score behalten und alle anderen Boxen
+        derselben Klasse, deren <strong>IoU</strong> mit ihr ≥ 0,45 beträgt, unterdrückt.
+        Das wiederholt sich, bis keine überlappenden Kandidaten mehr übrig sind – übrig bleibt
+        genau eine Box pro erkanntem Objekt.
+      </p>
+    </div>
+
+  </div>
 </div>
 
 <div class="callout info fade-up">
@@ -497,7 +575,7 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
     <ul style="margin:0;padding-left:1.2rem;font-size:.9rem;line-height:1.7;">
       <li>Bounding Box, IoU und NMS als Kernkonzepte</li>
       <li>One-Stage vs. Two-Stage: Geschwindigkeit vs. Genauigkeit</li>
-      <li>YOLO-Pipeline: Backbone → Neck → Head → NMS</li>
+      <li>YOLO-Pipeline: Input → Backbone → Neck → Head → NMS</li>
       <li>Browserbasierte Inferenz via ONNX Runtime Web</li>
     </ul>
   </div>
@@ -528,15 +606,6 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   </p>
 </div>
 
-<div class="callout info fade-up">
-  <span class="ci">🔭</span>
-  <div class="ct">
-    <strong>Trend: Foundation Models für Objekterkennung</strong>
-    Segment Anything Model (SAM 2) von Meta segmentiert und verfolgt beliebige
-    Objekte ohne vorherige Klassenliste – ein erster Schritt in Richtung
-    allgemeiner visueller Intelligenz in Echtzeit.
-  </div>
-</div>
 
 <!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
 <div class="page-footer">
