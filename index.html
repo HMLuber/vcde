@@ -494,7 +494,7 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   <div id="bar">
     <span id="st"></span>
     <button id="reload" style="display:none">↩ Neue Datei</button>
-    <button id="webcam-btn" style="display:none">📹 Webcam</button>
+    <button id="webcam-btn">📹 Webcam</button>
     <label>Konfidenz ≥</label>
     <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.40">
     <span class="val" id="confv">0.40</span>
@@ -659,7 +659,6 @@ reload.addEventListener('click', () => {
   wrap.style.display = 'none';
   drop.style.display = '';
   reload.style.display = 'none';
-  webcamBtn.style.display = 'none';
   stEl.textContent = '';
   stopWebcam();
   // Switch back to preview
@@ -717,7 +716,6 @@ function stopWebcam() {
   wrap.style.display = 'none';
   drop.style.display = '';
   reload.style.display = 'none';
-  webcamBtn.style.display = 'none';
   webcamBtn.textContent = '📹 Webcam';
   webcamBtn.style.backgroundColor = '';
   stEl.textContent = '';
@@ -736,7 +734,6 @@ function load(file) {
     activeCanvas = cv; activeStatus = stEl;
     drop.style.display = 'none';
     reload.style.display = '';
-    webcamBtn.style.display = '';
     webcamBtn.textContent = '📹 Webcam';
     webcamBtn.style.backgroundColor = '';
     wrap.style.display = 'block';
