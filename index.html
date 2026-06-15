@@ -494,6 +494,7 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   <div id="bar">
     <span id="st"></span>
     <button id="reload" style="display:none">↩ Neue Datei</button>
+    <button id="webcam-btn" style="display:none">📹 Webcam</button>
     <label>Konfidenz ≥</label>
     <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.40">
     <span class="val" id="confv">0.40</span>
@@ -612,6 +613,7 @@ const stEl   = document.getElementById('st');
 const confEl = document.getElementById('conf');
 const confv  = document.getElementById('confv');
 const reload = document.getElementById('reload');
+const webcamBtn = document.getElementById('webcam-btn');
 
 confEl.addEventListener('input', () => confv.textContent = parseFloat(confEl.value).toFixed(2));
 
@@ -620,6 +622,7 @@ const worker = new Worker('worker.js');
 let ready = false, sz = 640, provider = 'WASM';
 let lastDets = [], running = false, resolveResult = null;
 let activeVid = null, activeCtx = null, activeCanvas = null, activeStatus = null;
+let webcamStream = null, webcamActive = false;
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') {
@@ -656,12 +659,74 @@ reload.addEventListener('click', () => {
   wrap.style.display = 'none';
   drop.style.display = '';
   reload.style.display = 'none';
+  webcamBtn.style.display = 'none';
   stEl.textContent = '';
+  stopWebcam();
   // Switch back to preview
   activeVid = previewVid; activeCtx = previewCtx;
   activeCanvas = previewCv; activeStatus = previewStatus;
   previewVid.play();
 });
+
+// Webcam handler
+webcamBtn.addEventListener('click', async () => {
+  if (!webcamActive) {
+    await startWebcam();
+  } else {
+    stopWebcam();
+  }
+});
+
+async function startWebcam() {
+  try {
+    previewVid.pause();
+    vid.pause(); vid.src = '';
+    
+    webcamStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+    });
+    
+    vid.srcObject = webcamStream;
+    vid.onloadedmetadata = () => {
+      activeVid = vid; activeCtx = ctx;
+      activeCanvas = cv; activeStatus = stEl;
+      drop.style.display = 'none';
+      reload.style.display = '';
+      webcamBtn.style.display = '';
+      webcamBtn.textContent = '⏹ Webcam beenden';
+      webcamBtn.style.backgroundColor = '#ff5f57';
+      wrap.style.display = 'block';
+      vid.play();
+      webcamActive = true;
+    };
+  } catch (err) {
+    console.error('Webcam error:', err);
+    alert('Webcam konnte nicht zugegriffen werden. Überprüfen Sie die Berechtigung.');
+    webcamActive = false;
+  }
+}
+
+function stopWebcam() {
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(track => track.stop());
+    webcamStream = null;
+  }
+  vid.pause();
+  vid.srcObject = null;
+  vid.src = '';
+  wrap.style.display = 'none';
+  drop.style.display = '';
+  reload.style.display = 'none';
+  webcamBtn.style.display = 'none';
+  webcamBtn.textContent = '📹 Webcam';
+  webcamBtn.style.backgroundColor = '';
+  stEl.textContent = '';
+  webcamActive = false;
+  // Switch back to preview
+  activeVid = previewVid; activeCtx = previewCtx;
+  activeCanvas = previewCv; activeStatus = previewStatus;
+  previewVid.play();
+}
 
 function load(file) {
   vid.src = URL.createObjectURL(file);
@@ -671,6 +736,9 @@ function load(file) {
     activeCanvas = cv; activeStatus = stEl;
     drop.style.display = 'none';
     reload.style.display = '';
+    webcamBtn.style.display = '';
+    webcamBtn.textContent = '📹 Webcam';
+    webcamBtn.style.backgroundColor = '';
     wrap.style.display = 'block';
     vid.play();
   };
