@@ -415,24 +415,24 @@ ul.task-list li input[type="checkbox"] {
   </p>
 </div>
 
-<div class="”card-grid" fade-up”="" style="”grid-template-columns:repeat(4,1fr);”">
+<div class="”card-grid" fade-up”="" style="”grid-template-columns:repeat(2,1fr);”">
   <div class="”card”">
-    <div class="”card-icon" blue”="" style="”font-size:1.4rem;”">⊞</div>
+    <div class="”card-icon" blue”="">🔲</div>
     <h3 class="anchored">Faltung (Conv)</h3>
     <p>Ein kleiner Filter (z.B. 3×3) gleitet über das Bild und berechnet pro Position ein gewichtetes Skalarprodukt. Ergebnis: eine Feature Map mit erkannten lokalen Mustern.</p>
   </div>
   <div class="”card”">
-    <div class="”card-icon" red”="" style="”font-size:1.4rem;”">↘</div>
+    <div class="”card-icon" red”="">↘</div>
     <h3 class="anchored">Pooling</h3>
     <p>Max-Pooling (2×2) halbiert die räumliche Auflösung und behält nur den stärksten Aktivierungswert pro Region. Spart Rechenzeit und macht das Netz robuster gegen kleine Verschiebungen.</p>
   </div>
   <div class="”card”">
-    <div class="”card-icon" green”="" style="”font-size:1.4rem;”">⚡</div>
+    <div class="”card-icon" green”="">⚡</div>
     <h3 class="anchored">Aktivierung (ReLU)</h3>
     <p>Rectified Linear Unit: f(x) = max(0, x). Bringt Nichtlinearität ins Netz, ohne viel Rechenaufwand. Ohne Aktivierungsfunktionen wäre das Netz nur eine lineare Transformation.</p>
   </div>
   <div class="”card”">
-    <div class="”card-icon" blue”="" style="”font-size:1.4rem;”">🏛️</div>
+    <div class="”card-icon" blue”="">🏛️</div>
     <h3 class="anchored">Tiefe Hierarchie</h3>
     <p>Frühe Schichten: Kanten und Farben. Mittlere Schichten: Texturen und Formen. Späte Schichten: Semantische Konzepte wie „Gesicht” oder „Reifen”. Jede Schicht baut auf der vorherigen auf.</p>
   </div>
@@ -461,26 +461,26 @@ ul.task-list li input[type="checkbox"] {
   </p>
 </div>
 
-<div class="”pipeline" fade-up”="" style="”gap:.75rem;”">
-  <div class="”pipe-step”" style="”flex:1;”">
+<div class="”pipeline" fade-up”="">
+  <div class="”pipe-step”">
     <div class="”step-num”">A</div>
     <h4 class="anchored">Originalbild</h4>
     <p>Beliebiges Seitenverhältnis (z.B. 1920×1080 → 16:9)</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step”" style="”flex:1;”">
+  <div class="”pipe-step”">
     <div class="”step-num”">B</div>
     <h4 class="anchored">Proportional skalieren</h4>
     <p>Längste Seite auf 640 px bringen, andere Seite entsprechend kürzer</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step”" style="”flex:1;”">
+  <div class="”pipe-step”">
     <div class="”step-num”">C</div>
     <h4 class="anchored">Padding hinzufügen</h4>
     <p>Grauer Rand (RGB 114,114,114) oben/unten oder links/rechts auffüllen</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step" active”="" style="”flex:1;”">
+  <div class="”pipe-step" active”="">
     <div class="”step-num”">D</div>
     <h4 class="anchored">Normalisieren</h4>
     <p>Pixelwerte [0–255] → [0.0–1.0], Kanäle CHW-Format (3×640×640)</p>
@@ -568,7 +568,7 @@ ul.task-list li input[type="checkbox"] {
     <h3 class="anchored">Residual-Verbindungen (Skip Connections)</h3>
     <p>
       Inspiriert von ResNet: Statt nur den Ausgang einer Schicht weiterzugeben, wird
-      dieser mit dem Eingang addiert (<code>y = F(x) + x</code>). Das löst das
+      dieser mit dem Eingang addiert (<span style="font-family:'JetBrains Mono',monospace;font-size:.82em;background:var(--surface-2);padding:1px 5px;border-radius:2px;">y = F(x) + x</span>). Das löst das
       <em>Vanishing Gradient Problem</em> und ermöglicht sehr tiefe Netze (50+ Schichten),
       ohne dass der Gradient beim Training verschwindet.
     </p>
@@ -700,16 +700,16 @@ output = {
 </div>
 
 <div class="”two-col" fade-up”="">
-  <div class="”card”" style="”font-family:monospace;line-height:1.8;font-size:.85rem;”">
+  <div class="”card”">
     <h3 class="anchored">Formel</h3>
-    <p style="”font-size:1.1rem;text-align:center;margin:1rem" 0;”="">
+    <p style="”font-size:1.05rem;text-align:center;margin:1rem" 0;color:var(--text);”="">
       IoU = <strong>Schnittfläche</strong> / <strong>Vereinigungsfläche</strong>
     </p>
-    <p style="”text-align:center;color:#666;font-size:.8rem;”">
-      = |A ∩ B| / |A ∪ B|<br>
+    <p style="”text-align:center;color:var(--text-3);font-size:.85rem;font-family:'JetBrains" mono',monospace;”="">
+      |A ∩ B| / |A ∪ B|<br>
       = |A ∩ B| / (|A| + |B| − |A ∩ B|)
     </p>
-    <p style="”margin-top:.75rem;font-size:.8rem;color:#888;”">
+    <p style="”margin-top:.75rem;font-size:.82rem;color:var(--text-2);”">
       Wertebereich: 0 (keine Überlappung) bis 1 (identische Boxen).<br>
       COCO-Standard: Detektion gilt als korrekt (True Positive) ab IoU ≥ 0,5.
     </p>
@@ -742,35 +742,35 @@ output = {
 
 <div class="”timeline" fade-up”="">
   <div class="”tl-item”">
-    <div class="”tl-dot”" style="”min-width:3rem;”">①</div>
+    <div class="”tl-dot”">①</div>
     <div class="”tl-body”">
       <h4 class="anchored">Filtern nach Confidence</h4>
       <p>Alle Boxen mit Score &lt; Schwellwert (z.B. 0,40) werden verworfen. Typisch bleiben nur wenige Hundert Kandidaten übrig.</p>
     </div>
   </div>
   <div class="”tl-item”">
-    <div class="”tl-dot”" style="”min-width:3rem;”">②</div>
+    <div class="”tl-dot”">②</div>
     <div class="”tl-body”">
       <h4 class="anchored">Sortieren nach Score</h4>
       <p>Alle verbleibenden Boxen werden absteigend nach Konfidenz sortiert. Die Box mit dem höchsten Score kommt zuerst.</p>
     </div>
   </div>
   <div class="”tl-item”">
-    <div class="”tl-dot”" style="”min-width:3rem;”">③</div>
+    <div class="”tl-dot”">③</div>
     <div class="”tl-body”">
       <h4 class="anchored">Beste Box wählen</h4>
       <p>Die Box mit dem aktuell höchsten Score wird als Detektion übernommen und aus der Kandidatenliste entfernt.</p>
     </div>
   </div>
   <div class="”tl-item”">
-    <div class="”tl-dot”" style="”min-width:3rem;”">④</div>
+    <div class="”tl-dot”">④</div>
     <div class="”tl-body”">
       <h4 class="anchored">Überlappende Boxen unterdrücken</h4>
       <p>Alle verbleibenden Boxen derselben Klasse, deren IoU mit der gewählten Box ≥ 0,45 ist, werden gelöscht – sie zeigen auf dasselbe Objekt.</p>
     </div>
   </div>
   <div class="”tl-item”">
-    <div class="”tl-dot”" style="”min-width:3rem;”">⑤</div>
+    <div class="”tl-dot”">⑤</div>
     <div class="”tl-body”">
       <h4 class="anchored">Wiederholen</h4>
       <p>Schritte ③–④ werden wiederholt, bis keine Kandidaten mehr übrig sind. Ergebnis: eine Box pro Objekt, die bestmögliche.</p>
@@ -799,33 +799,33 @@ output = {
   </p>
 </div>
 
-<div class="”pipeline" fade-up”="" style="”gap:.5rem;”">
-  <div class="”pipe-step”" style="”flex:1;”">
-    <div class="”step-num”" style="”font-size:.75rem;”">YOLOv8</div>
+<div class="”pipeline" fade-up”="">
+  <div class="”pipe-step”">
+    <div class="”step-num”">YOLOv8</div>
     <h4 class="anchored">PyTorch</h4>
     <p>.pt Modell<br>Training &amp;<br>Ursprung</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step”" style="”flex:1;”">
-    <div class="”step-num”" style="”font-size:.75rem;”">Export</div>
+  <div class="”pipe-step”">
+    <div class="”step-num”">Export</div>
     <h4 class="anchored">ONNX</h4>
     <p>Offenes Format<br>framework-<br>unabhängig</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step”" style="”flex:1;”">
-    <div class="”step-num”" style="”font-size:.75rem;”">INT8</div>
+  <div class="”pipe-step”">
+    <div class="”step-num”">INT8</div>
     <h4 class="anchored">Quantisierung</h4>
     <p>Float32 → INT8<br>4× kleiner<br>2–4× schneller</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step" active”="" style="”flex:1;”">
-    <div class="”step-num”" style="”font-size:.75rem;”">WASM</div>
+  <div class="”pipe-step" active”="">
+    <div class="”step-num”">WASM</div>
     <h4 class="anchored">ONNX Runtime</h4>
     <p>WebAssembly<br>oder WebGPU<br>im Browser</p>
   </div>
   <div class="”pipe-arrow”">›</div>
-  <div class="”pipe-step”" style="”flex:1;”">
-    <div class="”step-num”" style="”font-size:.75rem;”">Canvas</div>
+  <div class="”pipe-step”">
+    <div class="”step-num”">Canvas</div>
     <h4 class="anchored">Visualisierung</h4>
     <p>JavaScript +<br>Canvas API<br>Bounding Boxes</p>
   </div>
@@ -860,7 +860,7 @@ output = {
     einem JavaScript-Thread, der unabhängig vom UI-Thread arbeitet. Dadurch friert
     die Seite nicht ein, während das Netz rechnet. Der Haupt-Thread übernimmt nur
     Preprocessing und Rendering (Canvas), der Worker ausschließlich die ONNX-Inferenz.
-    Kommunikation per <code>postMessage()</code> mit transferierbaren ArrayBuffers
+    Kommunikation per <span style="font-family:'JetBrains Mono',monospace;font-size:.82em;background:rgba(37,99,176,.15);padding:1px 5px;border-radius:2px;">postMessage()</span> mit transferierbaren ArrayBuffers
     (zero-copy, kein Kopieren des Float32-Tensors).
   </div>
 </div>
