@@ -1,13 +1,11 @@
-﻿---
-title: "Echtzeit-Objekterkennung mit YOLO"
-format:
-  html:
-    theme: flatly
-    toc: false
+---
+title: "Echtzeit-Objekterkennung in Videostreams"
 engine: markdown
+anchor-sections: false
 ---
 
 ```{=html}
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -641,22 +639,29 @@ body {
 .fade-up-3 { animation-delay: .3s; }
 </style>
 
+=======
+>>>>>>> f230a4463903ce0369b3e1b053facd5b311e65da
 <div class="page">
 
-<!-- ══════════════════════════════════════════════════════════════
-     HERO
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ HERO ═══════════════════════════════════════════════════════ -->
 <div class="hero fade-up">
-  <div class="hero-eyebrow">Visual Computing · Erkennung</div>
-  <h1>Echtzeit-Objekterkennung<br>mit YOLO</h1>
-  <div class="hero-tags">
-    <span class="tag tag-blue">One-stage Detector</span>
-    <span class="tag tag-red">CNN-basiert</span>
-    <span class="tag tag-green">Transfer Learning</span>
-    <span class="tag tag-amber">80 COCO-Klassen</span>
+  <div class="hero-eyebrow">Visual Computing</div>
+  <h1>Echtzeit-Objekterkennung<br>in Videostreams</h1>
+  <p class="hero-sub">
+    Wie Computer in Echtzeit Objekte in bewegten Bildern erkennen und lokalisieren –
+    von den Grundlagen bis zur Live-Demo direkt im Browser.
+  </p>
+  <div class="hero-authors">
+    <div class="author-label">Autoren</div>
+    <div class="author-list">
+      <span class="author-chip">Jasmin Kohlpaintner</span>
+      <span class="author-chip">Henrik Berg</span>
+      <span class="author-chip">Markus Luber</span>
+    </div>
   </div>
 </div>
 
+<<<<<<< HEAD
 <hr class="divider">
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -790,269 +795,396 @@ body {
 <!-- ══════════════════════════════════════════════════════════════
      PIPELINE OVERVIEW
 ══════════════════════════════════════════════════════════════════ -->
+=======
+<!-- ══ WAS IST ECHTZEIT-OBJEKTERKENNUNG? ══════════════════════════ -->
+>>>>>>> f230a4463903ce0369b3e1b053facd5b311e65da
 <div class="fade-up fade-up-1">
-  <div class="section-label">Einordnung</div>
-  <div class="section-title">Wo steht Objekterkennung im Gesamtsystem?</div>
+  <div class="section-label">Kurz erklärt</div>
+  <div class="section-title">Was ist Echtzeit-Objekterkennung?</div>
   <p class="section-body">
-    Wie in der Vorlesung gezeigt, gliedert sich die Bildanalyse in eine Kette von Verarbeitungsschritten.
-    Die Objekterkennung ist Teil der letzten Stufe – der <strong>Erkennung</strong> –
-    in der aus extrahierten Merkmalen abstrakte Beschreibungen erzeugt werden.
+    Objekterkennung löst gleichzeitig zwei Aufgaben: <strong>Lokalisierung</strong>
+    (wo ist das Objekt? → Bounding Box) und <strong>Klassifikation</strong>
+    (was ist es? → Klasse + Konfidenz). <em>Echtzeit</em> bedeutet mindestens
+    25–30 Frames pro Sekunde – jeder Frame muss in unter 33 ms verarbeitet sein.
   </p>
 </div>
 
-<div class="pipeline fade-up fade-up-1">
-  <div class="pipe-step">
-    <div class="step-num">01</div>
-    <h4>Akquisition</h4>
-    <p>Sensoren · Kameras<br>Welt → Pixel</p>
+<div class="card-grid fade-up fade-up-1">
+  <div class="card">
+    <div class="card-icon red">📦</div>
+    <h3>Lokalisierung</h3>
+    <p>Position und Größe jedes Objekts als Bounding Box (x, y, Breite, Höhe).</p>
   </div>
-  <div class="pipe-arrow">›</div>
-  <div class="pipe-step">
-    <div class="step-num">02</div>
-    <h4>Verarbeitung</h4>
-    <p>Filter · Transforms<br>Point Ops</p>
+  <div class="card">
+    <div class="card-icon blue">🏷️</div>
+    <h3>Klassifikation</h3>
+    <p>Gleichzeitige Zuweisung eines Klassen-Labels mit Konfidenzwert.</p>
   </div>
-  <div class="pipe-arrow">›</div>
-  <div class="pipe-step">
-    <div class="step-num">03</div>
-    <h4>Merkmale</h4>
-    <p>Statistiken · Kanten<br>CNNs (auto)</p>
+  <div class="card">
+    <div class="card-icon green">⚡</div>
+    <h3>Echtzeitfähigkeit</h3>
+    <p>One-Stage-Detektoren wie YOLO erreichen &gt;30 FPS auf Consumer-Hardware.</p>
   </div>
-  <div class="pipe-arrow">›</div>
-  <div class="pipe-step active">
-    <div class="step-num">04</div>
-    <h4>Erkennung ★</h4>
-    <p>Klassifikation · Seg.<br><strong>Objekterkennung</strong></p>
+</div>
+
+<!-- ══ LIVE-DEMO ═══════════════════════════════════════════════════ -->
+<div class="fade-up fade-up-2">
+  <div class="section-label">Beispielvideo</div>
+  <div class="section-title">Kurze Live-Demo</div>
+</div>
+
+<div class="demo-wrap fade-up fade-up-2">
+  <div id="preview-wrap">
+    <video id="preview-vid" loop muted playsinline></video>
+    <canvas id="preview-cv"></canvas>
   </div>
 </div>
 
 <hr class="divider">
 
-<!-- ══════════════════════════════════════════════════════════════
-     KLASSIFIKATION RECAP
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ GRUNDLAGEN ═════════════════════════════════════════════════ -->
 <div class="fade-up">
-  <div class="section-label">Grundlage</div>
-  <div class="section-title">Klassifikation & Neuronale Netze</div>
-  <p class="section-body">
-    Objekterkennung baut auf der Bildklassifikation auf. Ein Klassifikator ordnet einem Bild ein Klassenlabel
-    <em>y ∈ Y</em> zu. Für Bildaufgaben haben sich <strong>Convolutional Neural Networks (CNNs)</strong>
-    als besonders geeignet erwiesen – sie extrahieren Merkmale automatisch in einer Hierarchie
-    von einfachen Kanten bis hin zu komplexen Formen.
-  </p>
+  <div class="section-label">Kapitel 1</div>
+  <div class="section-title">Grundlagen</div>
 </div>
 
-<div class="card-grid fade-up">
-  <div class="card">
-    <div class="card-icon red">🧠</div>
-    <h3>Perzeptron → CNN</h3>
-    <p>Das Basiselement neuronaler Netze ist das Perzeptron (gewichtete Summe + Aktivierungsfunktion).
-    CNNs erweitern dies um <em>Convolution-</em>, <em>Pooling-</em> und <em>Flatten-Schichten</em>,
-    die speziell für 2D-Bilddaten ausgelegt sind.</p>
+<!-- Geschichte -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1.5rem;">Geschichte der Objekterkennung</div>
+</div>
+
+<div class="timeline fade-up">
+  <div class="tl-item">
+    <div class="tl-dot">2001</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">Klassisch</div>
+      <h4>Viola-Jones – Erster Echtzeit-Detektor</h4>
+      <p>Haar-Merkmale + Cascade Classifier ermöglichen erstmals Echtzeit-Gesichtserkennung auf Consumer-Hardware.</p>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-icon blue">⚡</div>
-    <h3>Gradient Descent</h3>
-    <p>Training = Minimierung der Kostenfunktion <em>J(θ)</em> durch iterative Schritte entgegen
-    dem Gradienten. In der Praxis wird <strong>Mini-batch GD</strong> mit Backpropagation
-    (Gradient Descent + Reverse-Mode AutoDiff) eingesetzt.</p>
+  <div class="tl-item">
+    <div class="tl-dot">2012</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Durchbruch</div>
+      <h4>AlexNet – Deep Learning Revolution</h4>
+      <p>Tiefes CNN gewinnt ImageNet und halbiert die Fehlerrate. GPU-Training und Deep Learning werden zum Standard.</p>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-icon green">🎯</div>
-    <h3>Loss-Funktionen</h3>
-    <p>Bei Klassifikation mit Klassen-Wahrscheinlichkeiten (z.&nbsp;B. Softmax-Ausgabe neuronaler Netze)
-    wird der <strong>Kreuzentropie-Loss</strong> verwendet:
-    <em>L(y, ŷ) = −Σ y<sub>j</sub> log₂(ŷ<sub>j</sub>)</em>.</p>
+  <div class="tl-item">
+    <div class="tl-dot">2013</div>
+    <div class="tl-body">
+      <div class="tl-badge blue">CNN</div>
+      <h4>R-CNN – Regionenbasierte Erkennung</h4>
+      <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-icon amber">📊</div>
-    <h3>Metriken</h3>
-    <p>Neben <em>Accuracy</em> sind <strong>Precision</strong>, <strong>Recall</strong> und
-    der <strong>F₁-Score</strong> wichtige Metriken – besonders bei unausgewogenen Datensätzen,
-    wie sie in der Objekterkennung häufig vorkommen.</p>
+  <div class="tl-item">
+    <div class="tl-dot">2015</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Meilenstein</div>
+      <h4>YOLO v1 – You Only Look Once</h4>
+      <p>Ein einziger Forward-Pass liefert alle Bounding Boxes direkt. 45 FPS auf einer GPU – Echtzeit-Objekterkennung ist Realität.</p>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-dot">2023</div>
+    <div class="tl-body">
+      <div class="tl-badge red">Aktuell</div>
+      <h4>YOLOv8 – Stand der Technik</h4>
+      <p>Ankerfreie Architektur, 37,3 mAP auf COCO, einheitliche API für Detection/Segmentation. Nano-Variante: 3,2 ms/Bild auf A100.</p>
+    </div>
   </div>
 </div>
 
-<div class="callout info fade-up">
-  <span class="ci">💡</span>
-  <div class="ct">
-    <strong>Aus der Vorlesung</strong>
-    Convolution-Schichten erkennen in den ersten Ebenen einfache Muster (Linien, Farbkombinationen).
-    In tieferen Schichten entstehen daraus immer komplexere Repräsentationen –
-    die Grundlage für leistungsstarke Detektoren wie YOLO.
+<!-- Begriffe -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:.5rem;">Begriffserklärungen</div>
+</div>
+
+<div class="def-grid fade-up">
+  <div class="def-card">
+    <div class="def-term">Begriff 01</div>
+    <div class="def-name">Bounding Box</div>
+    <p>Achsenparalleles Rechteck um ein erkanntes Objekt – definiert durch Mittelpunkt (cx, cy) sowie Breite und Höhe.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 02</div>
+    <div class="def-name">Confidence Score</div>
+    <p>Zahl [0–1]: Wie sicher ist das Modell, dass die Box ein Objekt enthält und die Klasse korrekt ist?</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 03</div>
+    <div class="def-name">IoU – Intersection over Union</div>
+    <p>Schnittfläche / Vereinigungsfläche zweier Boxen. 0 = keine Überlappung, 1 = identisch. COCO-Schwellwert: ≥ 0,5.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 04</div>
+    <div class="def-name">NMS – Non-Maximum Suppression</div>
+    <p>Bereinigt mehrfach erkannte Objekte: Beste Box behalten, alle Nachbarboxen mit IoU &gt; 0,45 unterdrücken.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 05</div>
+    <div class="def-name">Anchor Box</div>
+    <p>Vordefinierte Box-Formen als Vorhersage-Referenz. YOLOv8 ist ankerfrei und sagt den Mittelpunkt direkt vorher.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-term">Begriff 06</div>
+    <div class="def-name">mAP – mean Average Precision</div>
+    <p>Hauptmetrik für Objektdetektoren: Durchschnitt der Average Precision über alle Klassen bei variierenden IoU-Schwellwerten.</p>
+  </div>
+</div>
+
+<!-- Anwendungsfälle -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:.5rem;">Typische Anwendungsfälle</div>
+</div>
+
+<div class="usecase-grid fade-up">
+  <div class="usecase-card">
+    <span class="usecase-icon">🚗</span>
+    <h3>Autonomes Fahren</h3>
+    <ul>
+      <li>Fußgänger &amp; Radfahrer</li>
+      <li>Verkehrsschilder &amp; Ampeln</li>
+      <li>Fahrzeuge &amp; Hindernisse</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
+    <span class="usecase-icon">📹</span>
+    <h3>Sicherheit &amp; Überwachung</h3>
+    <ul>
+      <li>Personenzählung &amp; Tracking</li>
+      <li>Eindringling-Erkennung</li>
+      <li>Verlassengegenstand-Alarm</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
+    <span class="usecase-icon">⚽</span>
+    <h3>Sport &amp; Medizin</h3>
+    <ul>
+      <li>Spieler- &amp; Balltracking</li>
+      <li>Taktische Bewegungsanalyse</li>
+      <li>Chirurgische Instrumente</li>
+    </ul>
+  </div>
+  <div class="usecase-card">
+    <span class="usecase-icon">🏭</span>
+    <h3>Industrie &amp; Qualitätskontrolle</h3>
+    <ul>
+      <li>Defekterkennung am Fließband</li>
+      <li>Montagekontrolle &amp; Vollständigkeit</li>
+      <li>Barcode- &amp; Produktidentifikation</li>
+    </ul>
   </div>
 </div>
 
 <hr class="divider">
 
-<!-- ══════════════════════════════════════════════════════════════
-     TRANSFER LEARNING
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ MOTIVATION ═════════════════════════════════════════════════ -->
 <div class="fade-up">
-  <div class="section-label">Effizienz</div>
-  <div class="section-title">Transfer Learning</div>
+  <div class="section-label">Kapitel 2</div>
+  <div class="section-title">Motivation</div>
   <p class="section-body">
-    Wie in der Vorlesung erläutert, trainiert man in der Praxis kaum ein CNN von Grund auf neu.
-    Stattdessen nutzt man <strong>vortrainierte Gewichte</strong> (z.&nbsp;B. auf ImageNet) und
-    passt das Netz durch <em>Freezing</em> oder <em>Fine-Tuning</em> an die Zielaufgabe an.
-    YOLO nutzt genau dieses Prinzip.
+    Warum ist Geschwindigkeit so kritisch? Ein autonomes Fahrzeug, das einen Fußgänger
+    200 ms zu spät erkennt, hat bei 50 km/h bereits 2,8 m zurückgelegt – zu viel für
+    eine sichere Reaktion. Millisekunden entscheiden hier über Leben und Tod, und das
+    gilt nicht nur im Straßenverkehr: Industrieroboter, die Defekte am Fließband erkennen,
+    medizinische Systeme, die während einer Operation assistieren, oder Sicherheitskameras,
+    die Eindringlinge in Echtzeit melden – all diese Anwendungen verlangen, dass jeder
+    einzelne Frame innerhalb von unter 33 ms vollständig verarbeitet ist.
   </p>
-</div>
-
-<div class="tl-row fade-up">
-  <div class="tl-block frozen">
-    <div class="tb-label">Vortrainiert (Frozen)</div>
-    <div class="tb-title">Backbone CNN</div>
-  </div>
-  <div class="tl-arrow">›</div>
-  <div class="tl-block frozen">
-    <div class="tb-label">Frozen / Fine-tune</div>
-    <div class="tb-title">Feature Pyramid</div>
-  </div>
-  <div class="tl-arrow">›</div>
-  <div class="tl-block new">
-    <div class="tb-label">Neu trainiert</div>
-    <div class="tb-title">Detection Head</div>
-  </div>
-  <div class="tl-arrow">›</div>
-  <div class="tl-block new">
-    <div class="tb-label">Ausgabe</div>
-    <div class="tb-title">BBox + Klasse</div>
-  </div>
+  <p class="section-body">
+    Der Bedarf wächst rasant: Der globale Markt für Computer Vision wird bis 2030 auf
+    über 50 Milliarden US-Dollar geschätzt. Was vor zehn Jahren noch spezialisierte
+    Rechenzentren erforderte, läuft heute auf Smartphones, Mikrocontrollern und direkt
+    im Browser – und macht Echtzeit-Objekterkennung damit zu einer der praktisch
+    relevantesten Technologien unserer Zeit.
+  </p>
 </div>
 
 <div class="two-col fade-up">
   <div class="card">
-    <h3>❄️ Freezing</h3>
-    <p>Vortrainierte Schichten bleiben unverändert. Geeignet bei wenigen Zieldaten oder wenn
-    Quell- und Zieldaten ähnlich sind. Schneller und günstigerer in der Berechnung.</p>
+    <h3>🐢 Two-Stage – langsam</h3>
+    <p>Faster R-CNN erzielt hohe Genauigkeit (~42 mAP), benötigt aber 100–500 ms pro Frame – für Live-Video nicht einsetzbar.</p>
   </div>
   <div class="card">
-    <h3>🔧 Fine-Tuning</h3>
-    <p>Das gesamte Netz wird weitertrainiert. Empfohlen bei vielen Zieldaten oder wenn diese
-    sich stärker von den Quelldaten unterscheiden. Ermöglicht bessere Anpassung.</p>
+    <h3>⚡ One-Stage – schnell</h3>
+    <p>YOLOv8n erreicht 37 mAP bei unter 5 ms pro Frame auf der GPU, im Browser 10–30 FPS – Echtzeit ganz ohne Server.</p>
   </div>
 </div>
 
 <hr class="divider">
 
-<!-- ══════════════════════════════════════════════════════════════
-     SEGMENTIERUNG
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ TECHNIK ════════════════════════════════════════════════════ -->
 <div class="fade-up">
-  <div class="section-label">Verwandtes Thema</div>
-  <div class="section-title">Segmentierung</div>
+  <div class="section-label">Kapitel 3</div>
+  <div class="section-title">Technik</div>
+</div>
+
+<!-- YOLO Pipeline -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Wie YOLO funktioniert (Input → Netzwerk → Bounding Boxes)</div>
   <p class="section-body">
-    Während die Klassifikation einem ganzen Bild ein Label zuweist, ist Segmentierung
-    eine <strong>Klassifikation pro Pixel</strong>. Sie ist eng mit der Objekterkennung verbunden –
-    besonders bei der Instanz-Segmentierung (z.&nbsp;B. Mask&nbsp;R-CNN).
+    Ein einziger Forward-Pass durch fünf Stufen liefert alle Detektionen –
+    kein zweiter Pass, keine separaten Regionenvorschläge.
   </p>
 </div>
 
-<div class="seg-types fade-up">
-  <div class="seg-card">
-    <div class="seg-vis" style="background: linear-gradient(135deg, #4a90d9 40%, #e8c547 40% 70%, #4caf50 70%);">
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;text-shadow:0 1px 3px rgba(0,0,0,.4);">jedes Pixel = 1 Klasse</div>
-    </div>
-    <h4>Semantische Segmentierung</h4>
-    <p>Jedes Pixel erhält ein Klassenlabel. Kein Unterschied zwischen Instanzen
-    (z.&nbsp;B. alle Autos = blau). Typische Architektur: U-Net, DeepLab.</p>
+<div class="pipeline fade-up">
+  <div class="pipe-step">
+    <div class="step-num">01</div>
+    <h4>Input</h4>
+    <p>Letterboxing<br>640×640 px<br>RGB-Norm.</p>
   </div>
-  <div class="seg-card">
-    <div class="seg-vis" style="background: #1a1814; position:relative;">
-      <div style="position:absolute;top:12px;left:14px;width:44px;height:50px;background:#e8734a;border-radius:4px;opacity:.85;"></div>
-      <div style="position:absolute;top:18px;left:44px;width:40px;height:46px;background:#4a90d9;border-radius:4px;opacity:.85;"></div>
-      <div style="position:absolute;bottom:8px;right:12px;width:38px;height:44px;background:#4caf50;border-radius:4px;opacity:.85;"></div>
-    </div>
-    <h4>Instanz-Segmentierung</h4>
-    <p>Jede Objekt-Instanz erhält eine eigene Maske. Basis: Objekterkennung +
-    pixelweise Maskenprädiktion. Beispiel: <strong>Mask R-CNN</strong>.</p>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">02</div>
+    <h4>Backbone</h4>
+    <p>CSPDarknet<br>Merkmals-<br>extraktion</p>
   </div>
-  <div class="seg-card">
-    <div class="seg-vis" style="background:linear-gradient(135deg, #6b7280 0%, #6b7280 100%);">
-      <div style="position:absolute;inset:0;">
-        <div style="position:absolute;top:8px;left:8px;width:50px;height:60px;background:#4a90d9;opacity:.9;border-radius:3px;"></div>
-        <div style="position:absolute;top:14px;left:44px;width:42px;height:50px;background:#e8734a;opacity:.9;border-radius:3px;"></div>
-        <div style="position:absolute;bottom:0;left:0;right:0;height:22px;background:#4caf50;opacity:.6;"></div>
-      </div>
-    </div>
-    <h4>Panoptische Segmentierung</h4>
-    <p>Kombination aus beiden: zählbare Objekte erhalten Instanzlabels,
-    nicht-zählbare (Boden, Himmel) nur Klassenlabels.</p>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">03</div>
+    <h4>Neck</h4>
+    <p>FPN + PAN<br>Multi-Scale<br>Features</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step active">
+    <div class="step-num">04</div>
+    <h4>Head ★</h4>
+    <p>BBox + Score<br>80 Klassen-<br>vorhersage</p>
+  </div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step">
+    <div class="step-num">05</div>
+    <h4>NMS</h4>
+    <p>Bereinigung<br>überlappender<br>Boxen</p>
   </div>
 </div>
 
-<div class="callout note fade-up">
-  <span class="ci">📐</span>
-  <div class="ct">
-    <strong>Metrik: Intersection over Union (IoU)</strong>
-    Die Standard-Metrik für Segmentierung und Objekterkennung. IoU = Überlappungsfläche / Vereinigungsfläche.
-    Bei der Objekterkennung gilt eine Detektion als korrekt, wenn IoU ≥ 0.5 (je nach Standard auch 0.75).
+<!-- OpenCV -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Rolle von OpenCV für Video-Capture und Vorverarbeitung</div>
+  <p class="section-body">
+    OpenCV übernimmt in klassischen Pipelines Video-Capture, Farbkonvertierung (BGR→RGB),
+    Resize/Letterboxing und die Visualisierung der Bounding Boxes.
+    In dieser Browser-Demo erfüllt JavaScript + Canvas dieselbe Aufgabe.
+  </p>
+</div>
+
+<div class="code-block fade-up">
+  <div class="code-header">
+    <span class="dot" style="background:#ff5f57;"></span>
+    <span class="dot" style="background:#febc2e;margin-left:6px;"></span>
+    <span class="dot" style="background:#28c840;margin-left:6px;"></span>
+    <span style="margin-left:12px;">OpenCV + YOLO (Python)</span>
   </div>
+  <pre><span class="code-keyword">import</span> cv2
+<span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
+
+model = <span class="code-func">YOLO</span>(<span class="code-string">'yolov8n.pt'</span>)
+cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string">'video.mp4'</span>)  <span class="code-comment"># oder 0 für Webcam</span>
+
+<span class="code-keyword">while</span> cap.<span class="code-func">isOpened</span>():
+    ret, frame = cap.<span class="code-func">read</span>()
+    <span class="code-keyword">if not</span> ret: <span class="code-keyword">break</span>
+    results = model.<span class="code-func">predict</span>(frame, conf=<span class="code-string">0.30</span>)
+    cv2.<span class="code-func">imshow</span>(<span class="code-string">'YOLO'</span>, results[<span class="code-string">0</span>].<span class="code-func">plot</span>())
+    <span class="code-keyword">if</span> cv2.<span class="code-func">waitKey</span>(<span class="code-string">1</span>) == <span class="code-func">ord</span>(<span class="code-string">'q'</span>): <span class="code-keyword">break</span></pre>
 </div>
 
 <hr class="divider">
 
-<!-- ══════════════════════════════════════════════════════════════
-     OBJEKTERKENNUNG
-══════════════════════════════════════════════════════════════════ -->
+<!-- ══ DEMO-BEREICH ════════════════════════════════════════════════ -->
 <div class="fade-up">
-  <div class="section-label">Kernthema</div>
-  <div class="section-title">Objekterkennung – Two-stage vs. One-stage</div>
-  <p class="section-body">
-    Objekterkennung löst zwei Teilprobleme gleichzeitig: <strong>Lokalisierung</strong>
-    (wo ist das Objekt?) und <strong>Klassifikation</strong> (was ist es?).
-    Die Vorlesung unterscheidet zwei Methodenfamilien.
-  </p>
+  <div class="section-label">Kapitel 4</div>
+  <div class="section-title">Demo-Bereich</div>
+</div>
+
+<!-- Upload-Demo -->
+<div class="demo-wrap fade-up" style="margin-bottom:2rem;">
+  <div id="drop">
+    <span class="drop-icon">📁</span>
+    Eigenes Video hochladen oder hier ablegen
+    <input type="file" id="fi" accept="video/*" style="display:none">
+    <span class="drop-hint">MP4 · WebM · MOV · AVI</span>
+  </div>
+  <div id="bar">
+    <span id="st"></span>
+    <button id="reload" style="display:none">↩ Neue Datei</button>
+    <label>Konfidenz ≥</label>
+    <input type="range" id="conf" min="0.10" max="0.90" step="0.05" value="0.40">
+    <span class="val" id="confv">0.40</span>
+  </div>
+  <div id="wrap">
+    <video id="vid" loop muted playsinline></video>
+    <canvas id="cv"></canvas>
+  </div>
+</div>
+
+<!-- Vergleich -->
+<div class="fade-up" style="margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Vergleich: YOLO vs. TensorFlow Object Detection API</div>
 </div>
 
 <table class="cmp-table fade-up">
   <thead>
     <tr>
-      <th>Eigenschaft</th>
-      <th>Two-stage (R-CNN-Familie)</th>
-      <th>One-stage (YOLO / SSD)</th>
+      <th>Merkmal</th>
+      <th>YOLOv8n (diese Demo)</th>
+      <th>TF Object Detection API</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><strong>Prinzip</strong></td>
-      <td>1. Regionenvorschläge → 2. Klassifikation</td>
-      <td>Direkte Vorhersage in einem Pass</td>
-    </tr>
-    <tr>
-      <td><strong>Genauigkeit</strong></td>
-      <td><span class="badge badge-green">Hoch</span></td>
-      <td><span class="badge badge-amber">Gut</span></td>
+      <td><strong>Architektur</strong></td>
+      <td>One-Stage, ankerfrei</td>
+      <td>Two-Stage (Faster R-CNN) oder One-Stage (SSD)</td>
     </tr>
     <tr>
       <td><strong>Geschwindigkeit</strong></td>
-      <td><span class="badge badge-red">Langsam</span></td>
-      <td><span class="badge badge-green">Sehr schnell</span></td>
+      <td><span class="badge badge-green">~3–30 ms/Frame</span></td>
+      <td><span class="badge badge-amber">~50–500 ms/Frame</span></td>
     </tr>
     <tr>
-      <td><strong>Echtzeit</strong></td>
-      <td><span class="badge badge-red">Schwierig</span></td>
-      <td><span class="badge badge-green">Ja</span></td>
+      <td><strong>mAP (COCO)</strong></td>
+      <td>37,3 @ [0.5:0.95]</td>
+      <td>28–45 (je nach Modell)</td>
     </tr>
     <tr>
-      <td><strong>Beispiele</strong></td>
-      <td>R-CNN, Fast R-CNN, Faster R-CNN</td>
-      <td><strong>YOLO</strong>, SSD, RetinaNet</td>
+      <td><strong>Modellgröße</strong></td>
+      <td><span class="badge badge-green">~6 MB (nano)</span></td>
+      <td><span class="badge badge-amber">~25–200 MB</span></td>
+    </tr>
+    <tr>
+      <td><strong>Browser-fähig</strong></td>
+      <td><span class="badge badge-green">Ja (ONNX Runtime Web)</span></td>
+      <td><span class="badge badge-amber">Begrenzt (TF.js)</span></td>
+    </tr>
+    <tr>
+      <td><strong>Nutzungsaufwand</strong></td>
+      <td><span class="badge badge-green">Sehr einfach (1 Zeile)</span></td>
+      <td><span class="badge badge-amber">Komplex (Config-Dateien)</span></td>
+    </tr>
+    <tr>
+      <td><strong>Beste Eignung</strong></td>
+      <td>Echtzeit, Edge, Rapid Prototyping</td>
+      <td>Forschung, TF-Ökosystem, Produktion</td>
     </tr>
   </tbody>
 </table>
 
-<div class="callout info fade-up">
-  <span class="ci">🔍</span>
-  <div class="ct">
-    <strong>R-CNN (Girshick 2013) – Aus der Vorlesung</strong>
-    Schritt 1: Regionenvorschläge via Selektiver Suche (~2000 Regionen).
-    Schritt 2: Jede Region → CNN → 4096-D Merkmalsvektor.
-    Schritt 3: SVM pro Klasse zur Klassifikation. Problem: Jede Region benötigt einen separaten Forward-Pass → langsam.
+
+<!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
+<div class="page-footer">
+  <div class="pf-info">
+    <strong>Echtzeit-Objekterkennung in Videostreams</strong><br>
+    Jasmin Kohlpaintner · Henrik Berg · Markus Luber
   </div>
+  <div class="pf-info">YOLOv8n · ONNX Runtime Web · Visual Computing</div>
 </div>
 
+<<<<<<< HEAD
 <!-- YOLO highlight -->
 <div class="yolo-box fade-up">
   <div class="yb-label">One-stage Detector · Diese Demo</div>
@@ -1170,65 +1302,10 @@ body {
     <canvas id="cv"></canvas>
   </div>
 
+=======
+>>>>>>> f230a4463903ce0369b3e1b053facd5b311e65da
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     ANOMALIEERKENNUNG
-══════════════════════════════════════════════════════════════════ -->
-<hr class="divider">
-
-<div class="fade-up">
-  <div class="section-label">Weiteres Thema</div>
-  <div class="section-title">Anomalieerkennung</div>
-  <p class="section-body">
-    Anomalieerkennung erkennt <strong>Abweichungen vom Normalzustand</strong> – z.&nbsp;B. Produktionsfehler.
-    Im Gegensatz zur Klassifikation sind Defekte oft selten oder variabel,
-    weshalb unüberwachte Ansätze eine wichtige Rolle spielen.
-  </p>
-</div>
-
-<div class="anomaly-grid fade-up">
-  <div class="anomaly-card">
-    <div class="a-head">
-      <div class="a-dot" style="background: var(--blue);"></div>
-      <h4>Überwachter Ansatz</h4>
-    </div>
-    <p>Klassifikator lernt aus gelabelten normalen und defekten Bildern (z.&nbsp;B. CNNs mit Augmentation).
-    Gut bei vielen bekannten Fehlertypen.</p>
-    <ul>
-      <li>Benötigt: Normale + Defekte Bilder</li>
-      <li>Beispiele: ResNet, EfficientNet</li>
-      <li>Problem: Seltene/neue Fehler werden nicht erkannt</li>
-    </ul>
-  </div>
-  <div class="anomaly-card">
-    <div class="a-head">
-      <div class="a-dot" style="background: var(--accent);"></div>
-      <h4>Unüberwachter Ansatz</h4>
-    </div>
-    <p>Training nur auf normalen Daten. Anomalie = große Abweichung vom Normalmodell.
-    Ideal für unbekannte oder seltene Fehler.</p>
-    <ul>
-      <li>Autoencoder: hoher Rekonstruktionsfehler = Anomalie</li>
-      <li>Merkmalsbasiert: Cosine-Distanz zu normalen Features</li>
-      <li>Patch-basiert: PatchCore [Roth2022] für lokale Defekte</li>
-    </ul>
-  </div>
-</div>
-
-<div class="callout tip fade-up">
-  <span class="ci">🔬</span>
-  <div class="ct">
-    <strong>PatchCore – Stand der Technik</strong>
-    PatchCore (Roth et al., CVPR 2022) extrahiert lokale Patch-Features mit einem vortrainierten CNN (z.&nbsp;B. WideResNet)
-    und vergleicht Test-Patches mit einem Core-Set normaler Patches. Große Abweichung → Anomalie.
-    Kein Neutraining nötig – ein Paradebeispiel für den Einsatz von Transfer Learning.
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     YOLO WORKER + INFERENCE
-══════════════════════════════════════════════════════════════════ -->
 <script>
 (function () {
 
@@ -1252,6 +1329,14 @@ function hsl(name) {
   return `hsl(${h % 360},65%,48%)`;
 }
 
+// Preview (top) elements
+const previewWrap   = document.getElementById('preview-wrap');
+const previewVid    = document.getElementById('preview-vid');
+const previewCv     = document.getElementById('preview-cv');
+const previewCtx    = previewCv.getContext('2d');
+const previewStatus = null;
+
+// Upload (bottom) elements
 const drop   = document.getElementById('drop');
 const fi     = document.getElementById('fi');
 const wrap   = document.getElementById('wrap');
@@ -1265,27 +1350,33 @@ const reload = document.getElementById('reload');
 
 confEl.addEventListener('input', () => confv.textContent = parseFloat(confEl.value).toFixed(2));
 
-// ── Worker ────────────────────────────────────────────────────────────────────
+// Shared worker & state
 const worker = new Worker('worker.js');
 let ready = false, sz = 640, provider = 'WASM';
-let lastDets = [], running = false;
-let resolveResult = null;
+let lastDets = [], running = false, resolveResult = null;
+let activeVid = null, activeCtx = null, activeCanvas = null, activeStatus = null;
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') {
-    ready    = true;
-    sz       = data.inputSize;
-    provider = data.provider;
-    stEl.textContent = `✓ Modell geladen · ${provider}`;
+    ready = true; sz = data.inputSize; provider = data.provider;
+    // Auto-start preview video
+    previewVid.src = 'videos/queue-management.mp4';
+    previewVid.onloadeddata = () => {
+      previewWrap.style.display = 'block';
+      previewVid.play();
+      activeVid = previewVid; activeCtx = previewCtx;
+      activeCanvas = previewCv; activeStatus = previewStatus;
+      if (!running) { running = true; inferLoop(); drawLoop(); }
+    };
   } else if (data.type === 'result') {
     lastDets = data.detections;
     if (resolveResult) { resolveResult(); resolveResult = null; }
   } else if (data.type === 'error') {
-    stEl.textContent = `⚠ Fehler: ${data.message}`;
+    console.error('Worker error:', data.message);
   }
 };
 
-// ── Upload ────────────────────────────────────────────────────────────────────
+// Upload demo events
 drop.addEventListener('click', () => fi.click());
 drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -1296,28 +1387,30 @@ drop.addEventListener('drop', e => {
 fi.addEventListener('change', () => { if (fi.files[0]) load(fi.files[0]); });
 
 reload.addEventListener('click', () => {
-  running = false;
-  lastDets = [];
-  vid.pause();
-  vid.src = '';
+  vid.pause(); vid.src = '';
   wrap.style.display = 'none';
   drop.style.display = '';
   reload.style.display = 'none';
-  stEl.textContent = `✓ Modell geladen · ${provider}`;
+  stEl.textContent = '';
+  // Switch back to preview
+  activeVid = previewVid; activeCtx = previewCtx;
+  activeCanvas = previewCv; activeStatus = previewStatus;
+  previewVid.play();
 });
 
 function load(file) {
   vid.src = URL.createObjectURL(file);
   vid.onloadeddata = () => {
+    previewVid.pause();
+    activeVid = vid; activeCtx = ctx;
+    activeCanvas = cv; activeStatus = stEl;
     drop.style.display = 'none';
     reload.style.display = '';
-    wrap.style.display  = 'block';
+    wrap.style.display = 'block';
     vid.play();
-    if (!running) { running = true; inferLoop(); drawLoop(); }
   };
 }
 
-// ── Letterbox Preprocess ──────────────────────────────────────────────────────
 const off  = document.createElement('canvas');
 const octx = off.getContext('2d', { willReadFrequently: true });
 
@@ -1339,18 +1432,15 @@ function prep(src, W, H) {
   return { f32, scale, padX: px, padY: py };
 }
 
-// ── Inference Loop (serialized) ───────────────────────────────────────────────
 async function inferLoop() {
   while (running) {
-    if (!ready || vid.readyState < 2 || vid.paused) {
-      await new Promise(r => setTimeout(r, 50));
-      continue;
+    if (!ready || !activeVid || activeVid.readyState < 2 || activeVid.paused) {
+      await new Promise(r => setTimeout(r, 50)); continue;
     }
-    const W = vid.videoWidth, H = vid.videoHeight;
+    const W = activeVid.videoWidth, H = activeVid.videoHeight;
     if (!W) { await new Promise(r => setTimeout(r, 16)); continue; }
-
     const t0 = performance.now();
-    const { f32, scale, padX, padY } = prep(vid, W, H);
+    const { f32, scale, padX, padY } = prep(activeVid, W, H);
     await new Promise(r => {
       resolveResult = r;
       worker.postMessage({
@@ -1359,31 +1449,35 @@ async function inferLoop() {
         confThresh: parseFloat(confEl.value),
       }, [f32.buffer]);
     });
-    const fps = (1000 / (performance.now() - t0)).toFixed(1);
-    stEl.textContent = `${provider} · ${fps} FPS · ${lastDets.length} Objekt(e) erkannt`;
+    if (activeStatus && activeVid !== previewVid) {
+      const fps = (1000 / (performance.now() - t0)).toFixed(1);
+      activeStatus.textContent = `${provider} · ${fps} FPS · ${lastDets.length} Objekt(e)`;
+    }
   }
 }
 
-// ── Draw Loop (60 fps) ────────────────────────────────────────────────────────
 function drawLoop() {
   if (!running) return;
-  const W = vid.videoWidth, H = vid.videoHeight;
-  if (W > 0 && H > 0) {
-    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    ctx.clearRect(0, 0, W, H);
-    for (const d of lastDets) {
-      const c = hsl(d.class);
-      const [x, y, w, h] = d.bbox;
-      ctx.strokeStyle = c;
-      ctx.lineWidth   = 2.5;
-      ctx.strokeRect(x, y, w, h);
-      const lbl = `${d.class} ${Math.round(d.score * 100)}%`;
-      ctx.font = 'bold 24px DM Sans, system-ui, sans-serif';
-      const tw = ctx.measureText(lbl).width;
-      ctx.fillStyle = c;
-      ctx.fillRect(x, y - 30, tw + 12, 30);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(lbl, x + 6, y - 7);
+  if (activeVid && activeCanvas) {
+    const W = activeVid.videoWidth, H = activeVid.videoHeight;
+    if (W > 0 && H > 0) {
+      if (activeCanvas.width !== W || activeCanvas.height !== H) {
+        activeCanvas.width = W; activeCanvas.height = H;
+      }
+      activeCtx.clearRect(0, 0, W, H);
+      for (const d of lastDets) {
+        const c = hsl(d.class);
+        const [x, y, w, h] = d.bbox;
+        activeCtx.strokeStyle = c; activeCtx.lineWidth = 2.5;
+        activeCtx.strokeRect(x, y, w, h);
+        const lbl = `${d.class} ${Math.round(d.score * 100)}%`;
+        activeCtx.font = 'bold 24px DM Sans, system-ui, sans-serif';
+        const tw = activeCtx.measureText(lbl).width;
+        activeCtx.fillStyle = c;
+        activeCtx.fillRect(x, y - 30, tw + 12, 30);
+        activeCtx.fillStyle = '#fff';
+        activeCtx.fillText(lbl, x + 6, y - 7);
+      }
     }
   }
   requestAnimationFrame(drawLoop);

@@ -3,9 +3,16 @@ project:
   output-dir: docs
 
 website:
-  title: "Echtzeit-Objekterkennung mit YOLO"
+  title: "Echtzeit-Objekterkennung in Videostreams"
+
+format:
+  html:
+    theme: flatly
+    css: styles.css
+    toc: false
 
 resources:
   - models/
   - worker.js
   - videos/
+  - styles.css
