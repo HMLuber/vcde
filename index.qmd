@@ -151,7 +151,7 @@ anchor-sections: false
 </div>
 
 <div class="fade-up" style="margin-top:1.5rem;font-size:0.9rem;color:#666;">
-  Quellen: <a href="https://arxiv.org/abs/1506.02640" target="_blank" style="color:#0078d4;text-decoration:none;">Redmon et al. (2016) – YOLO</a> | <a href="https://github.com/ultralytics/ultralytics" target="_blank" style="color:#0078d4;text-decoration:none;">Ultralytics YOLOv8</a>
+  Quellen zur Historie: <a href="https://de.wikipedia.org/wiki/Objekterkennung" target="_blank" style="color:#0078d4;text-decoration:none;">Wikipedia: Objekterkennung</a> | <a href="https://arxiv.org/abs/1506.02640" target="_blank" style="color:#0078d4;text-decoration:none;">Redmon et al. (2016) – YOLO</a>
 </div>
 
 <!-- Begriffe -->
