@@ -1,0 +1,1682 @@
+=== vc_ana_linear_filters.pdf ===
+--- PAGE 1 ---
+Hochschule 
+München 
+University of
+Applied SciencesVisual Computing
+Prof. Dr. Markus Friedrich
+Lineare FilterFakultät für Informatik und Mathematik
+--- PAGE 2 ---
+Übersicht
+2 Visual ComputingVisual Computing
+Geometry Image Synthesis
+Image Analysis SciencesInformation 
+Visualization
+Mixed Reality
+Visual Analytics
+Human Computer 
+Interaction
+…
+2D/3D 
+Computer Vision
+Image ProcessingRepresentations
+Data Structures
+…
+Computer Science
+Life Sciences
+Social Sciences
+…Visualization
+Computer Graphics
+--- PAGE 3 ---
+3 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automaticÜbersicht
+--- PAGE 4 ---
+Lernziele
+•Die Funktionsweise Linearer Filter mit eigenen Worten beschreiben können.
+•Anwendungen und Eigenschaften einzelner Linearer Filter aufzählen können.
+•Lineare Filter händisch berechnen sowie implementieren können. 
+•Aus einem gefilterten Bild ableiten können, welcher Linearer Filter benutzt wurde.
+•Entscheiden können, ob ein gegebener Linearer Filter separierbar ist.
+4 Visual Computing
+--- PAGE 5 ---
+Lineare Filter
+•Bisher: Bildpunktbezogene Grauwertmanipulationen ohne Miteinbeziehung von Nachbarpixeln
+Jetzt: Betrachtung der räumlichen Umgebung eines Bildpunktes.
+•Da wir die Umgebung betrachten, bewegen wir uns im Ortsbereich.
+Daher auch der Name: Operationen im Ortsbereich (vs. Operationen im Frequenzbereich).
+•Da der neue Wert eines Pixels linear von den Werten seiner Nachbarn abhängt (gewichtete Summe), 
+sprechen wird von Linearen Filtern (vs. Nichtlineare Filter).
+5 Visual Computing
+--- PAGE 6 ---
+Anwendungen
+•Vorverarbeitungsschritte innerhalb einer komplexeren Bildverarbeitungs -Pipeline 
+(z.B. zur Segmentierung von Bildinhalten)
+•Rauschunterdrückung in Videosequenzen / einfachen Bildern
+•Hervorhebung von Kanten als Vorverarbeitungsschritt zur Kantenextraktion
+•Als Element eines neuronalen Netzes zur Erkennung von Bildinhalten ( Convolutional Neural
+Networks, CNNs)
+6 Visual Computing
+--- PAGE 7 ---
+Hinweis
+7 Visual ComputingLineare Filter definieren wir auf Grauwertmengen 
+𝑮=𝟎,𝟐𝟓𝟓 (also nur ein Kanal, 𝑁=1).
+Wenn Lineare Filter für mehrkanalige Bilder implementiert werden sollen, können diese pro 
+Kanal angewendet werden.
+
+--- PAGE 8 ---
+Beispiel: Bewegter Mittelwert
+8 Visual Computing
+𝑆=(𝑠𝑥,𝑦) 𝑆′=(𝑠′𝑥,𝑦)
+𝑠′𝑥,𝑦=1
+9෍
+𝑢=−1+1
+෍
+𝑣=−1+1
+𝑠(𝑥−𝑢,𝑦−𝑣)
+© Prof. Dr. P. Haberäcker
+--- PAGE 9 ---
+Lineare Filterung als Diskrete Faltung
+Verallgemeinerung:
+9 Visual Computing𝑠′𝑥,𝑦=1
+9෍
+𝑢=−1+1
+෍
+𝑣=−1+1
+𝑠(𝑥−𝑢,𝑦−𝑣)
+𝑠′𝑥,𝑦=෍
+𝑢=−𝑘𝑘
+෍
+𝑣=−𝑘𝑘
+ℎ𝑢,𝑣⋅𝑠𝑥−𝑢,𝑦−𝑣⋅
+𝐻=(ℎ𝑢,𝑣)
+Filterkern, Faltungsmatrix, Filterkernel𝑚=3,5,7,…
+Umgebung 𝑘=𝑚−1
+2
+
+--- PAGE 10 ---
+Diskrete Faltung –Zusammenhang Korrelation
+10 Visual ComputingY
+X0012345
+1
+2
+3
+4
+5Y
+X-1-101234
+0
+1
+2
+3
+4𝑘=𝑚−1
+2=1
+𝑠(𝑥=2,𝑦=3)
+𝑠′𝑥,𝑦=෍
+𝑢=−𝑘𝑘
+෍
+𝑣=−𝑘𝑘
+ℎ𝑢,𝑣⋅𝑠𝑥+𝑢,𝑦+𝑣Korrelation:𝑆𝐻
+Faltung zu Korrelation: Filterkern horizontal, dann 
+vertikal „flippen“ (Daher: Bei punktsymmetrischen 
+Filterkernen gibt es keinen Unterschied.
+෍
+𝑢=−𝑘𝑘
+෍
+𝑣=−𝑘𝑘
+𝒉−𝒖,−𝒗⋅𝑠𝑥+𝑢,𝑦+𝑣=෍
+𝑢=−𝑘𝑘
+෍
+𝑣=−𝑘𝑘
+ℎ𝑢,𝑣⋅𝑠𝑥−𝑢,𝑦−𝑣
+Faltung Korrelation mit „ Flippen “
+--- PAGE 11 ---
+Diskrete Faltung –Zusammenhang Korrelation
+•Die Faltung ist als Operator ∗auf zwei 
+Funktionen definiert, der eine neue Funktion 
+erzeugt: ℎ∗𝑠𝑡=σ𝑢=−𝑘𝑘ℎ𝑢⋅𝑠𝑡−𝑢
+•Die Faltung ist kommutativ , 
+d.h. ℎ∗𝑠𝑡=𝑠∗ℎ𝑡
+•Einsatz: Lineare Filterung
+11 Visual Computing•Die Korrelation ist als Operator ⋆auf zwei 
+Funktionen definiert, der eine neue Funktion 
+erzeugt: ℎ⋆𝑠𝑡=σ𝑢=−𝑘𝑘ℎ𝑢⋅𝑠𝑡+𝑢
+•Die Korrelation ist nicht kommutativ , 
+d.h. ℎ⋆𝑠𝑡≠𝑠⋆ℎ𝑡
+•Einsatz: Mustererkennung
+Quelle: https://en.wikipedia.org/wiki/Convolution#/media/File:Comparison_convolution_correlation.svg
+Wenn ℎsymmetrisch ist, ergibt die Anwendung beider Operatoren das gleiche Ergebnis. ℎ∗𝑠 𝑠∗ℎ
+ℎ
+𝑠𝑠⋆ℎ ℎ⋆𝑠
+--- PAGE 12 ---
+Diskrete Faltung –Zusammenhang Korrelation
+Beispiel: 1D Mustererkennung mittels Korrelation
+12 Visual Computing
+ℎ
+𝑠ℎ⋆𝑠
+Quelle: https://en.wikipedia.org/wiki/Cross -correlation#/media/File:Cross_correlation_animation.gifℎ⋆𝑠ist dort maximal, 
+wo die Überlagerung 
+beider Funktionen 
+perfekt ist („Match“).
+
+--- PAGE 13 ---
+Diskrete Faltung –Zusammenhang Korrelation
+Beispiel: 2D Mustererkennung mittels Korrelation
+13 Visual Computing
+ℎ⋆𝑠(𝑥,𝑦) Maximaextraktion ℎ(𝑢,𝑣)𝑠(𝑥,𝑦)Quelle: https://courses.cs.duke.edu/spring21/compsci527/notes/n_01_convolution.pdf
+Vereinfachung: ℎund 𝑠müssten eigentlich normiert werden (Stichwort: Zero Normalized Cross Correlation ). 
+Außerdem zeigt das Ergebnis auch resulte für rotierte und skalierte ℎ-Varianten.
+--- PAGE 14 ---
+Randpixelergänzung
+Wie mit Pixelzugriffen umgehen, die 
+außerhalb des Bildes liegen?
+14 Visual Computing
+Quelle: [Burger2005]
+Zero-Padding Extrapolation Zyklische Fortsetzung
+Quelle: [Burger2005]
+--- PAGE 15 ---
+Unterscheidung
+Wir unterscheiden zwei Arten von Linearen Filtern:
+•Summen -oder Glättungsoperatoren (nur positive Werte in 𝐻)
+•Differenzoperatoren (positive und negative Werte in 𝐻)
+20 Visual Computing
+--- PAGE 16 ---
+Glättungsoperatoren
+•Der bereits behandelte Operator Bewegter Mittelwert ist ein Beispiel für eine Glättungsoperation 
+(auch: Box -Filter)
+•Der Box -Filter ist aufgrund folgender Eigenschaften ein schlechter Glättungsfilter: 
+•Scharf abfallende Ränder (schlechtes Frequenzverhalten)
+•Alle Bildelemente haben gleiches Gewicht (wenn nicht zusätzlich gewichtet wird) 
+•Keine Isotropie (Filter sollte in alle Richtungen gleiche Auswirkungen haben)
+•Besser: Gauß -Filter (auch: Gauß -Weichzeichner)
+•Diskrete Approximation der Gauß -Glockenkurve
+•Gutes Frequenzverhalten
+•Isotrop (bei Filtermasken 𝑚>4)
+21 Visual Computing𝑔𝑥,𝑦=1
+2𝜋𝜎2⋅𝑒−𝑥2+𝑦2
+2𝜎2
+--- PAGE 17 ---
+Glättungsoperatoren -Beispiele
+22 Visual Computing
+Quelle: [Burger2005]
+𝑚=3
+Box-Filter Gauß -Filter
+--- PAGE 18 ---
+Glättungsoperatoren -Beispiele
+23 Visual Computing
+
+--- PAGE 19 ---
+Glättungsoperatoren -Beispiele
+24 Visual Computing
+Quelle: http://16385.courses.cs.cmu.edu/spring2021/lecture/filtering/slide_068
+--- PAGE 20 ---
+Glättungsoperatoren -Unsharp Masking
+•Ein Verfahren, bei der Glättungsoperatoren zum Einsatz kommen, ist das Unsharp Masking :
+•Schritte:
+•Das Eingabebild wird weichgezeichnet (z.B. mit einem Gauß -Weichzeichner).
+•Das Weichgezeichnete Eingabebild wird vom eigentlichen Eingabebild subtrahiert.
+•Das Differenzbild (auch: Maske) wird auf das Eingabebild addiert (mit konstantem Faktor 𝑐).
+•𝑐=1: Standardverfahren, 𝑐>1: „Highboost -Filtering “, 𝑐<1: Einfluss d. Maske wird reduziert.
+25 Visual Computing
+Quelle: [Gonzalez2018]
+--- PAGE 21 ---
+Einschub -Grauwertübergänge und -gradienten
+Grauwertübergang: 
+(𝑀=1)
+26 Visual Computing
+© Prof. Dr. G. Socher𝑠(𝑥)
+𝑠′(𝑥)
+𝑠′′(𝑥)Erste Ableitung 𝑠′(𝑥)oder 𝛿𝑠(𝑥)
+𝛿𝑥
+Minimum oder Maximum in der ersten Ableitung.Bildfunktion 𝑠(𝑥)
+Zweite Ableitung 𝑠′′(𝑥)oder 𝛿2𝑠(𝑥)
+𝛿𝑥2
+Nulldurchgang in der zweiten Ableitung.
+Eine Kante verläuft an der Position der steilsten Steigung 
+(Steigung gibt Auskunft über die Stärke der Kante)
+--- PAGE 22 ---
+Einschub -Grauwertübergänge und -gradienten
+Grauwertgradient:
+(𝑀=2)
+27 Visual Computing𝑔𝑟𝑎𝑑𝑠=𝛿𝑠(𝑥,𝑦)
+𝛿𝑥
+𝛿𝑠(𝑥,𝑦)
+𝛿𝑦
+Betrag:𝛿𝑠𝑥,𝑦
+𝛿𝑥2
++𝛿𝑠(𝑥,𝑦)
+𝛿𝑦2 Richtung: a𝑟𝑐𝑡𝑎𝑛𝛿𝑠𝑥,𝑦
+𝛿𝑦
+𝛿𝑠(𝑥,𝑦)
+𝛿𝑥
+𝑔𝑟𝑎𝑑𝑠=𝛿𝑠(𝑥,𝑦)
+𝛿𝑥
+0𝑔𝑟𝑎𝑑𝑠=0
+𝛿𝑠(𝑥,𝑦)
+𝛿𝑦Quelle: https://www.youtube.com/watch?v=lOEBsQodtEQ
+Richtung
+--- PAGE 23 ---
+Einschub -Approximation des Grauwertgradienten
+•Wie können wir den Grauwertgradienten berechnen ?
+•Über eine Approximation mittels finiter Differenzen (diskrete partielle Ableitungen):
+•Diese lassen sich mittels Linearer Filter berechnen:
+(und das sind Differenzoperatoren )
+28 Visual Computing𝑔𝑟𝑎𝑑𝑠~𝑠𝑥(𝑥,𝑦)
+𝑠𝑦(𝑥,𝑦)𝑠𝑥𝑥,𝑦=𝑠𝑥+Δ𝑥,𝑦−𝑠(𝑥,𝑦)
+Δ𝑥=Δ𝑥=1𝑠𝑥+1,𝑦−𝑠(𝑥,𝑦)
+1=𝑠𝑥+1,𝑦−𝑠(𝑥,𝑦)
+𝑠𝑦𝑥,𝑦=𝑠𝑥,𝑦+Δ𝑦−𝑠(𝑥,𝑦)
+Δ𝑦=Δ𝑦=1𝑠𝑥,𝑦+1−𝑠(𝑥,𝑦)
+1=𝑠𝑥,𝑦+1−𝑠(𝑥,𝑦)
+𝐻𝑥=000
+0−10
+010𝐻𝑦=000
+0−11
+000
+--- PAGE 24 ---
+Einschub -Beispiele
+29 Visual Computing
+© Prof. Dr. G. Socher
+Grauwertübergänge in 𝑥-und 𝑦-Richtung Gradientenbetrag Gradientenrichtung𝐻𝑥 𝐻𝑦
+--- PAGE 25 ---
+Differenzoperatoren
+•Wie besprochen: Sind in 𝐻auch negative Werte enthalten, spricht man von Differenzoperatoren.
+•Bei Grauwertübergängen liefert der Operator eine Maßzahl für die „Stärke“ des Übergangs.
+•Wir sehen uns folgende Differenzoperatoren an: 
+•Sobel -Operator
+•Kompassgradient
+•Laplace -Operator
+30 Visual Computing
+--- PAGE 26 ---
+Differenzoperatoren -Sobel -Operator
+Eigenschaften:
+•Besseren Ergebnis als bereits gezeigte einfache Maske für diskrete partielle Ableitungen 
+(weniger störungsanfällig , z.B. gegen Bildrauschen)
+•Grund: Differenzbildung zur übernächsten Zeile (bzw. Spalte) => Kleine Störungen benachbarter 
+Zeilen (bzw. Spalten) gehen nicht in das Ergebnis ein.
+•Rauschminderung durch Mittelung quer zur Richtung des Gradienten
+•Der Sobel -Operator ist richtungsabhängig (horizontal und vertikal verlaufende Grauwertkanten).
+31 Visual Computing𝐻𝑥=121
+000
+−1−2−1𝐻𝑦=10−1
+20−2
+10−1
+--- PAGE 27 ---
+Differenzoperatoren -Kompassgradient
+•Schritte:
+•Filterung mit mehreren rotierten Faltungskernen.
+•Gesamtergebnis: Pro Pixel das maximale 
+Teilergebnis der Faltung mit den 8 
+Faltungskernen.
+•Eigenschaften:
+•Ergebnis ist sensitiv zu Bildstrukturen, die in 
+Richtung der Faltungskerne verlaufen.
+•Nichtlinear (max-Funktion).
+•Richtungsabhängig.
+•Gleiches Prinzip, leicht unterschiedliche Filterkerne: 
+Kirsch -Operator .
+32 Visual Computing𝐻0=−111
+−1−21
+−111𝐻1=111
+−1−21
+−1−11
+𝐻2=111
+1−21
+−1−1−1𝐻3=111
+1−2−1
+1−1−1
+𝐻4=11−1
+1−2−1
+11−1𝐻5=1−1−1
+1−2−1
+111
+𝐻6=−1−1−1
+1−21
+111𝐻7=−1−11
+−1−21
+111
+--- PAGE 28 ---
+Differenzoperatoren -Laplace -Operator
+•Laplace -Operator einer kontinuierlichen Funktion: 𝑠𝑥,𝑦=𝛿𝑠2(𝑥,𝑦)
+𝛿𝑥2+𝛿𝑠2(𝑥,𝑦)
+𝛿𝑦2
+•Für diskrete Funktionen : 𝐻=0−10
+−14−1
+0−10alternativ (u.a.): 𝐻=−1−1−1
+−18−1
+−1−1−1
+•Eigenschaften:
+•Richtungsunabhängiger Differenzoperator ( 𝐻ist punktsymmetrisch).
+•Nullstellen bilden Obermenge der Kanten im Bild.
+•Etwas anfälliger gegenüber Bildstörungen.
+33 Visual Computing
+--- PAGE 29 ---
+Differenzoperatoren -Beispiele
+34 Visual Computing
+© Prof. Dr. P. HaberäckerSobel (y)
+Sobel (x)
+--- PAGE 30 ---
+Differenzoperatoren -Beispiele
+35 Visual Computing
+Sobel -Operator: 
+Betrag
+Sobel -Operator: 
+Richtung
+Laplace 1 Laplace 2© Prof. Dr. P. Haberäcker
+--- PAGE 31 ---
+Sobel -Operator (als Beispiel eines Gradientenoperators ) Kompassgradient (alsBeispiel eines Gradientenoperators ) Laplace -Operator
+Idee• Bezugsgröße: 1.Ableitung (Grauwertgradient)
+• Approximation des Grauwertgradienten über 
+• Kantenstärke: Betrag desGradienten
+• Kantenrichtung: Richtung des Gradienten
+• Um eine Kante zu detektieren, muss ein Schwellwert für die Kantenstärke festgelegt werden
+.• Bezugsgröße: 1. Ableitung (Grauwertgradient)
+• Approximation des Grauwertgradienten über 8 Filterkerne (immer um 45 °gedreht)
+• Kantenstärke:  Maximale Teilergebnis der Faltung mit den 8 Faltungskernen.• Bezugsgröße: 2. Ableitung (Summe der beiden reinen zweiten Ableitungen)
+• Approximation des Laplace -Operators:
+• Kanten: Nullstellen des Laplace gefilterten Bilds
+• Keine Richtung!
+• Um eine Kante zu detektieren, müssen „falsche“ Nullstellen z.B. per Varianzcheck entfernt werden, da 
+auch das Laplace gefilterte Bild auf homogenen Flächen gleich null ist.
+RichtungsabhängigkeitJa (vertikal und horizontal verlaufende Grauwertkanten) Ja (entlang der durch die Filterkerne gegebenen Richtungen) Nein (𝐻ist punktsymmetrisch)
+Eigenschaften• Besseren Ergebnis als bereits gezeigte einfache Maske für diskrete partielle 
+Ableitungen ( weniger störungsanfällig , z.B. gegen Bildrauschen)
+• Grund: Differenzbildung zur übernächsten Zeile (bzw. Spalte) => Kleine Störungen 
+benachbarter Zeilen (bzw. Spalten) gehen nicht in das Ergebnis ein.
+• Rauschminderung durch Mittelung quer zur Richtung des Gradienten
+• Trade -Off: größere Filter => Robuster gegen Störungen, jedoch schlechtere Lokalität.
+• Problem: Schwellwertwahl kann zu „breiten“ Kanten führen.• Kaum besser als Sobel in der Praxis, außer: Keine Berechnung der Wurzelfunktion notwendig (siehe Sobelbetrag )
+• Ergebnis ist sensitiv zu Bildstrukturen, die in Richtung der Faltungskerne verlaufen.
+• Nichtlinear ( max-Funktion).• Etwas anfälliger gegenüber Bildstörungen (daher Glättungsoperator davor):
+• 2. Ableitung kann 0 sein, obwohl keine Kante da ist (homogene Fläche)
+=> Viele detektierten Kanten sind nicht im Bild
+• Nur eine Faltung (Sobel: 2)
+Rauschen
+Weichzeichner• Anwendung eines Weichzeichners (z.B. Gauß -Filter 𝑔) vor der Anwendung des Gradientenoperators
+• Oder: Derivative ofGaussian (DoG): 𝑔∗𝑠′=𝑔′∗𝑠• Anwendung eines Weichzeichners (z.B. Gauß -Filter 𝑔) vor der Anwendung des Laplace -Operators
+• Oder: Laplacian ofGaussian (LoG): 𝑔∗𝑠′′=𝑔′′∗𝑠𝐻𝑥=121
+000
+−1−2−1𝐻𝑦=10−1
+20−2
+10−1
+Betrag: 𝑠𝑥(𝑥,𝑦)2+𝑠𝑦(𝑥,𝑦)2𝐻=0−10
+−14−1
+0−10
+Richtung : a𝑟𝑐𝑡𝑎𝑛𝛿𝑠(𝑥,𝑦)
+𝛿𝑦
+𝛿𝑠(𝑥,𝑦)
+𝛿𝑥𝐻0=−111
+−1−21
+−111𝐻1=111
+−1−21
+−1−11
+𝐻2=111
+1−21
+−1−1−1𝐻3=111
+1−2−1
+1−1−1
+𝐻4=11−1
+1−2−1
+11−1𝐻5=1−1−1
+1−2−1
+111
+𝐻6=−1−1−1
+1−21
+111𝐻7=−1−11
+−1−21
+111
+𝑠′(𝑥) 𝑠(𝑥) 𝑠′′(𝑥)…Quelle: https://www.youtube.com/watch?v=uNP6ZwQ3r6A
+Schwellwert
+Quelle: https://www.youtube.com/watch?v=uNP6ZwQ3r6A
+Quelle: https://www.youtube.com/watch?v=uNP6ZwQ3r6A
+𝑠(𝑥)
+𝑠(𝑥)
+𝑔′(x)
+(𝑔′∗s)(x)𝑔′′(x)
+(𝑔′′∗s)(x)𝑠′(𝑥)
+36 Visual Computing
+--- PAGE 32 ---
+Differenzoperatoren -Beispiele
+37 Visual Computing
+Betrag Richtung 𝑯𝒚 𝑯𝒙
+Grauwert entspricht 
+WinkelGrauwert 0 entspricht 0
+Kanten
+Grauwert 255 
+entspricht Kante
+Sobel
+Laplace
+LoG
+ Sigma: 3
+Grauwert 128 entspricht 0
+
+--- PAGE 33 ---
+Differenzoperatoren –Beispiele (Laplace vs. Sobel)
+38 Visual Computing
+Quelle: https://i.stack.imgur.com/qtcA3.png
+--- PAGE 34 ---
+Zusammenfassung
+•Lineare Filter berechnen pro Pixel eine gewichtete Summe der Nachbarpixelwerte ( Faltung ). 
+•Sie zählen zu den Digitalen Filtern im Ortsbereich .
+•Wir unterscheiden zwischen Glättungs -(nur positive Filterkerneinträge) und Differenzoperatoren 
+(auch negative Filterkerneinträge).
+•Mit dem Box-Filter (Bewegter Mittelwert) und dem Gauß -Filter haben wir zwei 
+Glättungsoperatoren kennengelernt.
+•Betrachtete Differenzoperatoren sind Sobel -Operator , Kompassgradient und Laplace -Operator.
+•Lineare Filter lassen sich schneller ausführen, wenn deren Filterkerne separierbar sind. 
+39 Visual Computing
+--- PAGE 35 ---
+Ausblick
+•Bisher waren alle gezeigten Operatoren durch Lineare Filter beschreibbar 
+(Ausnahme: Kirsch -Operator, Kompassgradient)
+•Nun werden Operatoren vorgestellt, die nur durch Nichtlineare Filter darstellbar sind.
+•Dazu zählen Rangordnungsoperatoren und Morphologische Operatoren
+40 Visual Computing
+--- PAGE 36 ---
+Bibliographie
+Kürzel Referenz
+Burger2005 Wilhelm Burger, Mark James Burge , Digitale Bildverarbeitung –Eine Einführung in Java und ImageJ , X.media.press (2005)
+Gonzalez2018 Rafael C. Gonzalez, Richard E. Woods, Digital Image Processing, 4. Auflage, Pearson (2018)
+Nischwitz2020a Alfred Nischwitz , Max Fischer, Peter Haberäcker, Gudrun Socher, Bildverarbeitung –Band II des Standardwerks Computergrafik und 
+Bildverarbeitung, 4. Auflage, Springer (2020)
+41 Visual Computing
+
+=== vc_ana_nonlinear_filters.pdf ===
+--- PAGE 1 ---
+Hochschule 
+München 
+University of
+Applied SciencesVisual Computing
+Prof. Dr. Markus Friedrich
+Nichtlineare FilterFakultät für Informatik und Mathematik
+--- PAGE 2 ---
+Übersicht
+2 Visual ComputingVisual Computing
+Geometry Image Synthesis
+Image Analysis SciencesInformation 
+Visualization
+Mixed Reality
+Visual Analytics
+Human Computer 
+Interaction
+…
+2D/3D 
+Computer Vision
+Image ProcessingRepresentations
+Data Structures
+…
+Computer Science
+Life Sciences
+Social Sciences
+…Visualization
+Computer Graphics
+--- PAGE 3 ---
+3 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automaticÜbersicht
+--- PAGE 4 ---
+Lernziele
+•Die Funktionsweise Nichtlinearer Filter mit eigenen Worten beschreiben können.
+•Anwendungen und Eigenschaften einzelner Nichtlinearer Filter aufzählen können.
+•Nichtlineare Filter händisch berechnen sowie implementieren können. 
+•Aus einem gefilterten Bild ableiten können, welcher Nichtlinearer Filter benutzt wurde.
+4 Visual Computing
+--- PAGE 5 ---
+Nichtlineare Filter
+•Bisher: Der neue Wert eines Pixels hängt linear von den Werten seiner Nachbarn ab. 
+•Jetzt: Abhängigkeit ist nicht mehr linear.
+Wir starten mit den sog. Morphologischen Operatoren .
+5 Visual Computing
+--- PAGE 6 ---
+Morphologische Operatoren
+--- PAGE 7 ---
+Nichtlineare Filter 
+•Bisher: Der neue Wert eines Pixels hängt linear von den Werten seiner Nachbarn ab. 
+•Jetzt: Abhängigkeit ist nicht mehr linear.
+•Beispiele:
+•Morphologischen Operatoren
+•Median -Filter
+7 Visual Computing
+Quelle: [Burger2005]Elementarrechteck Elementarraute 8-NachbarnKreise: Nachbarn, fettumrandete Kästchen: Bezugspunkt
+--- PAGE 8 ---
+Morphologische Operatoren –Dilatation
+„Wachsen“ 𝑆⊕𝐾:𝑄𝑆⊕𝑄𝐾={𝑥,𝑦=(𝑥′+𝑖,𝑦′+𝑗)|𝑥′,𝑦′∈𝑄𝑆,𝑖,𝑗∈𝑄𝐾}
+8 Visual Computing
+Quelle: [Burger2005]
+𝑄𝐾={0,0,(0,1)}𝑄𝑆={1,1,1,2,(2,2)}𝑄𝑆⊕𝑄𝐾=
+{1,1+0,0,1,2+0,0,(2,2)+0,0,
+1,1+0,1,1,2+0,1,(2,2)+0,1}
+={1,1,1,2,2,2,1,3,(2,3)}
+--- PAGE 9 ---
+Morphologische Operatoren –Dilatation: Intuition
+9 Visual ComputingDilatation: Das Strukturierende Element 𝐾wird an 
+jedem gesetzten Pixel in 𝑆repliziert.
+
+--- PAGE 10 ---
+Morphologische Operatoren –Erosion
+„Schrumpfen“ 𝑆⊝𝐾:𝑄𝑆⊝𝑄𝐾={𝑥,𝑦|(𝑥+𝑖,𝑦+𝑗)∈𝑄𝑆,∀(𝑖,𝑗)∈𝑄𝐾}
+10 Visual Computing
+Quelle: [Burger2005]
+𝑄𝐾={0,0,(0,1)}𝑄𝑆={1,1,1,2,(2,2)} 𝑄𝑆⊝𝑄𝐾={1,1}
+Grund: 1,1+0,0=1,1∈𝑄𝑆und 
+1,1+0,1=1,2∈𝑄𝑆
+--- PAGE 11 ---
+Morphologische Operatoren –Erosion: Intuition
+11 Visual ComputingErosion: Es werden nur Pixel aus 𝑆übernommen, 
+dessen umliegende Bildregion komplett in das 
+strukturierende Element 𝐾passt.
+
+--- PAGE 12 ---
+Morphologische Operatoren –Opening und Closing
+Aus Dilatation und Erosion lassen sich zusammengesetzte Morphologische Operatoren erzeugen:
+•Opening
+•Erosion gefolgt von Dilatation mit demselben 𝐾.
+•Entfernt kleine Bildstrukturen.
+•Closing
+•Dilatation gefolgt von Erosion mit demselben 𝐾.
+•Füllt Löcher und Zwischenräume.
+Eigenschaften: 
+•Opening und Closing sind idempotent : Jede weitere Anwendung ändert nichts mehr am Bild. 
+•Opening des Vordergrunds ist äquivalent zu Closing des Hintergrunds (und umgekehrt).
+12 Visual Computing
+--- PAGE 13 ---
+Morphologische Operatoren –Beispiele (1)
+13 Visual Computing𝑟:Radius der 
+ScheibeQuelle: [Burger2005]Dilatation und Erosion verschiedengroßen 
+Scheiben als Strukturierendes Element.
+
+--- PAGE 14 ---
+Morphologische Operatoren –Beispiele (2)
+14 Visual Computing
+Quelle: [Burger2005]Opening und Closing verschiedengroßen 
+Scheiben als Strukturierendes Element.
+
+--- PAGE 15 ---
+Morphologische Operatoren -Grauwertbilder
+•Wie „versprochen“, kann man Morphologische Operatoren auch auf Grauwertbildern anwenden.
+•Dazu nutzt man sog. Rangordnungsoperatoren :
+•Die Durch das Strukturierende Element ermittelten Nachbarn für einen Bildpunkt ( 𝑥,𝑦)in 𝑆
+werden der Größe nach sortiert. 
+•Dilatation: Der maximale Wert wird der neue Wert an der Stelle (𝑥,𝑦).  
+•Erosion: Der minimale Wert wird der neue Wert an der Stelle (𝑥,𝑦).
+•Die auf diese Weise definierten Operatoren Dilatation und Erosion (und darauf aufbauend Opening
+und Closing ) haben die gleichen Eigenschaften wie im Binärbild -Fall.
+15 Visual Computing
+--- PAGE 16 ---
+Morphologische Operatoren -Beispiele
+16 Visual Computing
+Strukturiendes Element 𝐾 Bildmatrix 𝑆
+ErosionDilatation
+© Prof. Dr. P. Haberäcker
+--- PAGE 17 ---
+Morphologische Operatoren –Anwendungen
+Extraktion von Segmenträndern
+17 Visual Computing
+Eingabe
+Erosion -EingabeDilatation -EingabeQuelle: [Nischwitz2020a]Innerer Rand
+Ränder
+(, die Segmente 
+vollständig 
+enthalten)
+
+--- PAGE 18 ---
+Morphologische Operatoren –Anwendungen
+18 Visual Computing
+EingabeClosing© Prof. Dr. P. Haberäcker
+ OpeningDifferenz mit 
+dem OriginalGezielte Extraktion von Formen
+
+--- PAGE 19 ---
+Morphologische Operatoren –Anwendungen
+Kanten und Linien (hier: ungleichmäßige Ausleuchtung)
+19 Visual Computing
+EingabeBinarisierung
+(fixer Schwellwert)ClosingDifferenz mit 
+dem Original
+
+--- PAGE 20 ---
+Median -Filter
+--- PAGE 21 ---
+Median -Filter
+•Anstelle des minimalen oder maximalen Nachbarswert, nimmt man den Median : 
+•Der Median -Filter ist z.B. für die Reduzierung von sog. Salt-and-Pepper -Rauschen geeignet.
+21 Visual Computing
+Strukturiendes Element 𝐾Bildmatrix 𝑆
+Median
+© Prof. Dr. P. Haberäcker
+
+--- PAGE 22 ---
+22 Visual ComputingMedian -Filter -Beispiel
+© Prof. Dr. P. HaberäckerEingabe
+Median -Filter
+https://www.losinglena.com/Lena Forsén
+--- PAGE 23 ---
+Zusammenfassung
+•Morphologische Operatoren sind ein Beispiel für Nichtlineare Filter, die für die selektive 
+Veränderung von Bildstrukturen in Binär -und Grauwertbildern zum Einsatz kommen.
+•Namentlich sind das die Operatoren Dilatation („Wachsen“), Erosion („Schrumpfen“) sowie die 
+zusammengesetzten Operatoren Opening und Closing . 
+•Das dazu verwendete Strukturierende Element zur Festlegung von Nachbarschaften und hat 
+maßgeblichen Einfluss auf das Resultat. 
+•Ein weiteres Beispiel für Nichtlineare Filter ist der Median -Filter , der sich insbesondere zur 
+Reduktion von sog. Salt -and-Pepper -Rauschen eignet. 
+•Die Skelettierung ist die Reduktion von Bildelementen auf ihr „Skelett“, d.h. auf eine Struktur der 
+„Dicke“ 1px.
+23 Visual Computing
+--- PAGE 24 ---
+Ausblick
+•Bisher haben all unsere Betrachtungen (Bildmanipulationen) entweder nur den jeweiligen 
+Bildpunkt ( Punktoperationen ) oder „räumliche“ Nachbarschaften des Bildpunkts berücksichtigt 
+(Lineare bzw. Nichtlineare Filter => Operationen im Ortsbereich ).
+•Aber wie können wir die Geomtrie eines Bildes als Ganzes manipulieren?
+•Darum soll es als Nächstes gehen…
+24 Visual Computing
+--- PAGE 25 ---
+Bibliographie
+Kürzel Referenz
+Burger2005 Wilhelm Burger, Mark James Burge , Digitale Bildverarbeitung –Eine Einführung in Java und ImageJ , X.media.press (2005)
+Nischwitz2020a Alfred Nischwitz , Max Fischer, Peter Haberäcker, Gudrun Socher, Bildverarbeitung –Band II des Standardwerks Computergrafik und 
+Bildverarbeitung, 4. Auflage, Springer (2020)
+25 Visual Computing
+
+=== vc_ana_point_ops.pdf ===
+--- PAGE 1 ---
+Hochschule 
+München 
+University of
+Applied SciencesVisual Computing
+Prof. Dr. Markus Friedrich
+PunktoperationenFakultät für Informatik und Mathematik
+--- PAGE 2 ---
+Übersicht
+2 Visual ComputingVisual Computing
+Geometry Image Synthesis
+Image Analysis SciencesInformation 
+Visualization
+Mixed Reality
+Visual Analytics
+Human Computer 
+Interaction
+…
+2D/3D 
+Computer Vision
+Image ProcessingRepresentations
+Data Structures
+…
+Computer Science
+Life Sciences
+Social Sciences
+…Visualization
+Computer Graphics
+--- PAGE 3 ---
+3 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automaticÜbersicht
+--- PAGE 4 ---
+Lernziele
+•Die formale Beschreibung einer Punktoperation wiedergeben können.
+•Berechnungsmethode, Eigenschaften und Anwendungen von den angesprochenen 
+Punktoperationen beschreiben können.
+•Einem manipulierten Bild eine Punktoperation zuordnen können.
+•Punktoperationen anwenden und implementieren können.
+4 Visual Computing
+--- PAGE 5 ---
+Punktoperationen
+•Punktoperationen manipulieren die Werte der Bildpixel.
+•Wir beschränken uns hier auf Grauwerte (also 𝑁=1), daher spricht man in dem Kontext auch von 
+einer Modifikation der Grauwerte .
+•Dabei handelt es sich um einfache Methoden der Bildverbesserung basierend auf einer Analyse
+und Modifikation der Grauwertverteilung eines Bildes. 
+•Wir nehmen hier eine Standard -Grauwertmenge 𝐺={0,…,255}an. 
+5 Visual Computing
+--- PAGE 6 ---
+Punktoperationen -Anwendungen
+•Videodigitalisierung : Bessere bildliche Reproduktionsqualität.
+•Ausdruck auf S/W Druckern mit <255Graustufen.
+•Pseudofarbdarstellung zur 
+anschaulichen Datenvisualisierung
+6 Visual Computing
+Quelle: [Nischwitz2020a]
+--- PAGE 7 ---
+Punktoperationen -Definition
+Die Modifikation lässt sich als Funktion 𝒇:𝑮→𝑮beschreiben.
+Die normierte Funktion 𝒇𝒏𝐠=𝑓𝑔−min{𝑓}
+max𝑓−min{𝑓}⋅𝑐,wobei 𝑐=255
+Die Anwendung erfolgt dann auf dem Eingabebild 𝑺𝒆und resultiert im Ausgabebild 𝑺𝒂:
+𝑆𝑒→𝑆𝑎
+𝒔𝒂𝑥,𝑦=𝑓𝑛𝒔𝒆𝑥,𝑦,0≤𝑥≤𝐿−1,0≤𝑦≤𝑅−1
+7 Visual Computing
+--- PAGE 8 ---
+Lineare Skalierung
+8 Visual Computing
+𝑓𝑔=𝑔+𝑐1⋅𝑐2=𝑐2𝑔+𝑐1𝑐2
+© Prof. Dr. P. Haberäcker
+--- PAGE 9 ---
+Lineare Skalierung
+Die Konstanten wirken sich wie folgt auf die Grauwertverteilung aus:
+•𝑐1<0: Bild wird dunkler, Histogramm verschiebt sich nach links.
+•𝑐1>0: Bild wird heller, Histogramm verschiebt sich nach rechts.
+•0<𝑐2<1: Kontrast wird geringer, Histogramm wird gestaucht.
+•𝑐2>1: Kontrast wird größer, Histogramm wird gestreckt.
+•𝑐1=0,𝑐2=1: Identitätsabbildung
+9 Visual ComputingHinweis: Die Modifikation kann dazu führen, dass Grauwerte >255berechnet 
+werden. Durch "Abschneiden" aller Grauwerte <0und >255wird aus der 
+linearen Funktion eine stückweise lineare Funktion. Damit gehen jedoch 
+Informationen verloren. 
+
+--- PAGE 10 ---
+Lineare Skalierung –Automatische Berechnung von 𝑐1,𝑐2
+Einfache Methode über Histogramm :
+Werte für 𝑐1und 𝑐2lassen sich über den minimalen (min) und maximalen (𝑚𝑎𝑥) Grauwert im 
+Histogramm des Grauwertbildes bestimmen: 
+𝑐1=−𝑚𝑖𝑛und 𝑐2=𝑐
+𝑚𝑎𝑥−𝑚𝑖𝑛,wobei𝑐=255
+Damit geht keine Information verloren, da 𝑚𝑖𝑛auf 0und 𝑚𝑎𝑥 auf 255abgebildet werden.
+Problem: Wenn 𝑚𝑖𝑛und 𝑚𝑎𝑥 durch zufällige Bildfehler zustande kommen (dann haben wir wieder 
+die identische Abbildung).
+10 Visual Computing
+--- PAGE 11 ---
+Lineare Skalierung
+Für bessere Ergebnisse kann die ursprüngliche Funktion angepasst werden: 
+𝑓𝑔=𝑐2𝑔−128+128+𝑐1
+11 Visual ComputingIntuition: Der Kontrast „will“ im Grunde die Steigung der Übertragungsfunktion ändern, aber 
+dazu müsste um den Mittelpunkt „gedreht“ werden. Eine einfache Multiplikation dreht aber 
+nur um den Nullpunkt. Daher wird hier in den Ursprung verschoben ( −128), „gedreht“ und 
+wieder zurückverschoben ( +128).
+
+--- PAGE 12 ---
+Logarithmische Skalierung
+Die Logarithmische Skalierung: 
+𝑓𝑔=log𝑔,𝑔>0
+Wird meist  in der normalisierten Darstellung verwendet: 
+𝑓𝑛𝑔=255⋅log𝑐1+𝑔⋅𝑒𝑝𝑠−𝑚𝑖𝑛
+𝑚𝑎𝑥−𝑚𝑖𝑛
+mit 𝑚𝑖𝑛=log(𝑐1), 𝑚𝑎𝑥=log(𝑐2)und 𝑒𝑝𝑠=(𝑐2−𝑐1)/255
+Parameter: 
+•𝑐1,𝑐2: Beeinflussen den Steigungsverlauf ( 0<𝑐1<𝑐2) 
+•𝑐3: Verschiebt 𝑓𝑛im Grauwertintervall 𝐺nach links oder rechts.
+12 Visual Computing
+--- PAGE 13 ---
+Logarithmische Skalierung
+•Eine logarithmische Skalierung hebt den Kontrast in dunklen Bereichen, wohingegen bei der 
+linearen Skalierung alle Bereiche der Grauwertmenge gleichmäßig verändert werden 
+(Ausnahme: Ränder).
+•Analog möglich ist eine exponentielle Skalierung . 
+Logarithmusfunktion durch die Exponentialfunktion ersetzen, wobei dann 𝑐1<𝑐2gelten muss.
+13 Visual Computing
+Eingabebild Lineare Skalierung Logarithmische Skalierung
+© Prof. Dr. P. Haberäcker
+
+--- PAGE 14 ---
+Lookup -Tabelle
+Ordnet jedem Grauwert einen 
+anderen Grauwert zu:
+Anwendungen:
+•Falschfarbendarstellung  
+•Beschleunigung (Berechnung 
+aus existierender normierter 
+Skalierungsfunktion 𝑓𝑛)
+14 Visual Computing
+© Prof. Dr. P. Haberäcker
+--- PAGE 15 ---
+Histogrammlinearisierung (auch: Ebnen der Grauwerte)
+•Idee: Finden einer Skalierungsfunktion, sodass 𝑔gleichverteilt ist (also 𝑝𝑠′𝑔≈𝑐𝑜𝑛𝑠𝑡 ) und den 
+gesamten Wertebereich füllt (dann ist auch ℎ𝑠′(𝑔)linear).
+•Dies lässt sich durch folgende Operation bewerkstelligen: 
+•Effizient berechnen lässt sich das über eine Lookup -Tabelle.
+15 Visual Computing𝑔′=𝑓𝑛𝑔=(𝑐−1)⋅ℎ𝑠(𝑔)
+© Prof. Dr. P. HaberäckerHier: 256
+--- PAGE 16 ---
+Histogrammlinearisierung –Hintergrund
+•Ziel: Möglichst gleichmäßiges Histogramm, das kompletten Wertebereich 
+füllt (also 𝑝𝑠′𝑔′≈𝑐𝑜𝑛𝑠𝑡 und damit ℎ𝑠′(𝑔′)linear, also ℎ𝑠′𝑔′≈𝑔′
+𝑐−1) 
+•Warum? Besserer Kontrast und dadurch bessere Detailerkennung
+•Wie erreichen? 
+•Forderung: Kumulative Anteile von 𝑔und 𝑔′sollen gleich sein: 
+ℎ𝑠𝑔≈ℎ𝑠′(𝑔′)
+•Das führt dazu , dass :
+•Helligkeitsbereiche im Originalbild, die viele Pixel enthalten (steiler 
+Anstieg von ℎ𝑠(𝑔)), im transformierten Bild auf einen größeren Bereich 
+von 𝑔′abgebildet werden müssen.
+•Bereiche mit wenigen Pixeln auf einen kleineren Bereich von 𝑔′
+abgebildet werden müssen.
+16 Visual Computing𝑔′=𝑓𝑛𝑔=(𝑐−1)⋅ℎ𝑠(𝑔)𝑝𝑠′
+1
+𝑐−1
+𝑔′ℎ𝑠′𝑔′
+--- PAGE 17 ---
+Histogrammlinearisierung –Effekte
+Effekte:
+•Erhöhter Kontrast. Dadurch:
+•Bessere Sichtbarkeit feiner Bildstrukturen.
+•Kontrastanhebung sowohl in dunkleren als auch 
+helleren Bereichen.
+•Häufig vorkommende Grauwerte werden über einen größeren Ausgabebereich verteilt (Streckung).
+•Selten vorkommende Grauwerte werden in einem kleinen Ausgabebereich zusammengefasst (Stauchung).
+•Sichtbares Rauschen in hellen Bildbereichen.
+Anwendungen:
+•Vorteil: Methode ist frei von Parametern
+•S/W Druck (geringere Graustufenauflösung bei Drucker, daher hilfreich bei kontrastarmen Bildern)
+17 Visual Computing
+--- PAGE 18 ---
+Zusammenfassung
+•Wir haben Punktoperationen für Grauwertbilder formalisiert und verschiedene Varianten 
+kennengelernt.
+•Die Lineare Skalierung ist eine simple Methode, Kontrast und Helligkeit zu ändern.
+•Äquidensiten beschreiben stückweise konstante Skalierungen und können für eine einfache 
+Segmentierung oder Linienextraktion genutzt werden.
+•Die Logarithmische Skalierung hebt den Kontrast v.a. in dunklen Bildbereichen. 
+•Mit der Histogrammlinearisierung steht ein parameterfreies Werkzeug zur effektiven 
+Bildverbesserung zur Verfügung.
+•Zur Beschleunigung von Punktoperationen bieten sich Lookup -Tabellen an.
+18 Visual Computing
+--- PAGE 19 ---
+Ausblick
+Wir können jetzt die Pixel digitaler Bilder manipulieren.
+Aber: Wie kann man einzelne Pixel auf Basis ihrer Nachbarpixel manipulieren?
+Darum wird es in den nächsten Einheiten gehen.
+19 Visual Computing
+--- PAGE 20 ---
+Bibliographie
+Kürzel Referenz
+Nischwitz2020a Alfred Nischwitz , Max Fischer, Peter Haberäcker, Gudrun Socher, Bildverarbeitung –Band II des Standardwerks Computergrafik und 
+Bildverarbeitung, 4. Auflage, Springer (2020)
+20 Visual Computing
+
+=== vc_ana_recognition.pdf ===
+--- PAGE 1 ---
+Hochschule 
+München 
+University of
+Applied SciencesVisual Computing
+Prof. Dr. Markus Friedrich
+Erkennung: Klassifikation, 
+Segmentierung, Objekterkennung, 
+AnomalieerkennungFakultät für Informatik und Mathematik
+--- PAGE 2 ---
+Übersicht
+2 Visual ComputingVisual Computing
+Geometry Image Synthesis
+Image Analysis SciencesInformation 
+Visualization
+Mixed Reality
+Visual Analytics
+Human Computer 
+Interaction
+…
+2D/3D 
+Computer Vision
+Image ProcessingRepresentations
+Data Structures
+…
+Computer Science
+Life Sciences
+Social Sciences
+…Visualization
+Computergraphics
+--- PAGE 3 ---
+3 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automaticÜbersicht: Bildsynthese und -analyse
+--- PAGE 4 ---
+Maschinelles Lernen
+--- PAGE 5 ---
+Machine Learning
+Visual Computing 5Def. Lernen
+Ein Computerprogramm lernt im Hinblick auf eine bestimmte 
+Aufgabenklasse 𝑇und einen Leistungsmaßstab 𝑃aus Erfahrungen 𝐸, 
+wenn sich 𝑃in Bezug auf 𝑇mit zunehmender Erfahrung 𝐸verbessert. 
+[Mitchell1997]
+--- PAGE 6 ---
+Machine Learning –Supervised Learning
+Eingabe :𝑁gelabelte Datenpunkte 𝑆=𝑥𝑖,𝑦𝑖,𝑖=1,…,𝑁with 𝑥𝑖∈𝑋, 𝑦𝑖∈𝑌
+Ziel: Approximation :ℎ:𝑋→𝑌
+Visual Computing 6
+Aufgabe 𝑇:Regression 𝑌=ℝ𝐿Aufgabe 𝑇: Klassifikation 𝑌={𝐶1,…,𝐶𝐾}
+𝐾=2:Binär, 𝐾>2Multi -Class 𝐿=1:Univariat, 𝐿>1MultivariatErfahrung 𝐸!
+--- PAGE 7 ---
+Machine Learning –Unsupervised Learning
+Eingabe :𝑁Datenpunkte 𝑆=𝑥𝑖,𝑖=1,…,𝑁mit 𝑥𝑖∈𝑋und keinen Labels 𝑌!
+Ziel:Analysiere Struktur von 𝑆
+Visual Computing 7
+Dimensionsreduktion
+Clustering
+Auto Encoder
+--- PAGE 8 ---
+Klassifikation
+--- PAGE 9 ---
+Klassifikation
+Zuordnung: Bild ➔Klassenlabel 𝑦∈𝑌,𝑌≔𝐾
+9 Visual Computing
+Transformation
+…EingabeKatze
+HundKlassifikation 𝑋→𝑌
+KlassifikatorBildraum
+Ausgabe {Katze,Hund }Merkmalsraum 𝑋
+𝑋1𝑋2
+Nicht dargestellt: 𝑋3−6
+--- PAGE 10 ---
+Klassifikation -Merkmale
+•Beispiele Für Merkmale 
+•Statistische Merkmale (Mittelwert, (2D -)Histogramm, Co -Occurance -Matrix …)
+•Farbe
+•Fourier -Koeffizienten
+•Muster im Bild 
+•Kanten
+•…
+•Merkmale sollten so gewählt werden, dass Klassen möglichst klar abgegrenzte Bereiche im 
+Merkmalsraum einnehmen. 
+10 Visual Computing
+--- PAGE 11 ---
+Einschub: Merkmalsextraktion
+11 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automatic
+--- PAGE 12 ---
+Klassifikation –NNK
+•Nutzt man zur Zuordnung von 𝑥die Klassenlabels der nächstliegenden Merkmalsvektoren aus 𝑆, 
+erhält man einen Nächste -Nachbarn -Klassifikator (NNK).
+•Um dessen Effizienz zu verbessern, nutzt man räumliche hierarchische Datenstrukturen.
+12 Visual Computing
+--- PAGE 13 ---
+Klassifikation –NNK
+•NNK „ erzeugt“ ein Voronoi -Diagramm basierend auf den Merkmalsvektoren 𝑧𝑖.
+13 Visual Computing
+Quelle: https://en.wikipedia.org/wiki/Voronoi_diagram#/media/File:Voronoi_growth_euclidean.gifWeiß: ZurückweisungsklasseDargestellte Kreise mit Radius 𝑟der 
+Zurückweisung 
+Aus dem Voronoi -Diagramm lässt 
+sich die sog. Delaunay -
+Triangulation ableiten, die den 
+kleinsten Innenwinkel maximiert.
+
+--- PAGE 14 ---
+Klassifikation –Stützvektormaschinen
+•Komplexerer Algorithmus: Stützvektormaschinen
+•Stützvektoren: Repräsentanten zweier Klassen, die sich am nächsten liegen.
+•Finde Hyperebene, die möglichst weit von den beiden Stützvektoren (Rot) entfernt ist.
+14 Visual Computing
+Merkmalsraum:
+--- PAGE 15 ---
+Klassifikation –Stützvektormaschinen und allgemeine Modelle
+•Erweiterung: Algorithmus ℎwird zu einem mit 𝜃∈Θparametrisierten Modell ℎ𝜃.
+•Die Ausgabe des Modells ist eine Prädiktion ෝ𝒚:ො𝑦=ℎ𝜃(𝑥)
+•Der Trainingsprozess ist nun die Suche nach den „besten“ Modellparametern 𝜃∈Θ.
+•Wie lässt sich „gut“ quantifizieren?
+•Mit der sog. Loss -Funktion: 𝐿:𝑌×𝑌→ℝ
+•Damit lässt sich der Unterschied zwischen einer Prädiktion ො𝑦und dem „wahren“ Klassenlabel 𝑦
+bestimmen. 
+15 Visual Computing
+Stützvektormaschine: 𝜃sind die Parameter der Hyperebene 
+(ℎ{𝑤,𝑏}(𝑥)=𝒘⋅𝑥+𝒃) 
+--- PAGE 16 ---
+Klassifikation –Kostenfunktion
+•Wir können den Trainingsprozess nun als Optimierungsproblem formalisieren:
+𝐽𝜃=1
+𝑁෍
+𝑖=1𝑖≤𝑁
+𝐿(𝑦𝑖,ෝ𝑦𝑖)𝑎𝑟𝑔𝑚𝑖𝑛 𝜃∈Θ𝐽𝜃
+•𝐽nennt man auch Kostenfunktion , die minimiert werden muss.
+16 Visual Computing
+--- PAGE 17 ---
+Klassifikation –Loss -Funktion
+•Wie sieht die Loss -Funktion 𝐿für Klassifikationsprobleme aus?
+•Das hängt u.a. von der Ausgabe unseres Modells ℎ𝜃ab:
+•Nur Klassenlabel (z.B. bei der Stützvektormaschine): 
+Hinge -Loss𝐿𝑦,ො𝑦=max0,1−ො𝑦⋅𝑦,𝑌={−1,1}
+•Prädizierte Wahrscheinlichkeit ෝ𝑦𝑗für jedes der 𝑘Klassenlabel (z.B. bei Neuronalen Netzen ): 
+17 Visual Computing0,1
+0,1
+0,2
+0,6Hund
+Katze
+Maus
+Vogel
+ℎ𝜃( )  =𝐿(y,ො𝑦)=−෍
+𝑗=1𝐾
+𝑦𝑗log2(ෝ𝑦𝑗)
+ෞ𝑦4ෞ𝑦1
+ෞ𝑦2
+ෞ𝑦3𝑌=0;1𝐾
+Kreuzentropie -Loss
+--- PAGE 18 ---
+Klassifikation –Neuronale Netze
+Was sind Neuronale Netze?
+•Im ursprünglichen Sinn eine abstrakte, vereinfachte Umsetzung der Verknüpfung biologischer 
+Neuronen.
+•Sie haben sich in einer Vielzahl von Aufgaben (u.a. Klassifikation auf Bildern) als momentan 
+bestpassend herausgestellt.
+•Neuronale Netze können im Prinzip jede Funktion ℝ𝑎→ℝ𝑏approximieren, da sie eine sehr 
+flexible Struktur haben.
+18 Visual Computing
+--- PAGE 19 ---
+Klassifikation –Neuronale Netze
+Basiselement eines neuronalen Netzes ist das Perzeptron , das zu mehrschichtigen Architekturen 
+(daher das „ Deep “ in „Deep Learning“) kombiniert werden kann.
+19 Visual Computing
+
+--- PAGE 20 ---
+Klassifikation –Neuronale Netze
+•Aktivierungsfunktionen 𝑨:Fügen dem Netz Nichtlinearitäten hinzu. 
+Ihre Wahl ist abhängig von der Aufgabe.
+•Bias -Neuronen 𝑩: Geben immer eine Konstante aus (meistens 1) und dienen der Verschiebung 
+der Aktivierungsfunktion, um das Fitting der Eingabedaten zu verbessern.
+•Loss -Funktion 𝑳:Kennen wir schon. Ihre Wahl ist abhängig von der Aufgabe. Bei uns: 
+Klassifizierung auf Basis mehrere Klassen, also: Kreuzentropie Loss.
+20 Visual Computing
+--- PAGE 21 ---
+Klassifikation –Neuronale Netze
+Aktivierungsfunktionen
+21 Visual Computing
+Für Klassifikationsprobleme in der letzten Schicht benutzt.
+--- PAGE 22 ---
+Klassifikation –Neuronale Netze
+Trainingsprozess 
+•Was sind unsere Parameter 𝜃∈Θim Falle eines Neuronalen Netzes? 
+Die Gewichte 𝒘=𝒘𝟏,…,𝒘𝒏𝑻
+•Wie lösen wir das Optimierungsproblem 𝑎𝑟𝑔𝑚𝑖𝑛𝜃∈Θ𝐽(𝜃)?
+•Sowohl ℎ𝜃als auch 𝐿sind stetig differenzierbar => Daher können wir Gradient Descent nutzen. 
+22 Visual Computing
+--- PAGE 23 ---
+Klassifikation –Neuronale Netze
+Gradient Descent
+•Für eine einfach stetig differenzierbare Zielfunktion 𝐽𝜃gibt der Gradient 𝛻𝐽(𝜃)die Richtung des 
+steilsten Anstiegs von 𝑱an der Stelle 𝜃an.
+•Der Gradient kann somit genutzt werden, um 𝐽(𝜃)zu minimieren: 
+•Von einem Startpunkt 𝜃0aus wird in einem iterativen Prozess der jeweils nächste Punkt 𝜃𝑖+1
+bestimmt, in dem sich in die entgegengesetzte Gradientenrichtung bewegt wird: 
+𝜃𝑖+1=𝜃𝑖−𝜂⋅𝛻𝐽(𝜃𝑖)
+•Der Vorgang wird wiederholt, bis sich keine Verbesserung mehr einstellt 
+(niedrigerer Wert für 𝐽(𝜃)).
+23 Visual ComputingLearning Rate
+--- PAGE 24 ---
+Klassifikation –Neuronale Netze
+Gradient Descent
+𝜃=𝜃0,Θ1𝑇
+24 Visual Computing
+
+--- PAGE 25 ---
+Klassifikation –Neuronale Netze
+•Da hier bei jedem Gradient Descent Schritt der komplette Trainingsdatensatz durchlaufen wird 
+(sog. Batch Gradient Descent ), ist in der Praxis eine effizientere Variante im Einsatz, die eine 
+zufällig gewählte Teilmenge des Trainingsdatensatzes verwendet 
+(sog. Mini-batch Gradient Descent ). Batches werden dazu zufällig ohne Zurücklegen aus dem 
+Trainingsdatensatz gezogen und ein GD -Schritt durchgeführt. Ist der Trainingsdatensatz „leer“ ist 
+eine Epoche vorbei und es wird wieder von vorn begonnen.
+•Zudem wird das klassische Gradient Descent -Verfahren in effizienteren Varianten verwendet 
+(z.B. Adaptive Moment Estimation (ADAM )).
+•Wie finden wir die Partiellen Ableitungen von 𝐽𝜃? Mit einem automatischen 
+Differenzierungsverfahren ( Reverse -Mode AutoDiff ).
+•Gradient Descent + Reverse -Mode AutoDiff = Backpropagation.
+25 Visual Computing
+--- PAGE 26 ---
+Klassifikation –Training
+26 Visual Computing•Datenaufbereitung (Processing)
+•Performance -Metrik Auswahl
+•Modellauswahl
+•Modelltraining
+--- PAGE 27 ---
+Klassifikation –Training
+27 Visual Computing•Datenaufbereitung (Processing, 80% der Zeit)
+‒Datenvisualisierung
+‒Datenreinigung
+‒Datentransformation (z.B. Normalisierung)
+--- PAGE 28 ---
+Klassifikation –Training
+28 Visual Computing•Performance -Metrik Auswahl (Aufgabenspezifisch)
+Confusion Matrix
+ Performance MetrikenAccuracy :𝑡𝑝+𝑡𝑛
+𝑡𝑝+𝑡𝑛+𝑓𝑝+𝑓𝑛
+Precision: 𝑡𝑝
+𝑡𝑝+𝑓𝑝
+Recall: 𝑡𝑝
+𝑡𝑝+𝑓𝑛
+𝑓1-score: 2⋅𝑝𝑟𝑒𝑐𝑖𝑠𝑖𝑜𝑛 ×𝑟𝑒𝑐𝑎𝑙𝑙
+𝑝𝑟𝑒𝑐𝑖𝑠𝑖𝑜𝑛 +𝑟𝑒𝑐𝑎𝑙𝑙
+
+--- PAGE 29 ---
+Klassifikation –Training
+29 Visual Computing•Modellauswahl
+‒Nicht jedes Modell ist gleich gut für alle 
+Aufgaben ( No-free-Lunch)
+‒Wahl ist z.B. abhängig von Ein -und Ausgabe
+--- PAGE 30 ---
+Klassifikation –Training
+30 Visual Computing•Modelltraining
+‒Split (z.B. 80/10/10)
+‒Oder:
+𝒌-fold Cross Validation
+--- PAGE 31 ---
+Klassifikation –Training
+31 Visual Computing•Modelltraining
+‒Problem: Over -/ Underfitting
+‒Lösung Overfitting : Einfacheres Modell, Mehr Trainingsdaten, RegularisierungGood model
+ Underfit Overfit
+model complexityoptimal complexity
+--- PAGE 32 ---
+Klassifikation –Training
+32 Visual Computing•Modelltraining
+‒Regularisierung: Early Stopping
+‒Regularisierung: Dropout
+‒Regularisierung: Data Augmentation
+(a)Original image
+(b)Horizontal inversion
+(c)Scaling
+(d)Translation
+(e)Rotation
+(f)Brightness and contrast change
+(g)Additive noise
+(h)Color shift
+Quelle: https://www.bishopbook.com/
+--- PAGE 33 ---
+Klassifikation
+Was wir bisher können:
+33 Visual Computing
+Transformation
+…EingabeMerkmalsraum 𝑋 Klassifikation 𝑋→𝑌 Bildraum
+Ausgabe
+Katze0,1
+0,9Hundෞ𝑦1
+ෞ𝑦2Softmax
+𝑋1𝑋2
+Nicht dargestellt: 𝑋3−6?
+--- PAGE 34 ---
+Klassifikation –Transformation vom Bildraum in den Merkmalsraum?
+34 Visual ComputingAcquisition Processing Feature -Extraction Recognition{world | abstr. desc .} => pixel pixel => pixel pixel => features features =>  abstract description
+Computer Vision
+Image ProcessingSensors world
+Image Synthesis abstr. desc .TransformationsFilters
+Point OperationsClassification
+Segmentation
+SelectionObject DetectionDigital 
+ImageDigital 
+ImageFeatures abstr. desc .Statistics
+Geometry (e.g. edges )
+…
+CNNsmanual automatic
+--- PAGE 35 ---
+Klassifikation –Überwachtes Lernen: CNNs
+•Neuronale Netze für die „automatische“ Merkmalsextraktion 
+aus Bildern: Convolutional Neural Networks (CNNs ).
+•CNNs sind von der Verarbeitung visueller Reize bei 
+Säugetieren inspiriert.
+•In der Retina verortete Neuronen „feuern“ selektiv für einen 
+begrenzten Bereich des Sichtfelds ( Rezeptives Feld ).
+•Im visuellen Kortex werden diese Informationen dann 
+hierarchisch zu Mustern zusammengesetzt.
+35 Visual Computing
+Quelle: http://fourier.eng.hmc.edu/
+--- PAGE 36 ---
+Klassifikation –Neuronale Netze –CNNs
+36 Visual Computing
+ReLU
+Pooling
+ReLU
+Pooling
+ReLU
+PoolingMerkmalskarte (Feature -Map)
+ReLU -Aktivierungsfunktion„Flatten -Schicht“ „Faltung“Klassifikation 𝑋→𝑌
+…CNN
+--- PAGE 37 ---
+Klassifikation –Neuronale Netze –CNNs
+Als Eingabe dient ein Bild mit mehreren Kanälen:
+37 Visual Computing
+Abstrakt:
+Merkmalskarten (Feature -Maps )
+
+--- PAGE 38 ---
+Klassifikation –Neuronale Netze –CNNs
+Convolution
+•Jede Merkmalskarte wird mit einem Filter mit lernbaren Gewichten „gefaltet“ (eigentlich: korreliert).
+•Padding : Randbedingung (z.B. Zero -Padding ) 
+•Stride : Soll die Ausgabe kleiner als die Eingabe sein, wird „gesprungen“.
+38 Visual Computing
+
+--- PAGE 39 ---
+Klassifikation –Neuronale Netze –CNNs
+Convolution
+•Die Werte des Ausgabekanals wird aus der Summe der „Faltungen“ jedes Eingabekanals gebildet.
+•Zusätzlich wird auf jeden Wert des Ausgabekanals ein kanalspezifischer Bias addiert.
+•Existieren mehrere Ausgabakanäle wird dies pro Ausgabekanal gemacht, jeweils mit einem eigenen 
+Satz von Filterkernen.
+•Kombiniert wird die Convolution -Schicht mit einer ReLU -Aktivierungsfunktion .
+39 Visual Computing
+--- PAGE 40 ---
+Klassifikation –Neuronale Netze –CNNs
+Convolution
+40 Visual Computing
+Summation der Merkmalskarten Bias
+--- PAGE 41 ---
+Klassifikation –Neuronale Netze –CNNs
+Pooling
+•Pooling führt eine Unterabtastung der Eingabe durch.
+•Werte eines Betrachtungsfensters werden auf einen einzelnen Wert reduziert.
+•Damit wird Komplexität reduziert und Translationsinvarianz ermöglicht.
+•Strategien: 
+•Max-Pooling (nimmt den maximalen Wert aus dem Betrachtungsfenster)
+•Average -Pooling (nimmt den Durchschnittswert)
+41 Visual Computing
+
+--- PAGE 42 ---
+Klassifikation –Neuronale Netze –CNNs
+Flatten -Schicht
+Die Flatten -Schicht überführt alle Ausgabekanäle der letzten Schicht in ein eindimensionales Array.
+42 Visual Computing
+
+--- PAGE 43 ---
+Klassifikation –Neuronale Netze –CNNs
+Intuition
+•Convolution -Schichten erkennen einfache Muster (z.B. Linien, Farbkombiniationen ) in 
+den ersten Schichten:
+•In den folgenden Schichten werden immer komplexere Muster als Kombination 
+einfacherer Muster erkannt.
+43 Visual Computing
+
+--- PAGE 44 ---
+Klassifikation –Neuronale Netze –CNNs
+CNNs...
+•... lernen nur die Gewichte der jeweiligen Filterkerne. Sie teilen sich sozusagen die Gewichte 
+innerhalb eines Eingabekanals ( Weight Sharing ).
+•... stellen Translationsinvarianz sicher. Bei der Gesichtserkennung ist es z.B. egal, wo das Gesicht 
+im Bild dargestellt wird.
+•... nutzen Korrelationen zwischen Pixeln in direkten Umgebungen ( Lokalität ).
+•... kombinieren oft mehrere Convolution -/Pooling -Schichten.
+44 Visual Computing
+--- PAGE 45 ---
+Transfer Learning
+--- PAGE 46 ---
+Transfer Learning
+•Nutze Wissen, gelernt durch Aufgabe A , 
+als Beschleunigung für das erlernen einer neuen Aufgabe B !
+•Wir übertragen oder „transferieren“ also Wissen.
+•Für uns spannend: Parameter -basierter Wissenstransfer !
+46 Visual ComputingIn practice, very few people train an entire Convolutional Network 
+from scratch (with random initialization), because it is relatively 
+rare to have a dataset of sufficient size. Instead, it is common to 
+pre-train a ConvNet on a very large dataset (e.g. ImageNet, which 
+contains 1.2 million images with 1000 categories), and then use the 
+ConvNet either as an initialization or a fixed feature extractor for 
+the task of interest.  
+Stanford University CS231n
+--- PAGE 47 ---
+Transfer Learning
+1.Finde geeignetes vortrainiertes neuronales Netz:
+47 Visual Computing
+Autor: Dr. Benedikt Zönnchen
+--- PAGE 48 ---
+Transfer Learning
+2.Lösche die geeigneten hinteren Layer:
+48 Visual Computing
+Autor: Dr. Benedikt Zönnchen
+--- PAGE 49 ---
+Transfer Learning
+3.Füge neue Layer an und starte Lernprozess mit vortrainierten Parametern :
+49 Visual Computing
+Autor: Dr. Benedikt Zönnchen
+
+--- PAGE 50 ---
+Transfer Learning
+Die vortrainierten Parameter können wir entweder: 
+•Als unveränderbar annehmen ( Freezing ), oder
+•Wir trainieren das gesamte Modell weiter ( Fine-Tuning )
+50 Visual Computing
+Autor: Dr. Benedikt Zönnchen
+--- PAGE 51 ---
+Transfer Learning
+Freezing oder Fine-Tuning ?
+•Falls es kaum Ziellabels gibt, dient das Freezing der Vermeidung von Überanpassung
+•Freezing ist oft kostengünstiger. 
+•Insbesondere, wenn Zieldaten sich stärker von den Quelldaten unterschieden, ist Fine-Tuning oft 
+notwendig.
+•Fine-Tuning ist oft nur möglich, wenn viele gelabelte Zieldaten zur Verfügung stehen.
+•Unterschiedliche Lernraten je Layer ist ein Kompromiss aus beidem.
+51 Visual Computing
+--- PAGE 52 ---
+Transfer Learning
+Daumenregeln für Freezing oder/und Fine-Tuning :
+•Wenige aber ähnliche Zieldaten: 
+Eher kein Fine -Tuning da Gefahr von Überanpassung droht. 
+•Viele und ähnliche Zieldaten: 
+Fine-Tuning des gesamten neuronalen Netzes steht zur Option.
+•Wenige und unähnliche Zieldaten: 
+Da die Zieldaten unähnlich sind, sollte der Schnitt am neuronalen Netzes weiter vorne angesetzt 
+werden. Da es nur wenige Daten gibt, verzichtet man besser auf Fine -Tuning.
+•Viele und unähnliche Zieldaten:
+Fine-Tuning bis hin zum kompletten neu trainieren des neuronalen Netzes stehen zur Option.
+52 Visual Computing
+--- PAGE 53 ---
+Segmentierung
+--- PAGE 54 ---
+Segmentierung
+Segmentierung ist eine Klassifikation pro Pixel.
+54 Visual Computing
+Ausgabe{Kreis1, Kreis2, Hintergrund}
+(c) Prof. Dr. P. Haberäcker
+--- PAGE 55 ---
+Segmentierung -Typen
+•Semantische Segmentierung: Jedes Pixel bekommt ein Klassenlabel.
+•Instanz -Segmentierung: Jedes Pixel eines zählbaren Objekts bekommt ein Instanz -und ein 
+Klassenlabel. 
+•Panoptische Segmentierung: Jedes Pixel bekommt ein Klassenlabel und, falls es ein zählbares 
+Objekt ist, ein Instanzlabel .
+55 Visual Computing
+Semantische Segmentierung Instanz -Segmentierung Panoptische Segmentierung
+Quelle: https://www.youtube.com/watch?v=LMZI8DDyltQ
+--- PAGE 56 ---
+Segmentierung –Typen
+56 Visual ComputingSemantische 
+SegmentierungInstanz -
+SegmentierungPanoptische 
+Segmentierung
+Eingabe
+Quelle: https://medium.com/@danielmechea/what -is-panoptic -segmentation -and-why-you-should -care-7f6c953d2a6a
+--- PAGE 57 ---
+Segmentierung –Merkmale (Noch einmal…)
+Texturmerkmale als pro -Pixel Merkmale:
+•Eine Textur ist eine künstliche oder natürliche regelmäßige Struktur 
+(gleichbedeutend mit Oberflächenstruktur).
+•Texturmerkmale können nicht auf einzelnen Bildpunkten berechnet werden, sondern nur in einer 
+Umgebung um den jeweiligen Pixel (Texturfenster 𝑈der Größe 𝑚=3,5,7,…).
+•Für jeden Bildpunkt existiert dann ein 𝑛-dimensionaler Merkmalsvektor.
+57 Visual Computing
+--- PAGE 58 ---
+Segmentierung –Merkmale (Noch einmal…)
+Texturmerkmale Beispiele
+•Lokale Schätzung der Streuung 
+(Schätzfunktion: 
+mittlere quadratische Abweichung in 𝑈)
+•Gradient
+(Betrag oder Richtung des Sobel -Operators) 
+•Kantendichte 
+(Anzahl Pixel zählen, deren 
+Sobelbetrag >Schwellwert 𝑐)
+58 Visual Computing
+3×3,𝑐=20 3×3,𝑐=10Sobel: Betrag Sobel: Richtung3×3 11×11 Eingabe
+(c) Prof. Dr. P. Haberäcker
+--- PAGE 59 ---
+Segmentierung –Übersicht
+•Semantische Segmentierung mit Neuronalen Netzen:
+•Instanz -Segmentierung (Proposal -based Methods ):
+1.Objekterkennung ( Bounding -Boxes + Klassenlabels).
+2.Maskenprädiktion pro Bounding -Box.
+59 Visual Computing
+Quelle: https://neptune.ai/blog/image -segmentation
+Bounding -Boxes Maske Resultat
+Quelle: https://medium.com/@danielmechea/what -is-panoptic -segmentation -and-why-you-should -care-7f6c953d2a6a
+--- PAGE 60 ---
+Segmentierung –Semantische Segmentierung
+Welche Metriken können wir verwenden?
+•Intersection over Union (IoU)
+•Variante: Mean Intersection over Union (mIoU ):
+IoUfür jede Klasse, dann Durchschnitt bilden.
+•Weitere Alternative: Pixelgenauigkeit (engl. pixel accuracy )
+Wie viele Pixel wurden korrekt klassifiziert relativ zur Anzahl der Pixel? 
+60 Visual Computing
+Quelle: Adrian Rosebrock, CC BY -SA 4.0, via Wikimedia Commons
+--- PAGE 61 ---
+Segmentierung –Semantische Segmentierung
+Sagen wir, wir haben ein Semantisches Segmentierungs Problem :
+CNN ohne Down -Sampling:  
+61 Visual Computing
+Source: https://medium.com/@danielmechea/what -is-panoptic -segmentation -and-why-you-should -care-7f6c953d2a6a
+Expensive!Source: http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf
+--- PAGE 62 ---
+Segmentierung –Semantische Segmentierung
+•Down -Sampling via Convolution oder Pooling mit Stride .
+•Wie funktioniert das Up-Sampling? 
+62 Visual Computing
+Source: http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf
+--- PAGE 63 ---
+Segmentierung –Semantische Segmentierung
+Fully Connected Networks mit Transposed Convolutions .
+•Nutzung eines Standard -CNNs (z.B. ResNet ) als Feature -Backbone. D.h. 
+Dense -Layer werden abgeschnitten.
+•Dann: 1 ×1 Convolutions anwenden, sodass Anzahl der Channels Anzahl 
+der Segmentierungsklassen entspricht.
+•Abschließend: Up -Sampling auf Eingabebildgröße per Transposed
+Convolutions .
+•Keine Pooling Layer!
+63 Visual Computing
+Source: https://d2l.ai/chapter_computer -vision/transposed -conv.html
+--- PAGE 64 ---
+Segmentierung –Semantische Segmentierung
+Fully Connected Networks mit Transposed Convolutions .
+64 Visual Computing
+
+--- PAGE 65 ---
+Segmentierung –Semantische Segmentierung
+Modernere Ansätze: 
+U-Nets 
+DeepLab
+65 Visual Computing
+
+--- PAGE 66 ---
+Objekterkennung
+--- PAGE 67 ---
+Objekterkennung
+•Objekterkennung (engl. object detection ): Auffinden von Objekten in einem Bild.
+•Pro Objekt wird zurückgegeben, wo im Bild es sich befindet und was es ist.
+•Es müssen also zwei Unterprobleme gelöst werden: Lokalisierung und Klassifikation .
+67 Visual Computing
+Eingabe: Bild, 
+Ausgabe: Pro Objekt: Bounding -Box + Klasse. 
+Quelle: ( MTheiler ), CC BY -SA 4.0, via Wikimedia Commons.
+--- PAGE 68 ---
+Objekterkennung -Probleme
+•Klassifikation : Invarianz bzgl. Objekttransformation (Rotation, Translation, Skalierung, ...), 
+Beleuchtung und Verdeckung
+•Lokalisierung : Invarianz bzgl. Beleuchtung und Verdeckung, Äquivarianz bzgl. 
+Objekttransformation
+68 Visual Computing
+Quelle: [Ding2011]
+--- PAGE 69 ---
+Objekterkennung -Verfahrensfamilien
+•One-stage Detectors (schnell):
+•Two-stage Detectors (genau):
+69 Visual Computing
+
+--- PAGE 70 ---
+Objekterkennung –Two-stage Detectors
+•Bekannte Architekturen: R-CNN, Fast R -CNN, Faster R-CNN
+•Wir sehen uns hier die klassische R -CNN Architektur an [Girshick2013].
+71 Visual Computing
+Quelle: [Girshick2013]
+EingabebildExtraktion von 
+Regionenvorschlägen
+(engl. region proposals )Merkmalsextraktion 
+mittels eines CNNs.Regionsklassifikation mittels 
+einer Support -Vector
+Maschine (SVM) pro 
+Klasse.
+--- PAGE 71 ---
+Objekterkennung –Two-stage Detectors
+Schritt 2
+•Hier wird die sog. Selektive Suche 
+angewandt.
+•Dies ist ein greedy Algorithmus, der 
+ausgehend von Startregionen, ähnliche 
+Regionen zusammenfügt.
+•Ähnlichkeit wird auf Basis einer Reihe 
+unterschiedlicher Regionenmerkmale
+quantifiziert (z.B. Farb -oder 
+Texturähnlichkeit).
+72 Visual Computing
+ Quelle : [Uijlings2013]
+Quelle : [Felzenszwalb2004]Startregionen:
+--- PAGE 72 ---
+Objekterkennung –Two-stage Detectors
+Schritt 3 
+•Regionenvorschläge werden in ein kanonisches 227×227Bild transformiert. 
+•Das CNN hat 5Convolution -und 2Dense -Layer.
+•Ausgabe 4096 -D Merkmalsvektor.
+•Das CNN wird auf einer Klassifikationsaufgabe vortrainiert, dann Fine -Tuning auf 
+Regionenvorschlägen .
+73 Visual Computing
+--- PAGE 73 ---
+Objekterkennung –Two-stage Detectors
+Schritt 4 
+•Eine SVM wird pro Klasse trainiert und liefert einen Score (pro Klasse) für jeden Regionen -
+Merkmalsvektor.
+•Zur Laufzeit: Regionen, die überlappen, werden geprüft und nur diejenige Region behalten, die 
+einen höheren Klassen -Score haben 
+•Warum eine SVM und nicht über das CNN auch die Klasse prädizieren?
+Das hat in den Experimenten besser funktioniert. Es wird aber angedeutet, dass dies womöglich 
+auch durch Fine -Tuning + CNN zu erreichen wäre.
+74 Visual Computing
+Quelle: [Girshick2013]
+--- PAGE 74 ---
+Objekterkennung –Two-stage Detectors
+Probleme
+•Training dauert lange: CNN, SVM dann Regressor für Bounding -Box-Verbesserung.
+•Inferenz dauert lange, da initial ca. 2000 Regionenvorschläge vorliegen. Für jeden Vorschlag 
+benötigt man einen Forward -Pass durch das CNN. Berechnungen werden nicht geteilt.
+•Die selektive Suche ist ein klassischer Algorithmus, der sein Verhalten nicht auf Trainingsdaten 
+anpassen kann. Dies führt in dem Fall zu schlechten Regionenvorschlägen .
+•Besser: Fast-R-CNN andeven Faster -R-CNN .
+75 Visual Computing
+--- PAGE 75 ---
+Objekterkennung –Instanz Segmentierung
+•Für die Instanz Segmentierung gibt es zwei Methodenfamilien: Vorschlagsfrei, Vorschlagsbasiert
+•Objekterkennung kann für vorschlagsbasierte Instanz Segmentierung genutzt werden. 
+•Ein wichtiger Vertreter: Mask R-CNN [He2017] als Erweiterung von Faster R-CNN.
+•Nutzt Faster -R-CNN für Regionenvorschläge .
+76 Visual Computing
+Quelle: [He2017] 
+--- PAGE 76 ---
+Anomalieerkennung
+--- PAGE 77 ---
+Anomalieerkennung
+Was?
+•Erkennung von Abweichungen vom „Normalzustand“
+•In der Qualitätskontrolle: Fehler = Anomalien
+•Herausforderung: Defekte sind selten oder variabel
+Warum?
+•Sicherstellung gleichbleibender Produktqualität
+•Früherkennung von Produktionsfehlern
+•Reduktion manueller Inspektionskosten
+•Effizienzsteigerung & Rückverfolgbarkeit
+78 Visual Computing
+Quelle: https://www.mvtec.com/company/research/datasets/mvtec -ad
+--- PAGE 78 ---
+Anomalieerkennung –Übersicht
+Ansatz Benötigte Daten Typischer Einsatzbereich
+Überwacht Normale + Defekte Bilder (Label) Bekannte Fehler, viele Daten
+Unüberwacht Nur normale Daten Unbekannte oder seltene Fehler
+79 Visual Computing
+--- PAGE 79 ---
+Anomalieerkennung –Überwacht
+•Klassifikator lernt, bekannte Fehler zu erkennen
+•Gute Ergebnisse bei vielen gelabelten Daten
+•Nicht geeignet bei seltenen/vielfältigen Fehlern
+•Beispiele:
+•CNNs (z. B. ResNet , EfficientNet )
+•Datenerweiterung (Augmentation) für Defektsimulation
+80 Visual Computing
+--- PAGE 80 ---
+Anomalieerkennung –Unüberwacht (Beispiele)
+•Autoencoder
+•Trainiert auf normalen Bildern
+•Hoher Rekonstruktionsfehler = Anomalie
+•Ergebnis : Fehlerkarte oder Score
+•Merkmalsbasierte Verfahren
+•Vortrainierte Modelle (z.B. ResNet , ViT) 
+extrahieren Merkmale
+•Vergleich zu„normalen “ Feature -Vektoren
+•Anomalien = große Distanz (z.B. Cosine)
+•Schnell und ohne Neutraining
+•Gut beiwenigen Beispieldaten
+81 Visual Computing
+Quelle: https://de.wikipedia.org/wiki/Autoencoder#/media/Datei:Autoencoder_schema.png
+--- PAGE 81 ---
+Anomalieerkennung –Unüberwacht (Beispiele)
+•Patch -basierte Lokalisierung
+•Bild wird in kleine Regionen (Patches) aufgeteilt
+•Vergleich von lokalen Mustern mit „normalen“
+•Gut für lokale Defekte (z. B. Kratzer, Risse)
+•Ergebnis: Fehlerkarte
+•Beispiel : Patch Core [ Roth2022 ]. Prinzip :
+•Extrahiere Patch -Features mit einem vortrainierten CNN (z.B. WideResNet , ResNet18)
+•Vergleiche Patches des Testbildes mit den gelernten "normalen" Patches
+→ große Abweichung = Anomalie
+•Optimierung : PatchCore -Sampling erzeugt sog. Core -Set ( globale Auswahl von 
+repräsentativen Patches)
+82 Visual Computing
+Quelle: https://github.com/amazon -science/patchcore -inspection
+--- PAGE 82 ---
+Zusammenfassung
+•Klassifikatoren auf Basis von Unüberwachtem Lernen: Minimum Distance Clustering (MDC).
+•Eine Architektur Neuronaler Netze eignet sich im Besonderen u.a. für die Merkmalsextraktion auf 
+Basis von Bildern: Convolutional Neural Networks (CNNs). 
+•Bei der Segmentierung wird einem Bildpunkt ein Klassenlabel zugeordnet.
+•Wir unterscheiden zwischen Semantischer Segmentierung , Instanz -Segmentierung und 
+Plenoptischer Segmentierung .
+•Zur Semantischen Segmentierung gehören z.B. die Binarisierung und die Segmentierung mittels 
+Äquidensiten .
+•Bestimmte Neuronale Netzarchitekturen eignen sich im Besonderen für die verschiedenen 
+Varianten der Segmentierung.
+•Für die Anomalieerkennung gibt es überwachte und unüberwachte Verfahren.
+83 Visual Computing
+--- PAGE 83 ---
+Bibliographie
+Kürzel Referenz
+Nischwitz2020a Alfred Nischwitz , Max Fischer, Peter Haberäcker, Gudrun Socher, Bildverarbeitung –Band II des Standardwerks Computergrafik und 
+Bildverarbeitung, 4. Auflage, Springer (2020)
+Ding2011 Ding, J., Huang, Y., Huang, K., andTan, T. (2011). Robust object tracking via online learning ofadaptive appearance manifold . In 2011 IEEE 
+International Conference on Computer Vision Workshops (ICCV Workshops), pages 1863 -1869. IEEE.
+Girshick2013 Girshick , R. B., Donahue, J., Darrell, T., and Malik, J. (2013). Rich feature hierarchies for accurate object detection and semantic segmentation. 
+CoRR , abs/1311.2524.
+Uijlings2013 Uijlings , J. R., Van De Sande, K. E., Gevers , T., and Smeulders , A. W. (2013). Selective search for object recognition. International journal of 
+computer vision, 104:154 -171.
+Hariharan2014 Hariharan , B., Arbelaez , P., Girshick , R. B., and Malik, J. (2014). Simultaneous detection and segmentation. CoRR , abs/1407.1808.
+He2017 He, K., Gkioxari , G., Dollár , P., and Girshick , R. B. (2017). Mask R -CNN. CoRR , abs/1703.06870.
+Felzenszwalb2004 Felzenszwalb , P. F., & Huttenlocher , D. P. (2004). Efficient graph -based image segmentation. International journal of computer vision, 59, 167 -
+181.
+Roth2022 K. Roth, L. Pemula , J. Zepeda, B. Schölkopf , T. Brox and P. Gehler , "Towards Total Recall in Industrial Anomaly Detection," 2022 IEEE/CVF 
+Conference on Computer Vision and Pattern Recognition (CVPR), New Orleans, LA, USA, 2022, pp. 14298 -14308, doi: 
+10.1109/CVPR52688.2022.01392.
+Mitchell1997 T. Mitchell. Machine Learning. 1997. Publisher: McGraw -Hill.
+84 Visual Computing
