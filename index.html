@@ -574,11 +574,69 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
   Quellen: <a href="https://github.com/ultralytics/ultralytics" target="_blank" style="color:#0078d4;text-decoration:none;">YOLOv8 Dokumentation</a> | <a href="https://github.com/tensorflow/models/tree/master/research/object_detection" target="_blank" style="color:#0078d4;text-decoration:none;">TensorFlow Object Detection API</a>
 </p>
 
-<!-- ══ Abschluss und Zukunft ═══════════════════════════════════════ -->
+<hr class="divider">
+
+<!-- ══ Zusammenfassung und Ausblick ═══════════════════════════════════════ -->
 <div class="fade-up">
   <div class="section-label">Kapitel 5</div>
   <div class="section-title">Zusammenfassung und Ausblick</div>
-  <p>TODO: Ausblick zukünftiger Entwicklungen in der Objekterkennung</p>
+  <p class="section-body">
+    Echtzeit-Objekterkennung verbindet <strong>Lokalisierung</strong> und
+    <strong>Klassifikation</strong> in einem einzigen Schritt und hat sich von
+    handgefertigten Feature-Methoden der 1990er-Jahre bis zu modernen
+    One-Stage-Architekturen wie YOLOv8 entwickelt. Der entscheidende Durchbruch
+    war 2015 die YOLO-Familie: ein einziger Forward-Pass liefert alle Detektionen
+    in unter 33 ms – Voraussetzung für echte Echtzeitfähigkeit. Mit ONNX Runtime Web
+    lässt sich ein solches Modell heute vollständig im Browser betreiben, ganz ohne
+    Server oder Installation.
+  </p>
+</div>
+
+<div class="two-col fade-up">
+  <div class="card">
+    <h3 class="anchored">Was wir gelernt haben</h3>
+    <ul style="margin:0;padding-left:1.2rem;font-size:.9rem;line-height:1.7;">
+      <li>Bounding Box, IoU und NMS als Kernkonzepte</li>
+      <li>One-Stage vs. Two-Stage: Geschwindigkeit vs. Genauigkeit</li>
+      <li>YOLO-Pipeline: Backbone → Neck → Head → NMS</li>
+      <li>Browserbasierte Inferenz via ONNX Runtime Web</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 class="anchored">Offene Herausforderungen</h3>
+    <ul style="margin:0;padding-left:1.2rem;font-size:.9rem;line-height:1.7;">
+      <li>Kleine und verdeckte Objekte bleiben schwierig</li>
+      <li>Domänenwechsel erfordert oft Nachtraining</li>
+      <li>Mobilgeräte und Microcontroller setzen Grenzen</li>
+      <li>Datenschutz bei Live-Kamerasystemen</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fade-up" style="margin-top:1.5rem;">
+  <div class="section-label">Ausblick</div>
+</div>
+
+<div class="fade-up">
+  <p class="section-body">
+    Die Entwicklung geht in drei Richtungen: <strong>Effizienz</strong> –
+    Quantisierung und Pruning bringen YOLOv8 nano auf Mikrocontroller mit
+    weniger als 4 MB RAM. <strong>Offene Vokabularien</strong> – Modelle wie
+    Grounding DINO erkennen beliebige Objektklassen auf Basis von
+    Textbeschreibungen, ohne Nachtraining. <strong>Multimodalität</strong> –
+    Vision-Language-Modelle wie GPT-4o oder Gemini kombinieren Sprachverständnis
+    und Bilderkennung und ermöglichen Antworten auf freie Fragen über Videostreams.
+  </p>
+</div>
+
+<div class="callout info fade-up">
+  <span class="ci">🔭</span>
+  <div class="ct">
+    <strong>Trend: Foundation Models für Objekterkennung</strong>
+    Segment Anything Model (SAM 2) von Meta segmentiert und verfolgt beliebige
+    Objekte ohne vorherige Klassenliste – ein erster Schritt in Richtung
+    allgemeiner visueller Intelligenz in Echtzeit.
+  </div>
 </div>
 
 <!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
