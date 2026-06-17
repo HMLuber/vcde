@@ -440,6 +440,15 @@ ul.task-list li input[type="checkbox"] {
 
 <div class="fade-up" style="margin-top:1.5rem;">
 
+  <!-- Gesamtarchitektur-Übersicht -->
+  <div style="margin-bottom:1.25rem;">
+    <img src="images/pipeline/yolov8-architecture.jpg" style="width:100%;border-radius:.6rem;border:1px solid #2a2a2a;" alt="YOLOv8 Gesamtarchitektur – Backbone, Neck und Head">
+    <div style="font-size:.75rem;color:#666;margin-top:.4rem;text-align:center;">
+      Abb.: Vollständige YOLOv8-P5-Architektur – Backbone (CSPDarknet), Neck (FPN+PAN) und entkoppelter Head im Überblick.
+      Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
+    </div>
+  </div>
+
   <div style="display:flex;flex-direction:column;gap:1rem;">
 
     <div class="card" style="border-left:4px solid #0078d4;">
@@ -449,10 +458,16 @@ ul.task-list li input[type="checkbox"] {
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
         Das Eingabebild wird mittels <strong>Letterboxing</strong> auf exakt 640 × 640 Pixel gebracht:
-        Das Bild wird proportional skaliert und die verbleibenden Ränder mit einem neutralen Grau
-        (RGB 114, 114, 114) aufgefüllt. Anschließend werden die Pixelwerte von [0–255] auf [0–1]
-        normiert. Letterboxing statt einfachem Stretch stellt sicher, dass Seitenverhältnisse erhalten
-        bleiben und Objekte nicht verzerrt erkannt werden.
+        proportional skaliert, verbleibende Ränder mit neutralem Grau (RGB 114, 114, 114) aufgefüllt.
+        Pixelwerte werden von [0–255] auf [0,0–1,0] normiert. Die Wahl <em>640 px</em> ist kein Zufall –
+        das Backbone arbeitet mit einem <strong>Stride von 32</strong>, was bei 640 px genau ein
+        20 × 20-Raster für die gröbste Erkennungsstufe ergibt. Anschließend wird ein vierdimensionaler
+        Tensor der Form <strong>[Batch, 3, 640, 640]</strong> (NCHW – Channels First) erzeugt und
+        an das Netz übergeben. Letterboxing statt einfachem Strecken ist zwingend: Verzerrte
+        Proportionen könnten z. B. Personen breiter erscheinen lassen, was die Klassifikation
+        nachhaltig verschlechtert. Im Training kommen zusätzlich Augmentierungen wie Mosaic
+        (4 Bilder zu einem zusammengesetzt), zufällige Skalierung und Farbverschiebung hinzu –
+        bei der Inferenz bleibt es beim reinen Letterboxing.
       </p>
     </div>
 
@@ -462,13 +477,24 @@ ul.task-list li input[type="checkbox"] {
         <h4 style="margin:0;" class="anchored">Backbone – Merkmalsextraktion</h4>
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
-        Das <strong>CSPDarknet</strong>-Backbone verarbeitet das Bild mit einer Folge von
-        Faltungsschichten (Convolutional Layers) und extrahiert dabei hierarchische visuelle Merkmale:
-        frühe Schichten erkennen einfache Kanten und Farben, spätere Schichten komplexe Formen und
-        Texturen. Der <em>Cross-Stage-Partial</em>-Ansatz teilt den Gradientenfluss auf, was
-        Trainingseffizienz und Genauigkeit verbessert. Das Backbone liefert Feature-Maps in
-        verschiedenen Auflösungen (z. B. 80 × 80, 40 × 40, 20 × 20 Zellen) für die nächste Stufe.
+        Das <strong>CSPDarknet</strong>-Backbone (Cross-Stage-Partial Darknet) verarbeitet den
+        Eingabe-Tensor mit einer tiefen Folge von Faltungsschichten. Jede Konvolutionsschicht
+        verwendet <strong>Batch-Normalization</strong> zur Stabilisierung des Gradientenflusses
+        und <strong>SiLU</strong> (Sigmoid Linear Unit, <em>x · σ(x)</em>) als Aktivierungsfunktion –
+        ein glatteres Profil als ReLU, das Gradienten bei negativen Werten nicht vollständig blockiert.
+        Der CSP-Trick teilt den Eingangskanal in zwei Pfade: Ein Pfad durchläuft mehrere
+        Residualblöcke (C2f-Module), der andere wird direkt weitergeleitet und dann konkateniert.
+        Das reduziert den Rechenaufwand und mindert das Vanishing-Gradient-Problem.
+        Als Ausgabe liefert das Backbone drei Feature-Maps: <strong>P3 (80 × 80)</strong>,
+        <strong>P4 (40 × 40)</strong> und <strong>P5 (20 × 20)</strong> – entsprechend den
+        Strides 8, 16 und 32. Die Heatmaps unten zeigen anschaulich, welche Bildbereiche
+        das Backbone auf verschiedenen Abstraktionsniveaus aktiviert.
       </p>
+      <img src="images/pipeline/backbone-featuremaps.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="Heatmap-Aktivierungen des CSPDarknet-Backbones">
+      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
+        Abb.: Heatmap-Visualisierung der CSPDarknet-Feature-Maps – warme Farben (rot/gelb) zeigen Bereiche hoher Aktivierung.
+        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
+      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #059669;">
@@ -477,14 +503,23 @@ ul.task-list li input[type="checkbox"] {
         <h4 style="margin:0;" class="anchored">Neck – Multi-Scale-Fusion</h4>
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
-        Der Neck kombiniert die Feature-Maps aller drei Auflösungen. Dazu verwendet YOLOv8 eine
-        <strong>FPN</strong> (Feature Pyramid Network) und eine <strong>PAN</strong>
-        (Path Aggregation Network): FPN leitet semantisch reichhaltige Informationen der tiefen
-        Schichten nach oben weiter (Top-Down), PAN schickt räumlich genaue Informationen der
-        flachen Schichten zurück nach unten (Bottom-Up). Das Ergebnis sind drei fusionierte
-        Feature-Maps, die sowohl <em>Was</em> (Semantik) als auch <em>Wo</em> (Position) kodieren –
-        entscheidend für die Erkennung kleiner und großer Objekte im selben Bild.
+        Der Neck kombiniert P3, P4 und P5 in zwei Pässen. Im <strong>Top-Down-Pfad (FPN)</strong>
+        wird P5 per Nearest-Neighbour-Upsampling vergrößert und mit P4 konkateniert, dann mit P3 –
+        semantisch reiche Informationen tiefer Schichten „fließen" zu hochauflösenden Maps.
+        Im <strong>Bottom-Up-Pfad (PAN)</strong> läuft die Information erneut von P3 nach P5:
+        räumlich präzise Positionsinformation reichert die grobkörnigen Maps an.
+        An jedem Kreuzungspunkt verarbeitet ein <strong>C2f-Modul</strong> die konkatenierten
+        Feature-Maps weiter. Warum drei Skalen? 80 × 80-Zellen erkennen <em>kleine Objekte</em>
+        (z. B. Fußgänger in der Ferne), 40 × 40 <em>mittelgroße</em>, 20 × 20
+        <em>große Objekte</em> (z. B. Fahrzeuge nah). Die Neck-Heatmaps zeigen deutlich, wie sich
+        die Aktivierungsmuster gegenüber dem Backbone verändern – der Neck kodiert nun sowohl
+        <em>Was</em> (Semantik) als auch <em>Wo</em> (Position).
       </p>
+      <img src="images/pipeline/neck-featuremaps.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="Feature-Maps nach FPN/PAN-Fusion im Neck">
+      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
+        Abb.: Feature-Maps nach FPN/PAN-Fusion – drei Skalen (80×80, 40×40, 20×20) für kleine, mittlere und große Objekte.
+        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
+      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #dc2626;">
@@ -493,14 +528,22 @@ ul.task-list li input[type="checkbox"] {
         <h4 style="margin:0;" class="anchored">Head – Vorhersage (ankerfrei)</h4>
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
-        Der Detection Head liest die fusionierten Feature-Maps und sagt für jede Gitterzelle direkt
-        voraus: den <strong>Mittelpunkt</strong> (cx, cy), <strong>Breite und Höhe</strong> (w, h)
-        der Bounding Box sowie <strong>80 Klassenwahrscheinlichkeiten</strong>. YOLOv8 ist dabei
-        <em>ankerfrei</em> (anchor-free): Ältere YOLO-Versionen verwendeten vordefinierte
-        Ankerboxen als Referenzrahmen und passten diese an. YOLOv8 sagt die Box-Koordinaten
-        direkt vorher, was Hyperparameter-Tuning entfallen lässt und gerade bei untypischen
-        Seitenverhältnissen präziser ist.
+        Der Detection Head liest die drei fusionierten Feature-Maps und erzeugt für jede Zelle eine
+        Vorhersage. YOLOv8 verwendet einen <strong>entkoppelten Head</strong> (Decoupled Head):
+        Klassifikation und Box-Regression laufen in zwei getrennten Zweigen, was beide Aufgaben
+        unabhängig optimiert. Für die Box-Koordinaten setzt YOLOv8 <strong>DFL</strong>
+        (Distribution Focal Loss) ein: statt einen einzelnen Wert vorherzusagen, schätzt das Netz
+        eine Verteilung über mögliche Abstände zum Boxrand – das macht die Regression robuster.
+        Insgesamt entstehen <strong>8 400 Rohvorhersagen</strong>
+        (80×80 + 40×40 + 20×20 = 6 400 + 1 600 + 400), jede mit 4 Box-Koordinaten und
+        80 Klassenwahrscheinlichkeiten via Sigmoid. Die Abbildung zeigt den Unterschied zwischen
+        dem alten gekoppelten YOLOv5-Head und dem neuen entkoppelten YOLOv8-Head.
       </p>
+      <img src="images/pipeline/head-architecture.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="YOLOv5 Coupled Head vs. YOLOv8 Decoupled Head">
+      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
+        Abb.: YOLOv5 Coupled Head (oben) vs. YOLOv8 Decoupled Head (unten) – getrennte Zweige für Box-Regression (CIoU+DFL) und Klassifikation (BCE).
+        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
+      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #d97706;">
@@ -509,24 +552,25 @@ ul.task-list li input[type="checkbox"] {
         <h4 style="margin:0;" class="anchored">NMS – Duplikat-Bereinigung</h4>
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
-        Da das Netz dasselbe Objekt oft in mehreren benachbarten Zellen erkennt, entsteht ein
-        Schwarm überlappender Boxen. <strong>Non-Maximum Suppression</strong> bereinigt das:
-        Zuerst werden alle Boxen unterhalb des Konfidenzschwellwerts (hier 0,40) verworfen.
-        Dann wird iterativ die Box mit dem höchsten Score behalten und alle anderen Boxen
-        derselben Klasse, deren <strong>IoU</strong> mit ihr ≥ 0,45 beträgt, unterdrückt.
-        Das wiederholt sich, bis keine überlappenden Kandidaten mehr übrig sind – übrig bleibt
-        genau eine Box pro erkanntem Objekt.
+        Von den 8 400 Rohvorhersagen erkennen viele benachbarte Zellen dasselbe Objekt.
+        <strong>Non-Maximum Suppression</strong> reduziert diesen Schwarm auf wenige finale Boxen,
+        klassenweise und in zwei Schritten: Zuerst werden alle Boxen unterhalb des
+        Konfidenzschwellwerts (Standard: 0,40) verworfen. Aus den verbliebenen Boxen wird iterativ
+        die mit dem höchsten Score behalten; alle anderen Boxen <em>derselben Klasse</em>,
+        deren <strong>IoU</strong> mit ihr ≥ 0,45 beträgt, werden unterdrückt. Der Algorithmus
+        hat Zeitkomplexität O(n²) in der Anzahl verbleibender Boxen – in der Praxis nach dem
+        Konfidenzfilter nur noch wenige Dutzend, sodass NMS unter 1 ms abläuft.
+        Das Flussdiagramm zeigt die vollständige Post-Processing-Pipeline: von den rohen
+        Klassenlogits und Box-Verteilungen über Sigmoid-Dekodierung und Schwellwertfilter
+        bis zum finalen NMS-Schritt – aus 8 400 Rohboxen typischerweise 5–20 Detektionen.
       </p>
+      <img src="images/pipeline/inference-process.png" style="width:100%;max-width:480px;display:block;margin:.75rem auto 0;border-radius:.5rem;border:1px solid #2a2a2a;" alt="Post-Processing-Pipeline: Threshold Filter und NMS">
+      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
+        Abb.: Post-Processing-Flowchart – von 8 400 Rohvorhersagen (cls_logit + bbox_dist_preds) über Dekodierung und Schwellwertfilter bis zum NMS-Ergebnis.
+        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
+      </div>
     </div>
 
-  </div>
-</div>
-
-<div class="callout info fade-up">
-  <span class="ci">🔲</span>
-  <div class="ct">
-    <strong>Gitter-Struktur</strong>
-    Das Bild wird in ein S×S-Raster unterteilt. Jede Zelle ist für Objekte verantwortlich, deren Mittelpunkt in ihr liegt. Für jede Zelle werden gleichzeitig Bounding Boxes, Objectness Score und Klassenwahrscheinlichkeiten vorhergesagt – daher der Name <em>You Only Look Once</em>.
   </div>
 </div>
 
