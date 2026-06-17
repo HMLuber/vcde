@@ -605,8 +605,6 @@ cap   = cv2.<span class="code-func">VideoCapture</span>(<span class="code-string
     und Bilderkennung und ermöglichen Antworten auf freie Fragen über Videostreams.
   </p>
 </div>
-
-
 <!-- ══ FOOTER ══════════════════════════════════════════════════════ -->
 <div class="page-footer">
   <div class="pf-info">
