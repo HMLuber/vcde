@@ -423,7 +423,7 @@ anchor-sections: false
         unabhängig optimiert. Für die Box-Koordinaten setzt YOLOv8 <strong>DFL</strong>
         (Distribution Focal Loss) ein: statt einen einzelnen Wert vorherzusagen, schätzt das Netz
         eine Verteilung über mögliche Abstände zum Boxrand – das macht die Regression robuster.
-        Insgesamt entstehen <strong>8 400 Rohvorhersagen</strong>
+        Insgesamt entstehen <strong>8400 Rohvorhersagen</strong>
         (80×80 + 40×40 + 20×20 = 6 400 + 1 600 + 400), jede mit 4 Box-Koordinaten und
         80 Klassenwahrscheinlichkeiten via Sigmoid. Im Gegensatz zu YOLOv5, das Klassifikation
         und Regression im selben Zweig verarbeitet (Coupled Head), trennt YOLOv8 diese Aufgaben
@@ -437,7 +437,7 @@ anchor-sections: false
         <h4 style="margin:0;">NMS – Duplikat-Bereinigung</h4>
       </div>
       <p style="margin:0;font-size:.9rem;line-height:1.7;">
-        Von den 8 400 Rohvorhersagen erkennen viele benachbarte Zellen dasselbe Objekt.
+        Von den 8400 Rohvorhersagen erkennen viele benachbarte Zellen dasselbe Objekt.
         <strong>Non-Maximum Suppression</strong> reduziert diesen Schwarm auf wenige finale Boxen,
         klassenweise und in zwei Schritten: Zuerst werden alle Boxen unterhalb des
         Konfidenzschwellwerts (Standard: 0,40) verworfen. Aus den verbliebenen Boxen wird iterativ
@@ -445,7 +445,7 @@ anchor-sections: false
         deren <strong>IoU</strong> mit ihr ≥ 0,45 beträgt, werden unterdrückt. Der Algorithmus
         hat Zeitkomplexität O(n²) in der Anzahl verbleibender Boxen – in der Praxis nach dem
         Konfidenzfilter nur noch wenige Dutzend, sodass NMS unter 1 ms abläuft.
-        Aus 8 400 Rohboxen entstehen so typischerweise nur 5–20 finale, überlappungsfreie
+        Aus 8400 Rohboxen entstehen so typischerweise nur 5–20 finale, überlappungsfreie
         Detektionen.
       </p>
     </div>
