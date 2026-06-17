@@ -487,14 +487,8 @@ ul.task-list li input[type="checkbox"] {
         Das reduziert den Rechenaufwand und mindert das Vanishing-Gradient-Problem.
         Als Ausgabe liefert das Backbone drei Feature-Maps: <strong>P3 (80 × 80)</strong>,
         <strong>P4 (40 × 40)</strong> und <strong>P5 (20 × 20)</strong> – entsprechend den
-        Strides 8, 16 und 32. Die Heatmaps unten zeigen anschaulich, welche Bildbereiche
-        das Backbone auf verschiedenen Abstraktionsniveaus aktiviert.
+        Strides 8, 16 und 32.
       </p>
-      <img src="images/pipeline/backbone-featuremaps.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="Heatmap-Aktivierungen des CSPDarknet-Backbones">
-      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
-        Abb.: Heatmap-Visualisierung der CSPDarknet-Feature-Maps – warme Farben (rot/gelb) zeigen Bereiche hoher Aktivierung.
-        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
-      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #059669;">
@@ -511,15 +505,9 @@ ul.task-list li input[type="checkbox"] {
         An jedem Kreuzungspunkt verarbeitet ein <strong>C2f-Modul</strong> die konkatenierten
         Feature-Maps weiter. Warum drei Skalen? 80 × 80-Zellen erkennen <em>kleine Objekte</em>
         (z. B. Fußgänger in der Ferne), 40 × 40 <em>mittelgroße</em>, 20 × 20
-        <em>große Objekte</em> (z. B. Fahrzeuge nah). Die Neck-Heatmaps zeigen deutlich, wie sich
-        die Aktivierungsmuster gegenüber dem Backbone verändern – der Neck kodiert nun sowohl
+        <em>große Objekte</em> (z. B. Fahrzeuge nah). So kodiert der Neck sowohl
         <em>Was</em> (Semantik) als auch <em>Wo</em> (Position).
       </p>
-      <img src="images/pipeline/neck-featuremaps.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="Feature-Maps nach FPN/PAN-Fusion im Neck">
-      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
-        Abb.: Feature-Maps nach FPN/PAN-Fusion – drei Skalen (80×80, 40×40, 20×20) für kleine, mittlere und große Objekte.
-        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
-      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #dc2626;">
@@ -536,14 +524,10 @@ ul.task-list li input[type="checkbox"] {
         eine Verteilung über mögliche Abstände zum Boxrand – das macht die Regression robuster.
         Insgesamt entstehen <strong>8 400 Rohvorhersagen</strong>
         (80×80 + 40×40 + 20×20 = 6 400 + 1 600 + 400), jede mit 4 Box-Koordinaten und
-        80 Klassenwahrscheinlichkeiten via Sigmoid. Die Abbildung zeigt den Unterschied zwischen
-        dem alten gekoppelten YOLOv5-Head und dem neuen entkoppelten YOLOv8-Head.
+        80 Klassenwahrscheinlichkeiten via Sigmoid. Im Gegensatz zu YOLOv5, das Klassifikation
+        und Regression im selben Zweig verarbeitet (Coupled Head), trennt YOLOv8 diese Aufgaben
+        vollständig – das verbessert die Genauigkeit beider Teilaufgaben.
       </p>
-      <img src="images/pipeline/head-architecture.png" style="width:100%;border-radius:.5rem;margin-top:.75rem;border:1px solid #2a2a2a;" alt="YOLOv5 Coupled Head vs. YOLOv8 Decoupled Head">
-      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
-        Abb.: YOLOv5 Coupled Head (oben) vs. YOLOv8 Decoupled Head (unten) – getrennte Zweige für Box-Regression (CIoU+DFL) und Klassifikation (BCE).
-        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
-      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #d97706;">
@@ -560,15 +544,9 @@ ul.task-list li input[type="checkbox"] {
         deren <strong>IoU</strong> mit ihr ≥ 0,45 beträgt, werden unterdrückt. Der Algorithmus
         hat Zeitkomplexität O(n²) in der Anzahl verbleibender Boxen – in der Praxis nach dem
         Konfidenzfilter nur noch wenige Dutzend, sodass NMS unter 1 ms abläuft.
-        Das Flussdiagramm zeigt die vollständige Post-Processing-Pipeline: von den rohen
-        Klassenlogits und Box-Verteilungen über Sigmoid-Dekodierung und Schwellwertfilter
-        bis zum finalen NMS-Schritt – aus 8 400 Rohboxen typischerweise 5–20 Detektionen.
+        Aus 8 400 Rohboxen entstehen so typischerweise nur 5–20 finale, überlappungsfreie
+        Detektionen.
       </p>
-      <img src="images/pipeline/inference-process.png" style="width:100%;max-width:480px;display:block;margin:.75rem auto 0;border-radius:.5rem;border:1px solid #2a2a2a;" alt="Post-Processing-Pipeline: Threshold Filter und NMS">
-      <div style="font-size:.75rem;color:#666;margin-top:.35rem;text-align:center;">
-        Abb.: Post-Processing-Flowchart – von 8 400 Rohvorhersagen (cls_logit + bbox_dist_preds) über Dekodierung und Schwellwertfilter bis zum NMS-Ergebnis.
-        Quelle: <a href="https://mmyolo.readthedocs.io/en/latest/recommended_topics/algorithm_descriptions/yolov8_description.html" target="_blank" style="color:#0078d4;text-decoration:none;">MMYOLO Docs</a> (Apache 2.0)
-      </div>
     </div>
 
   </div>
