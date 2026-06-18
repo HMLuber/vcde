@@ -469,6 +469,20 @@ ul.task-list li input[type="checkbox"] {
         (4 Bilder zu einem zusammengesetzt), zufällige Skalierung und Farbverschiebung hinzu –
         bei der Inferenz bleibt es beim reinen Letterboxing.
       </p>
+      <div class="formula-box" style="margin-top:.75rem;">
+        <div class="formula-title">Normalisierung</div>
+        <div class="formula-main">x̂ = x / 255 &nbsp;∈ [0,0 ; 1,0]</div>
+        <div class="formula-note">Jeder Pixelwert x ∈ {0,…,255} wird linear auf [0,1] skaliert (float32). Ohne Normalisierung wären die Gradienten im ersten Layer um Faktor 255 größer als in späteren – das destabilisiert das Training.</div>
+      </div>
+      <div class="formula-box" style="margin-top:.5rem;">
+        <div class="formula-title">Letterboxing – Skalierungsfaktor &amp; Padding</div>
+        <div class="formula-main">s = min(640/W, 640/H)<br>Δx = ⌊(640 − s·W) / 2⌋ &nbsp;&nbsp; Δy = ⌊(640 − s·H) / 2⌋</div>
+        <div class="formula-note">
+          <strong>Beispiel</strong> – 1920 × 1080-Video:<br>
+          s = min(640/1920, 640/1080) = min(0,333 ; 0,593) = <strong>0,333</strong><br>
+          Skaliertes Bild: 640 × 360 px → Δy = ⌊(640 − 360)/2⌋ = <strong>140 px</strong> Graurand oben &amp; unten.
+        </div>
+      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #7c3aed;">
@@ -489,6 +503,25 @@ ul.task-list li input[type="checkbox"] {
         <strong>P4 (40 × 40)</strong> und <strong>P5 (20 × 20)</strong> – entsprechend den
         Strides 8, 16 und 32.
       </p>
+      <div class="formula-box blue" style="margin-top:.75rem;">
+        <div class="formula-title">2D-Faltungsoperation (Convolutional Layer)</div>
+        <div class="formula-main">(I ∗ K)[x, y] = ∑ᵢ ∑ⱼ I[x+i, y+j] · K[i, j]</div>
+        <div class="formula-note">I = Eingabe-Feature-Map, K = Faltungskern der Größe k×k, i,j ∈ {−⌊k/2⌋, …, ⌊k/2⌋}. Jeder Ausgabewert ist ein gewichtetes Skalarprodukt eines Bild-Ausschnitts mit dem Kernel.</div>
+        <div class="example-trace"><span class="ex-label">Beispiel – horizontaler Sobel-Kantenfilter (3×3)</span>K_x = ⎡−1  0  +1⎤    Patch I = ⎡ 80  120  200⎤
+       ⎢−2  0  +2⎥              ⎢ 90  130  210⎥
+       ⎣−1  0  +1⎦              ⎣ 70  110  190⎦
+
+(I ∗ K)[x,y] = (−1)·80 + 0·120 + (+1)·200
+             + (−2)·90 + 0·130 + (+2)·210
+             + (−1)·70 + 0·110 + (+1)·190
+           = −80 + 200 − 180 + 420 − 70 + 190
+           = <span class="ex-highlight">+480</span>  →  starke positive Kante (Helligkeitssprung links→rechts)</div>
+      </div>
+      <div class="formula-box blue" style="margin-top:.5rem;">
+        <div class="formula-title">SiLU-Aktivierungsfunktion</div>
+        <div class="formula-main">SiLU(x) = x · σ(x) = x · 1 / (1 + e<sup>−x</sup>)</div>
+        <div class="formula-note">Im Vergleich zu ReLU(x) = max(0, x) dämpft SiLU negative Eingaben weich statt hart auf 0 zu setzen. Das hält den Gradientenfluss für leicht negative Aktivierungen aufrecht und beschleunigt das Training tiefer Netze.</div>
+      </div>
     </div>
 
     <div class="card" style="border-left:4px solid #059669;">
@@ -547,8 +580,91 @@ ul.task-list li input[type="checkbox"] {
         Aus 8400 Rohboxen entstehen so typischerweise nur 5–20 finale, überlappungsfreie
         Detektionen.
       </p>
+      <div class="formula-box" style="margin-top:.75rem;">
+        <div class="formula-title">Intersection over Union (IoU)</div>
+        <div class="formula-main">IoU(A, B) = |A ∩ B| / |A ∪ B| = |A ∩ B| / (|A| + |B| − |A ∩ B|)</div>
+        <div class="formula-note">Maß für die Überlappung zweier Bounding Boxes. 0 = keine Überlappung, 1 = identisch. NMS-Schwellwert: IoU ≥ 0,45 → unterdrückt.</div>
+        <div class="example-trace"><span class="ex-label">Numerisches Beispiel – zwei Boxen gleicher Klasse</span>Box A: (x₁=50, y₁=50, x₂=150, y₂=150)  →  |A| = 100 × 100 = 10 000 px²
+Box B: (x₁=70, y₁=70, x₂=170, y₂=170)  →  |B| = 100 × 100 = 10 000 px²
+
+Schnittbereich: (max(50,70), max(50,70), min(150,170), min(150,170))
+              = (70, 70, 150, 150)  →  80 × 80 = 6 400 px²
+
+|A ∪ B| = 10 000 + 10 000 − 6 400 = 13 600 px²
+
+IoU = 6 400 / 13 600 ≈ <span class="ex-highlight">0,47</span>  &gt;  Schwellwert 0,45
+→ Box B wird <span class="ex-highlight">unterdrückt</span> (Box A hat höheren Confidence-Score)</div>
+      </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Matrixoperationen – Exkurs -->
+<div class="fade-up" style="margin-top:2rem;margin-bottom:.75rem;">
+  <div class="section-label" style="margin-top:1rem;">Exkurs: Bildverarbeitung als Matrizenrechnung</div>
+  <p class="section-body">
+    Bilder sind dreidimensionale Matrizen der Form H × W × 3 (Höhe × Breite × RGB-Kanäle).
+    Viele Verarbeitungsschritte – von der Graustufen-Konvertierung bis zur Faltung – lassen sich
+    präzise als lineare Algebraoperationen ausdrücken.
+  </p>
+</div>
+
+<div class="card fade-up" style="border-left:4px solid var(--accent);margin-bottom:1rem;">
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+    <span style="background:var(--accent);color:#fff;font-weight:700;border-radius:4px;padding:.2rem .65rem;font-size:.8rem;font-family:'JetBrains Mono',monospace;">MATRIX</span>
+    <h4 style="margin:0;font-family:'DM Serif Display',serif;font-size:1.05rem;" class="anchored">Graustufenkonvertierung als Dot-Produkt</h4>
+  </div>
+  <p style="margin:0 0 .75rem;font-size:.9rem;line-height:1.7;color:var(--text-2);">
+    Obwohl YOLOv8 auf RGB operiert, ist Graustufenkonvertierung ein klassisches Beispiel für
+    Matrizenrechnung in der Bildverarbeitung. Jeder RGB-Pixel wird durch ein gewichtetes
+    Dot-Produkt auf einen skalaren Helligkeitswert Y abgebildet.
+    Die Gewichte folgen der <strong>ITU-R BT.601-Norm</strong>, die die spektrale Empfindlichkeit
+    des menschlichen Auges (grün &gt; rot &gt; blau) nachbildet:
+  </p>
+  <div class="formula-box">
+    <div class="formula-title">Luminanzformel (Vektorform)</div>
+    <div class="formula-main">
+      Y = <strong>w</strong>ᵀ · <strong>p</strong> = [0,299 &nbsp; 0,587 &nbsp; 0,114] · [R &nbsp; G &nbsp; B]ᵀ
+    </div>
+    <div class="formula-note">
+      <strong>w</strong> = Gewichtsvektor (Empfindlichkeitsspektrum), <strong>p</strong> = Pixelvektor.<br>
+      Grün erhält das höchste Gewicht (0,587), weil das menschliche Auge bei ~555 nm Wellenlänge am empfindlichsten ist.
+      Für ein vollständiges Bild I ∈ ℝ<sup>H×W×3</sup> gilt: Y = I · <strong>w</strong> ∈ ℝ<sup>H×W</sup>.
+    </div>
+  </div>
+  <div class="example-trace"><span class="ex-label">Gerechnetes Beispiel – warmorangener Pixel (R=200, G=120, B=50)</span>Y = <strong>w</strong>ᵀ · <strong>p</strong>
+
+  = ⎡0,299⎤ᵀ   ⎡200⎤
+    ⎢0,587⎥  ·  ⎢120⎥
+    ⎣0,114⎦     ⎣ 50⎦
+
+  = 0,299 × 200  +  0,587 × 120  +  0,114 × 50
+  =   59,80      +    70,44       +    5,70
+  = <span class="ex-highlight">135,94  ≈  136</span>  (Graustufe 8-Bit, Skala 0–255)</div>
+  <p style="margin:.75rem 0 0;font-size:.85rem;color:var(--text-2);">
+    In OpenCV (BGR-Reihenfolge): <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;">cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)</code>
+    – die Gewichte sind intern identisch, nur B und R sind wegen BGR-Konvention vertauscht.
+  </p>
+</div>
+
+<div class="card fade-up" style="margin-bottom:1rem;border-left:4px solid #059669;">
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+    <span style="background:#059669;color:#fff;font-weight:700;border-radius:4px;padding:.2rem .65rem;font-size:.8rem;font-family:'JetBrains Mono',monospace;">TENSOR</span>
+    <h4 style="margin:0;font-family:'DM Serif Display',serif;font-size:1.05rem;" class="anchored">Vom Pixel-Array zum 4D-Tensor</h4>
+  </div>
+  <p style="margin:0 0 .75rem;font-size:.9rem;line-height:1.7;color:var(--text-2);">
+    Nach Letterboxing und Normalisierung übergibt die Preprocessing-Pipeline das Bild als
+    vierdimensionalen Tensor an das Netz – im NCHW-Format (Channels First, GPU-optimiert):
+  </p>
+  <div class="formula-box green">
+    <div class="formula-title">Tensor-Notation (NCHW)</div>
+    <div class="formula-main">T ∈ ℝ<sup>N × C × H × W</sup> = ℝ<sup>1 × 3 × 640 × 640</sup></div>
+    <div class="formula-note">
+      N = Batch-Größe (1 bei Einzel-Inferenz), C = Kanäle (3 für RGB), H = W = 640.<br>
+      Gesamtanzahl Werte: 1 × 3 × 640 × 640 = <strong>1 228 800 float32-Werte</strong> → 4,7 MB pro Frame.
+      Die Kanalreihenfolge im Speicher ist R-gesamt → G-gesamt → B-gesamt (planar), nicht pixelweise interleaved.
+    </div>
   </div>
 </div>
 
