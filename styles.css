@@ -746,6 +746,67 @@ body {
 .fade-up-2 { animation-delay: .2s; }
 .fade-up-3 { animation-delay: .3s; }
 
+/* ── Formula box ──────────────────────────────────────────────── */
+.formula-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: .85rem 1.1rem;
+  margin: .75rem 0;
+  overflow-x: auto;
+}
+.formula-box.blue { border-left-color: var(--blue); }
+.formula-box.green { border-left-color: var(--green); }
+.formula-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: .4rem;
+}
+.formula-main {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .95rem;
+  color: var(--text);
+  text-align: center;
+  padding: .4rem 0;
+  line-height: 1.9;
+}
+.formula-note {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: .45rem;
+  line-height: 1.6;
+}
+.example-trace {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .85rem 1rem;
+  margin-top: .65rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem;
+  color: var(--text-2);
+  line-height: 2;
+  overflow-x: auto;
+  white-space: pre;
+}
+.ex-label {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: .35rem;
+  white-space: normal;
+}
+.ex-highlight { color: var(--accent); font-weight: 700; }
+
 /* ── Quarto content overrides ────────────────────────────────── */
 #quarto-content { padding: 0; }
 .quarto-container { max-width: 100%; padding: 0; }
