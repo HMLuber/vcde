@@ -79,188 +79,16 @@ anchor-sections: false
 
 <hr class="divider">
 
-<!-- ══ GRUNDLAGEN ═════════════════════════════════════════════════ -->
-<div class="fade-up">
-  <div class="section-label">Kapitel 1</div>
-  <div class="section-title">Grundlagen</div>
-  <p style="margin-top:.5rem;font-size:.95rem;color:#999">Dieses Kapitel stützt sich auf die Vorlesungsfolie „Objekterkennung“ aus dem Themenblock Erkennung.</p>
-</div>
-
-<!-- Geschichte -->
-<div class="fade-up" style="margin-bottom:.75rem;">
-  <div class="section-label" style="margin-top:1.5rem;">Geschichte der Objekterkennung</div>
-</div>
-
-<div class="timeline fade-up">
-  <div class="tl-item">
-    <div class="tl-dot">1960er–1990er</div>
-    <div class="tl-body">
-      <div class="tl-badge blue">Klassisch</div>
-      <h4>Klassische Computer Vision</h4>
-      <p>Edge Detection und Feature Matching (z.B. Haar Cascades) dominieren. Methoden sind handgefertigt und auf spezielle Szenarien begrenzt.</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2001</div>
-    <div class="tl-body">
-      <div class="tl-badge blue">Klassisch</div>
-      <h4>Viola-Jones – Erster Echtzeit-Detektor</h4>
-      <p>Haar-Merkmale + Cascade Classifier ermöglichen erstmals Echtzeit-Gesichtserkennung auf Consumer-Hardware.</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2012</div>
-    <div class="tl-body">
-      <div class="tl-badge red">Durchbruch</div>
-      <h4>AlexNet – Deep Learning Revolution</h4>
-      <p>Tiefes CNN gewinnt ImageNet und halbiert die Fehlerrate. GPU-Training und Deep Learning werden zum Standard.</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2013</div>
-    <div class="tl-body">
-      <div class="tl-badge blue">CNN</div>
-      <h4>R-CNN – Regionenbasierte Erkennung</h4>
-      <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2015–2016</div>
-    <div class="tl-body">
-      <div class="tl-badge blue">Two-Stage</div>
-      <h4>Faster R-CNN – Zwei-Etappen-Verfahren</h4>
-      <p>Faster R-CNN und ähnliche Architekturen erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit – für Echtzeit-Anwendungen nicht geeignet.</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2015</div>
-    <div class="tl-body">
-      <div class="tl-badge red">Meilenstein</div>
-      <h4>YOLO v1 – You Only Look Once</h4>
-      <p>Ein einziger Forward-Pass liefert alle Bounding Boxes direkt. 45 FPS auf einer GPU – Echtzeit-Objekterkennung ist Realität.</p>
-    </div>
-  </div>
-  <div class="tl-item">
-    <div class="tl-dot">2023</div>
-    <div class="tl-body">
-      <div class="tl-badge red">Aktuell</div>
-      <h4>YOLOv8 – Stand der Technik</h4>
-      <p>Ankerfreie Architektur, 37,3 mAP auf COCO, einheitliche API für Detection/Segmentation. Nano-Variante: 3,2 ms/Bild auf A100.</p>
-    </div>
-  </div>
-</div>
-
-<div class="fade-up" style="margin-top:1.5rem;font-size:0.9rem;color:#666;">
-  Quellen zur Historie: <a href="https://de.wikipedia.org/wiki/Objekterkennung" target="_blank" style="color:#0078d4;text-decoration:none;">Wikipedia: Objekterkennung</a> | <a href="https://arxiv.org/abs/1506.02640" target="_blank" style="color:#0078d4;text-decoration:none;">Redmon et al. (2016) – YOLO</a>
-</div>
-
-<!-- Begriffe -->
-<div class="fade-up" style="margin-bottom:.75rem;">
-  <div class="section-label" style="margin-top:.5rem;">Begriffserklärungen</div>
-</div>
-
-<div class="def-grid fade-up">
-  <div class="def-card">
-    <div class="def-term">Begriff 01</div>
-    <div class="def-name">Bounding Box</div>
-    <p>Achsenparalleles Rechteck um ein erkanntes Objekt – definiert durch Mittelpunkt (cx, cy) sowie Breite und Höhe.</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 02</div>
-    <div class="def-name">Confidence Score</div>
-    <p>Zahl [0–1]: Wie sicher ist das Modell, dass die Box ein Objekt enthält und die Klasse korrekt ist?</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 03</div>
-    <div class="def-name">IoU – Intersection over Union</div>
-    <p>Schnittfläche / Vereinigungsfläche zweier Boxen. 0 = keine Überlappung, 1 = identisch. COCO-Schwellwert: ≥ 0,5.</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 04</div>
-    <div class="def-name">NMS – Non-Maximum Suppression</div>
-    <p>Bereinigt mehrfach erkannte Objekte: Beste Box behalten, alle Nachbarboxen mit IoU &gt; 0,45 unterdrücken.</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 05</div>
-    <div class="def-name">Anchor Box</div>
-    <p>Vordefinierte Box-Formen als Vorhersage-Referenz. YOLOv8 ist ankerfrei und sagt den Mittelpunkt direkt vorher.</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 06</div>
-    <div class="def-name">mAP – mean Average Precision</div>
-    <p>Hauptmetrik für Objektdetektoren: Durchschnitt der Average Precision über alle Klassen bei variierenden IoU-Schwellwerten.</p>
-  </div>
-  <div class="def-card">
-    <div class="def-term">Begriff 07</div>
-    <div class="def-name">CNN – Convolutional Neural Network</div>
-    <p>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder. Extrahiert Merkmale automatisch durch Faltungsoperationen – von einfachen Kanten bis zu komplexen Formen.</p>
-  </div>
-</div>
-
-<!-- Anwendungsfälle -->
-<div class="fade-up" style="margin-bottom:.75rem;">
-  <div class="section-label" style="margin-top:.5rem;">Typische Anwendungsfälle</div>
-</div>
-
-<div class="usecase-grid fade-up">
-  <div class="usecase-card">
-    <span class="usecase-icon">🚗</span>
-    <h3>Autonomes Fahren</h3>
-    <ul>
-      <li>Fußgänger &amp; Radfahrer</li>
-      <li>Verkehrsschilder &amp; Ampeln</li>
-      <li>Fahrzeuge &amp; Hindernisse</li>
-    </ul>
-  </div>
-  <div class="usecase-card">
-    <span class="usecase-icon">📹</span>
-    <h3>Sicherheit &amp; Überwachung</h3>
-    <ul>
-      <li>Personenzählung &amp; Tracking</li>
-      <li>Eindringling-Erkennung</li>
-      <li>Verlassengegenstand-Alarm</li>
-    </ul>
-  </div>
-  <div class="usecase-card">
-    <span class="usecase-icon">⚽</span>
-    <h3>Sport</h3>
-    <ul>
-      <li>Spieler- &amp; Balltracking</li>
-      <li>Taktische Bewegungsanalyse</li>
-    </ul>
-  </div>
-  <div class="usecase-card">
-    <span class="usecase-icon">🩺</span>
-    <h3>Medizin</h3>
-    <ul>
-      <li>Erkennung von Tumoren &amp; Frakturen</li>
-      <li>Anomalien in Röntgen-/CT-Bildern</li>
-      <li>Assistenz bei medizinischer Diagnose</li>
-    </ul>
-  </div>
-  <div class="usecase-card">
-    <span class="usecase-icon">🏭</span>
-    <h3>Industrie &amp; Qualitätskontrolle</h3>
-    <ul>
-      <li>Defekterkennung am Fließband</li>
-      <li>Montagekontrolle &amp; Vollständigkeit</li>
-      <li>Barcode- &amp; Produktidentifikation</li>
-    </ul>
-  </div>
-</div>
-
-<hr class="divider">
-
 <!-- ══ MOTIVATION ═════════════════════════════════════════════════ -->
-<div class="fade-up">
-  <div class="section-label">Kapitel 2</div>
-  <div class="section-title">Motivation</div>
-  <p class="section-body">
+<div class=”fade-up”>
+  <div class=”section-label”>Kapitel 1</div>
+  <div class=”section-title”>Motivation</div>
+  <p class=”section-body”>
     Die Fähigkeit, Objekte augenblicklich und präzise zu erkennen, ist in einer zunehmend
     vernetzten und autonomen Welt unverzichtbar. Herkömmliche Bildanalyse-Methoden sind
     zu langsam und fehleranfällig für moderne Anforderungen.
   </p>
-  <p class="section-body">
+  <p class=”section-body”>
     Warum ist Geschwindigkeit so kritisch? Ein autonomes Fahrzeug, das einen Fußgänger
     200 ms zu spät erkennt, hat bei 50 km/h bereits 2,8 m zurückgelegt – zu viel für
     eine sichere Reaktion. Millisekunden entscheiden hier über Leben und Tod, und das
@@ -269,7 +97,7 @@ anchor-sections: false
     die Eindringlinge in Echtzeit melden – all diese Anwendungen verlangen, dass jeder
     einzelne Frame innerhalb von unter 33 ms vollständig verarbeitet ist.
   </p>
-  <p class="section-body">
+  <p class=”section-body”>
     Der Bedarf wächst rasant: Der globale Markt für Computer Vision wird bis 2030 auf
     über 50 Milliarden US-Dollar geschätzt. Was vor zehn Jahren noch spezialisierte
     Rechenzentren erforderte, läuft heute auf Smartphones, Mikrocontrollern und direkt
@@ -278,14 +106,186 @@ anchor-sections: false
   </p>
 </div>
 
-<div class="two-col fade-up">
-  <div class="card">
+<div class=”two-col fade-up”>
+  <div class=”card”>
     <h3>🐢 Two-Stage – langsam</h3>
     <p>Faster R-CNN erzielt hohe Genauigkeit (~42 mAP), benötigt aber 100–500 ms pro Frame – für Live-Video nicht einsetzbar.</p>
   </div>
-  <div class="card">
+  <div class=”card”>
     <h3>⚡ One-Stage – schnell</h3>
     <p>YOLOv8n erreicht 37 mAP bei unter 5 ms pro Frame auf der GPU, im Browser 10–30 FPS – Echtzeit ganz ohne Server.</p>
+  </div>
+</div>
+
+<hr class=”divider”>
+
+<!-- ══ GRUNDLAGEN ═════════════════════════════════════════════════ -->
+<div class=”fade-up”>
+  <div class=”section-label”>Kapitel 2</div>
+  <div class=”section-title”>Grundlagen</div>
+  <p style=”margin-top:.5rem;font-size:.95rem;color:#999”>Dieses Kapitel stützt sich auf die Vorlesungsfolie „Objekterkennung” aus dem Themenblock Erkennung.</p>
+</div>
+
+<!-- Geschichte -->
+<div class=”fade-up” style=”margin-bottom:.75rem;”>
+  <div class=”section-label” style=”margin-top:1.5rem;”>Geschichte der Objekterkennung</div>
+</div>
+
+<div class=”timeline fade-up”>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>1960er–1990er</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge blue”>Klassisch</div>
+      <h4>Klassische Computer Vision</h4>
+      <p>Edge Detection und Feature Matching (z.B. Haar Cascades) dominieren. Methoden sind handgefertigt und auf spezielle Szenarien begrenzt.</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2001</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge blue”>Klassisch</div>
+      <h4>Viola-Jones – Erster Echtzeit-Detektor</h4>
+      <p>Haar-Merkmale + Cascade Classifier ermöglichen erstmals Echtzeit-Gesichtserkennung auf Consumer-Hardware.</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2012</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge red”>Durchbruch</div>
+      <h4>AlexNet – Deep Learning Revolution</h4>
+      <p>Tiefes CNN gewinnt ImageNet und halbiert die Fehlerrate. GPU-Training und Deep Learning werden zum Standard.</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2013</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge blue”>CNN</div>
+      <h4>R-CNN – Regionenbasierte Erkennung</h4>
+      <p>~2000 Regionenvorschläge → CNN → SVM. Durchbruch für CNN-Detektoren, aber noch zu langsam für Echtzeit (47 s/Bild).</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2015–2016</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge blue”>Two-Stage</div>
+      <h4>Faster R-CNN – Zwei-Etappen-Verfahren</h4>
+      <p>Faster R-CNN und ähnliche Architekturen erreichen höchste Genauigkeit, aber mit längerer Verarbeitungszeit – für Echtzeit-Anwendungen nicht geeignet.</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2015</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge red”>Meilenstein</div>
+      <h4>YOLO v1 – You Only Look Once</h4>
+      <p>Ein einziger Forward-Pass liefert alle Bounding Boxes direkt. 45 FPS auf einer GPU – Echtzeit-Objekterkennung ist Realität.</p>
+    </div>
+  </div>
+  <div class=”tl-item”>
+    <div class=”tl-dot”>2023</div>
+    <div class=”tl-body”>
+      <div class=”tl-badge red”>Aktuell</div>
+      <h4>YOLOv8 – Stand der Technik</h4>
+      <p>Ankerfreie Architektur, 37,3 mAP auf COCO, einheitliche API für Detection/Segmentation. Nano-Variante: 3,2 ms/Bild auf A100.</p>
+    </div>
+  </div>
+</div>
+
+<div class=”fade-up” style=”margin-top:1.5rem;font-size:0.9rem;color:#666;”>
+  Quellen zur Historie: <a href=”https://de.wikipedia.org/wiki/Objekterkennung” target=”_blank” style=”color:#0078d4;text-decoration:none;”>Wikipedia: Objekterkennung</a> | <a href=”https://arxiv.org/abs/1506.02640” target=”_blank” style=”color:#0078d4;text-decoration:none;”>Redmon et al. (2016) – YOLO</a>
+</div>
+
+<!-- Begriffe -->
+<div class=”fade-up” style=”margin-bottom:.75rem;”>
+  <div class=”section-label” style=”margin-top:.5rem;”>Begriffserklärungen</div>
+</div>
+
+<div class=”def-grid fade-up”>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 01</div>
+    <div class=”def-name”>Bounding Box</div>
+    <p>Achsenparalleles Rechteck um ein erkanntes Objekt – definiert durch Mittelpunkt (cx, cy) sowie Breite und Höhe.</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 02</div>
+    <div class=”def-name”>Confidence Score</div>
+    <p>Zahl [0–1]: Wie sicher ist das Modell, dass die Box ein Objekt enthält und die Klasse korrekt ist?</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 03</div>
+    <div class=”def-name”>IoU – Intersection over Union</div>
+    <p>Schnittfläche / Vereinigungsfläche zweier Boxen. 0 = keine Überlappung, 1 = identisch. COCO-Schwellwert: ≥ 0,5.</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 04</div>
+    <div class=”def-name”>NMS – Non-Maximum Suppression</div>
+    <p>Bereinigt mehrfach erkannte Objekte: Beste Box behalten, alle Nachbarboxen mit IoU &gt; 0,45 unterdrücken.</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 05</div>
+    <div class=”def-name”>Anchor Box</div>
+    <p>Vordefinierte Box-Formen als Vorhersage-Referenz. YOLOv8 ist ankerfrei und sagt den Mittelpunkt direkt vorher.</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 06</div>
+    <div class=”def-name”>mAP – mean Average Precision</div>
+    <p>Hauptmetrik für Objektdetektoren: Durchschnitt der Average Precision über alle Klassen bei variierenden IoU-Schwellwerten.</p>
+  </div>
+  <div class=”def-card”>
+    <div class=”def-term”>Begriff 07</div>
+    <div class=”def-name”>CNN – Convolutional Neural Network</div>
+    <p>Neuronales Netzwerk spezialisiert auf räumliche Daten wie Bilder. Extrahiert Merkmale automatisch durch Faltungsoperationen – von einfachen Kanten bis zu komplexen Formen.</p>
+  </div>
+</div>
+
+<!-- Anwendungsfälle -->
+<div class=”fade-up” style=”margin-bottom:.75rem;”>
+  <div class=”section-label” style=”margin-top:.5rem;”>Typische Anwendungsfälle</div>
+</div>
+
+<div class=”usecase-grid fade-up”>
+  <div class=”usecase-card”>
+    <span class=”usecase-icon”>🚗</span>
+    <h3>Autonomes Fahren</h3>
+    <ul>
+      <li>Fußgänger &amp; Radfahrer</li>
+      <li>Verkehrsschilder &amp; Ampeln</li>
+      <li>Fahrzeuge &amp; Hindernisse</li>
+    </ul>
+  </div>
+  <div class=”usecase-card”>
+    <span class=”usecase-icon”>📹</span>
+    <h3>Sicherheit &amp; Überwachung</h3>
+    <ul>
+      <li>Personenzählung &amp; Tracking</li>
+      <li>Eindringling-Erkennung</li>
+      <li>Verlassengegenstand-Alarm</li>
+    </ul>
+  </div>
+  <div class=”usecase-card”>
+    <span class=”usecase-icon”>⚽</span>
+    <h3>Sport</h3>
+    <ul>
+      <li>Spieler- &amp; Balltracking</li>
+      <li>Taktische Bewegungsanalyse</li>
+    </ul>
+  </div>
+  <div class=”usecase-card”>
+    <span class=”usecase-icon”>🩺</span>
+    <h3>Medizin</h3>
+    <ul>
+      <li>Erkennung von Tumoren &amp; Frakturen</li>
+      <li>Anomalien in Röntgen-/CT-Bildern</li>
+      <li>Assistenz bei medizinischer Diagnose</li>
+    </ul>
+  </div>
+  <div class=”usecase-card”>
+    <span class=”usecase-icon”>🏭</span>
+    <h3>Industrie &amp; Qualitätskontrolle</h3>
+    <ul>
+      <li>Defekterkennung am Fließband</li>
+      <li>Montagekontrolle &amp; Vollständigkeit</li>
+      <li>Barcode- &amp; Produktidentifikation</li>
+    </ul>
   </div>
 </div>
 
